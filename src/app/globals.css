@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Zmienne motywu — synchronizowane z src/config/theme.ts.
+ * Jeśli zmieniasz paletę w theme.ts, zaktualizuj też te zmienne
+ * (lub wygeneruj je z theme.ts w build-stepie).
+ */
+@layer base {
+  :root {
+    --background: 40 33% 97%;
+    --foreground: 180 25% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 180 25% 12%;
+    --muted: 40 20% 93%;
+    --muted-foreground: 180 8% 40%;
+    --primary: 172 55% 28%;
+    --primary-foreground: 40 33% 97%;
+    --accent: 150 35% 75%;
+    --accent-foreground: 180 25% 12%;
+    --border: 40 15% 88%;
+    --input: 40 15% 88%;
+    --ring: 172 55% 28%;
+  }
+
+  .dark {
+    --background: 180 18% 8%;
+    --foreground: 40 30% 95%;
+    --card: 180 18% 11%;
+    --card-foreground: 40 30% 95%;
+    --muted: 180 12% 16%;
+    --muted-foreground: 40 10% 65%;
+    --primary: 150 60% 55%;
+    --primary-foreground: 180 25% 8%;
+    --accent: 172 35% 30%;
+    --accent-foreground: 40 30% 95%;
+    --border: 180 12% 20%;
+    --input: 180 12% 20%;
+    --ring: 150 60% 55%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html,
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+}
