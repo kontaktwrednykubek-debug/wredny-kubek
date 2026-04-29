@@ -10,6 +10,14 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 type Mode = "signin" | "signup";
 
 export default function LoginPage() {
+  return (
+    <React.Suspense fallback={null}>
+      <LoginInner />
+    </React.Suspense>
+  );
+}
+
+function LoginInner() {
   const router = useRouter();
   const params = useSearchParams();
   const next = params.get("next") ?? "/account";
