@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { isValidPhonePL, normalizePhonePL } from "@/lib/phone";
+import { isValidPhone, normalizePhone } from "@/lib/phone";
 import { SHIPPING_METHODS, getShippingMethod } from "@/config/shipping";
 
 const SHIPPING_IDS = SHIPPING_METHODS.map((m) => m.id) as [string, ...string[]];
@@ -13,8 +13,8 @@ const bodySchema = z.object({
       .string()
       .min(6)
       .max(40)
-      .refine(isValidPhonePL, {
-        message: "Nieprawidłowy numer telefonu (wymagane 9 cyfr).",
+      .refine(isValidPhone, {
+        message: "Nieprawidłowy numer telefonu.",
       }),
     address: z.string().min(3).max(200),
     city: z.string().min(2).max(80),
@@ -72,7 +72,7 @@ export async function POST(req: Request) {
 
   const normalizedShipping = {
     ...shipping,
-    phone: normalizePhonePL(shipping.phone),
+    phone: normalizePhone(shipping.phone),
     shippingMethodName: method?.name ?? shipping.shippingMethod,
     shippingPriceGr: method?.priceGrosze ?? 0,
   };

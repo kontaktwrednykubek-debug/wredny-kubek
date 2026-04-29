@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCart, cartTotalGr } from "@/features/cart/useCart";
 import { formatPrice } from "@/lib/utils";
-import { isValidPhonePL } from "@/lib/phone";
+import { isValidPhone } from "@/lib/phone";
 import {
   SHIPPING_METHODS,
   getShippingMethod,
@@ -51,9 +51,9 @@ export function CheckoutClient() {
   function validatePhone(value: string) {
     if (!value) return setPhoneError(null);
     setPhoneError(
-      isValidPhonePL(value)
+      isValidPhone(value)
         ? null
-        : "Nieprawidłowy numer (wymagane 9 cyfr, np. 600 100 200).",
+        : "Nieprawidłowy numer. Przykłady: 600 100 200, +48 600 100 200, +41 78 206 73 79.",
     );
   }
   function validateZip(value: string) {
@@ -67,7 +67,7 @@ export function CheckoutClient() {
     e.preventDefault();
     setError(null);
 
-    if (!isValidPhonePL(form.phone)) {
+    if (!isValidPhone(form.phone)) {
       setPhoneError("Nieprawidłowy numer telefonu.");
       return;
     }
