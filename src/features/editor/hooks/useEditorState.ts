@@ -9,6 +9,8 @@ type State = {
   elements: DesignElement[];
   selectedId: string | null;
   mirror: boolean;
+  /** Id istniejącego projektu w bazie — jeśli ustawione, zapis aktualizuje (a nie duplikuje). */
+  currentDesignId: string | null;
 };
 
 type Actions = {
@@ -19,6 +21,15 @@ type Actions = {
   removeElement: (id: string) => void;
   select: (id: string | null) => void;
   toggleMirror: () => void;
+  /** Załaduj projekt z bazy do stanu edytora. */
+  loadDesign: (input: {
+    id: string;
+    productId: ProductId;
+    elements: DesignElement[];
+    mirror?: boolean;
+  }) => void;
+  /** Zresetuj edytor do pustego stanu (np. nowy projekt). */
+  reset: () => void;
 };
 
 const uid = () => Math.random().toString(36).slice(2, 9);
@@ -28,15 +39,37 @@ export const useEditorState = create<State & Actions>((set) => ({
   elements: [],
   selectedId: null,
   mirror: false,
+  currentDesignId: null,
 
-  setProduct: (id) => set({ productId: id, elements: [], selectedId: null }),
+  setProduct: (id) =>
+    set({ productId: id, elements: [], selectedId: null, currentDesignId: null }),
 
-  addText: (t) =>
+  loadDesign: ({ id, productId, elements, mirror }) =>
+    set({
+      currentDesignId: id,
+      productId,
+      elements,
+      mirror: mirror ?? false,
+      selectedId: null,
+    }),
+
+  reset: () =>
+    set({
+      productId: "mug",
+      elements: [],
+      selectedId: null,
+      mirror: false,
+      currentDesignId: null,
+    }),
+
+  addText: (t) => {
+    const id = uid();
     set((s) => ({
+      selectedId: id,
       elements: [
         ...s.elements,
         {
-          id: uid(),
+          id,
           kind: "text",
           x: 60,
           y: 60,
@@ -48,14 +81,17 @@ export const useEditorState = create<State & Actions>((set) => ({
           ...t,
         } as TextElement,
       ],
-    })),
+    }));
+  },
 
-  addImage: (src) =>
+  addImage: (src) => {
+    const id = uid();
     set((s) => ({
+      selectedId: id,
       elements: [
         ...s.elements,
         {
-          id: uid(),
+          id,
           kind: "image",
           x: 40,
           y: 40,
@@ -65,7 +101,8 @@ export const useEditorState = create<State & Actions>((set) => ({
           rotation: 0,
         } as ImageElement,
       ],
-    })),
+    }));
+  },
 
   updateElement: (id, patch) =>
     set((s) => ({

@@ -1,3 +1,5 @@
+export type TextAlign = "left" | "center" | "right";
+
 export type TextElement = {
   id: string;
   kind: "text";
@@ -8,6 +10,14 @@ export type TextElement = {
   fontFamily: string;
   fill: string;
   rotation: number;
+  // formatowanie (Canva-style)
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
+  align?: TextAlign;
+  letterSpacing?: number;
+  lineHeight?: number;
+  width?: number; // do textu wieloliniowego z align
 };
 
 export type ImageElement = {

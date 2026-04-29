@@ -1,6 +1,6 @@
 "use client";
 
-import { productList } from "@/config/products";
+import { availableProductList as productList } from "@/config/products";
 import { useEditorState } from "../hooks/useEditorState";
 import { cn } from "@/lib/utils";
 

@@ -7,142 +7,85 @@ import { useEditorState } from "../hooks/useEditorState";
 import { getProduct } from "@/config/products";
 
 /**
- * Komponenty react-konva są ŁADOWANE TYLKO PO STRONIE KLIENTA
- * (Konva potrzebuje window).
+ * Lazy-load całego modułu Konva (jeden chunk, bez SSR).
+ * Patrz: src/features/editor/components/KonvaCanvas.tsx
  */
-const Stage = dynamic(() => import("react-konva").then((m) => m.Stage), {
+const KonvaCanvas = dynamic(() => import("./KonvaCanvas"), {
   ssr: false,
-});
-const Layer = dynamic(() => import("react-konva").then((m) => m.Layer), {
-  ssr: false,
-});
-const Rect = dynamic(() => import("react-konva").then((m) => m.Rect), {
-  ssr: false,
-});
-const KText = dynamic(() => import("react-konva").then((m) => m.Text), {
-  ssr: false,
-});
-const KImage = dynamic(() => import("react-konva").then((m) => m.Image), {
-  ssr: false,
+  loading: () => (
+    <div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
+      Ładowanie edytora…
+    </div>
+  ),
 });
 
 export type EditorStageHandle = {
   getStage: () => Konva.Stage | null;
 };
 
-export const EditorStage = React.forwardRef<EditorStageHandle>(
-  function EditorStage(_props, ref) {
+type StageContainerProps = {
+  width: number;
+  height: number;
+  background: string;
+};
+
+const StageContainer = React.forwardRef<EditorStageHandle, StageContainerProps>(
+  function StageContainer({ width, height, background }, ref) {
     const stageRef = React.useRef<Konva.Stage | null>(null);
-    const { productId, elements, selectedId, select, updateElement } =
-      useEditorState();
-    const product = getProduct(productId);
-    const { widthPx, heightPx } = product.canvas;
+    const wrapperRef = React.useRef<HTMLDivElement | null>(null);
+    const [scale, setScale] = React.useState(1);
 
     React.useImperativeHandle(ref, () => ({
       getStage: () => stageRef.current,
     }));
 
+    // Skalujemy canvas do szerokości kontenera (responsywność na mobile).
+    // Konva stage pozostaje w natywnym rozmiarze (ekspor PNG 300 DPI bez straty jakości),
+    // skalowanie odbywa się czystym CSS transform.
+    React.useEffect(() => {
+      if (!wrapperRef.current) return;
+      const el = wrapperRef.current;
+      const update = () => {
+        const available = el.clientWidth;
+        const next = Math.min(1, available / width);
+        setScale(Number.isFinite(next) && next > 0 ? next : 1);
+      };
+      update();
+      const ro = new ResizeObserver(update);
+      ro.observe(el);
+      return () => ro.disconnect();
+    }, [width]);
+
     return (
-      <div
-        className="relative overflow-hidden rounded-2xl border border-border shadow-inner"
-        style={{ background: product.sceneBg, width: widthPx, height: heightPx }}
-      >
-        <Stage
-          ref={(s: Konva.Stage | null) => {
-            stageRef.current = s;
-          }}
-          width={widthPx}
-          height={heightPx}
-          onMouseDown={(e: Konva.KonvaEventObject<MouseEvent>) => {
-            if (e.target === e.target.getStage()) select(null);
+      <div ref={wrapperRef} className="w-full" style={{ height: height * scale }}>
+        <div
+          className="relative overflow-hidden rounded-2xl border border-border shadow-inner"
+          style={{
+            background,
+            width,
+            height,
+            transform: `scale(${scale})`,
+            transformOrigin: "top left",
           }}
         >
-          <Layer>
-            {/* tło pola nadruku */}
-            <Rect
-              x={0}
-              y={0}
-              width={widthPx}
-              height={heightPx}
-              fill="rgba(255,255,255,0.0)"
-              listening={false}
-            />
-
-            {elements.map((el) => {
-              if (el.kind === "text") {
-                return (
-                  <KText
-                    key={el.id}
-                    x={el.x}
-                    y={el.y}
-                    text={el.text}
-                    fontSize={el.fontSize}
-                    fontFamily={el.fontFamily}
-                    fill={el.fill}
-                    rotation={el.rotation}
-                    draggable
-                    onClick={() => select(el.id)}
-                    onTap={() => select(el.id)}
-                    onDragEnd={(e: Konva.KonvaEventObject<DragEvent>) =>
-                      updateElement(el.id, { x: e.target.x(), y: e.target.y() })
-                    }
-                    stroke={selectedId === el.id ? "#1ea69a" : undefined}
-                    strokeWidth={selectedId === el.id ? 1 : 0}
-                  />
-                );
-              }
-              return (
-                <ImageNode
-                  key={el.id}
-                  el={el}
-                  selected={selectedId === el.id}
-                  onSelect={() => select(el.id)}
-                  onMove={(x, y) => updateElement(el.id, { x, y })}
-                />
-              );
-            })}
-          </Layer>
-        </Stage>
+          <KonvaCanvas stageRef={stageRef} />
+        </div>
       </div>
     );
   },
 );
 
-function ImageNode({
-  el,
-  selected,
-  onSelect,
-  onMove,
-}: {
-  el: { id: string; x: number; y: number; width: number; height: number; src: string; rotation: number };
-  selected: boolean;
-  onSelect: () => void;
-  onMove: (x: number, y: number) => void;
-}) {
-  const [img, setImg] = React.useState<HTMLImageElement | null>(null);
-  React.useEffect(() => {
-    const i = new window.Image();
-    i.crossOrigin = "anonymous";
-    i.src = el.src;
-    i.onload = () => setImg(i);
-  }, [el.src]);
-  if (!img) return null;
-  return (
-    <KImage
-      image={img}
-      x={el.x}
-      y={el.y}
-      width={el.width}
-      height={el.height}
-      rotation={el.rotation}
-      draggable
-      onClick={onSelect}
-      onTap={onSelect}
-      onDragEnd={(e: Konva.KonvaEventObject<DragEvent>) =>
-        onMove(e.target.x(), e.target.y())
-      }
-      stroke={selected ? "#1ea69a" : undefined}
-      strokeWidth={selected ? 1 : 0}
-    />
-  );
-}
+export const EditorStage = React.forwardRef<EditorStageHandle>(
+  function EditorStage(_, ref) {
+    const productId = useEditorState((s) => s.productId);
+    const product = getProduct(productId);
+    return (
+      <StageContainer
+        ref={ref}
+        width={product.canvas.widthPx}
+        height={product.canvas.heightPx}
+        background={product.sceneBg}
+      />
+    );
+  },
+);

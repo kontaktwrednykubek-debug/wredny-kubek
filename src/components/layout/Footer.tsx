@@ -25,8 +25,8 @@ const cols = [
 
 export function Footer() {
   return (
-    <footer className="border-t border-border bg-card">
-      <div className="container mx-auto grid gap-8 px-4 py-10 md:grid-cols-4">
+    <footer className="w-full overflow-x-hidden border-t border-border bg-card">
+      <div className="container mx-auto grid gap-8 px-4 py-10 sm:grid-cols-2 md:grid-cols-4">
         <div>
           <p className="text-lg font-bold text-primary">{brand.name}</p>
           <p className="mt-2 text-sm text-muted-foreground">{brand.tagline}</p>
@@ -52,12 +52,22 @@ export function Footer() {
             <Instagram className="h-5 w-5" />
             <Youtube className="h-5 w-5" />
           </div>
-          <Link
-            href="/admin"
-            className="mt-4 inline-block text-xs text-muted-foreground hover:text-foreground"
-          >
-            Panel Administratora →
-          </Link>
+        </div>
+      </div>
+      <div className="border-t border-border">
+        <div className="container mx-auto flex flex-col items-center justify-between gap-2 px-4 py-4 text-xs text-muted-foreground sm:flex-row">
+          <p>© {new Date().getFullYear()} {brand.name}. Wszystkie prawa zastrzeżone.</p>
+          <p>
+            Wykonanie:{" "}
+            <a
+              href="https://www.andrzejmich.ch"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-foreground transition-colors hover:text-primary"
+            >
+              Andrzej Mich
+            </a>
+          </p>
         </div>
       </div>
     </footer>

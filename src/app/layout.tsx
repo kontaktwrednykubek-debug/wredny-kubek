@@ -29,10 +29,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pl" suppressHydrationWarning className={inter.variable}>
-      <body className="min-h-screen flex flex-col font-sans">
+      <body className="min-h-screen flex flex-col font-sans overflow-x-hidden" suppressHydrationWarning>
         <ThemeProvider>
           <Navbar />
-          <main className="flex-1">{children}</main>
+          <main className="flex-1 w-full max-w-full overflow-x-hidden">{children}</main>
           <Footer />
         </ThemeProvider>
       </body>

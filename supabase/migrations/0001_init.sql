@@ -56,6 +56,14 @@ create trigger on_auth_user_created
 after insert on auth.users
 for each row execute procedure public.handle_new_user();
 
+-- Backfill: jeśli ktoś zarejestrował się PRZED uruchomieniem tej migracji,
+-- utwórz mu profil z auth.users (jednorazowy catch-up).
+insert into public.profiles (id, email)
+select u.id, u.email
+from auth.users u
+left join public.profiles p on p.id = u.id
+where p.id is null;
+
 -- RLS
 alter table public.profiles enable row level security;
 alter table public.designs  enable row level security;
@@ -72,19 +80,22 @@ create policy "designs: own rows" on public.designs
 create policy "orders: own rows" on public.orders
   for select using (auth.uid() = user_id);
 
--- ADMIN bypass (rola ADMIN widzi i edytuje wszystko)
+-- ADMIN bypass: funkcja security definer omija RLS (brak nieskończonej rekurencji).
+create or replace function public.is_admin()
+returns boolean
+language sql
+security definer
+stable
+as $$
+  select exists (
+    select 1 from public.profiles
+    where id = auth.uid() and role = 'ADMIN'
+  );
+$$;
+
 create policy "admin: full access profiles" on public.profiles
-  for all using (
-    exists (select 1 from public.profiles p
-            where p.id = auth.uid() and p.role = 'ADMIN')
-  );
+  for all using (public.is_admin());
 create policy "admin: full access designs" on public.designs
-  for all using (
-    exists (select 1 from public.profiles p
-            where p.id = auth.uid() and p.role = 'ADMIN')
-  );
+  for all using (public.is_admin());
 create policy "admin: full access orders" on public.orders
-  for all using (
-    exists (select 1 from public.profiles p
-            where p.id = auth.uid() and p.role = 'ADMIN')
-  );
+  for all using (public.is_admin());

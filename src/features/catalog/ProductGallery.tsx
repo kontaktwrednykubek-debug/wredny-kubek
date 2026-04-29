@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 
 export function ProductGallery() {
   return (
-    <section className="container mx-auto px-4 py-12">
+    <section className="container mx-auto px-5 py-12 sm:px-6 lg:px-10 xl:px-12">
       <h2 className="mb-8 text-center text-2xl font-bold tracking-tight md:text-3xl">
         Produkty do personalizacji
       </h2>

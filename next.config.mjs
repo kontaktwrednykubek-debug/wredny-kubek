@@ -18,6 +18,14 @@ const nextConfig = {
   experimental: {
     serverActions: { bodySizeLimit: "10mb" },
   },
+  webpack: (config) => {
+    // react-konva ciągnie opcjonalny `canvas` (node-only). W przeglądarce nie jest potrzebny.
+    config.resolve.alias = {
+      ...(config.resolve.alias || {}),
+      canvas: false,
+    };
+    return config;
+  },
 };
 
 export default withPWA(nextConfig);

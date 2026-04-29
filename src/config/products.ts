@@ -56,8 +56,7 @@ export const productsConfig: Record<ProductId, ProductConfig> = {
       offsetXPx: 110,
       offsetYPx: 165,
     },
-    previewImage: "/products/mug/preview.png",
-    overlayImage: "/products/mug/overlay.png",
+    previewImage: "/kubek_merch.png",
     sceneBg: "#e9e6df",
     requiresMirrorPrint: true,
     colorVariants: [
@@ -132,6 +131,15 @@ export const productsConfig: Record<ProductId, ProductConfig> = {
 };
 
 export const productList: ProductConfig[] = Object.values(productsConfig);
+
+/**
+ * Lista produktów dostępnych aktualnie do personalizacji w UI.
+ * Pozostałe pozycje (tshirt, notebook, keychain) tymczasowo ukryte —
+ * konfiguracja zostaje, by nie psuć importów w innych modułach.
+ */
+export const availableProductList: ProductConfig[] = productList.filter((p) =>
+  p.id === "mug",
+);
 
 export function getProduct(id: ProductId): ProductConfig {
   return productsConfig[id];
