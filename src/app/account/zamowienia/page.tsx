@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { BackLink } from "@/components/BackLink";
+import { backfillOrderPreviews } from "@/lib/orderPreviews";
 import { OrdersClient } from "./OrdersClient";
 
 export const metadata = { title: "Twoje zamówienia" };
@@ -16,13 +17,15 @@ export default async function OrdersPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/login?next=/account/zamowienia");
 
-  const { data: orders } = await supabase
+  const { data: rawOrders } = await supabase
     .from("orders")
     .select(
       "id, product_id, amount_grosze, quantity, status, created_at, preview_url",
     )
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
+
+  const orders = await backfillOrderPreviews(supabase, rawOrders ?? []);
 
   return (
     <section className="container mx-auto max-w-4xl px-4 py-8">
@@ -34,7 +37,7 @@ export default async function OrdersPage({
           płatności i wysyłki.
         </p>
       )}
-      <OrdersClient orders={orders ?? []} />
+      <OrdersClient orders={orders} />
     </section>
   );
 }

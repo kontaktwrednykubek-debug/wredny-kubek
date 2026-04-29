@@ -8,13 +8,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCart, cartTotalGr } from "@/features/cart/useCart";
 import { formatPrice } from "@/lib/utils";
 import { isValidPhone } from "@/lib/phone";
-import {
-  SHIPPING_METHODS,
-  getShippingMethod,
-  type ShippingMethodId,
-} from "@/config/shipping";
 
-export function CheckoutClient() {
+export type CheckoutShippingMethod = {
+  code: string;
+  name: string;
+  description: string;
+  priceGrosze: number;
+  requiresParcelCode: boolean;
+};
+
+export function CheckoutClient({
+  methods,
+}: {
+  methods: CheckoutShippingMethod[];
+}) {
   const router = useRouter();
   const { items, clear } = useCart();
   const [loading, setLoading] = React.useState(false);
@@ -31,8 +38,9 @@ export function CheckoutClient() {
     parcelCode: "",
     note: "",
   });
-  const [shippingMethod, setShippingMethod] =
-    React.useState<ShippingMethodId>("inpost_paczkomat");
+  const [shippingMethod, setShippingMethod] = React.useState<string>(
+    methods[0]?.code ?? "",
+  );
 
   React.useEffect(() => {
     if (items.length === 0) {
@@ -43,7 +51,7 @@ export function CheckoutClient() {
   if (items.length === 0) return null;
 
   const itemsTotal = cartTotalGr(items);
-  const method = getShippingMethod(shippingMethod);
+  const method = methods.find((m) => m.code === shippingMethod);
   const shippingPrice = method?.priceGrosze ?? 0;
   const total = itemsTotal + shippingPrice;
   const requiresParcelCode = method?.requiresParcelCode ?? false;
@@ -250,11 +258,16 @@ export function CheckoutClient() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              {SHIPPING_METHODS.map((m) => {
-                const checked = shippingMethod === m.id;
+              {methods.length === 0 && (
+                <p className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+                  Brak dostępnych metod dostawy. Skontaktuj się z obsługą.
+                </p>
+              )}
+              {methods.map((m) => {
+                const checked = shippingMethod === m.code;
                 return (
                   <label
-                    key={m.id}
+                    key={m.code}
                     className={`flex cursor-pointer items-center justify-between gap-3 rounded-xl border p-3 transition ${
                       checked
                         ? "border-primary bg-primary/5 ring-2 ring-primary/20"
@@ -265,9 +278,9 @@ export function CheckoutClient() {
                       <input
                         type="radio"
                         name="shippingMethod"
-                        value={m.id}
+                        value={m.code}
                         checked={checked}
-                        onChange={() => setShippingMethod(m.id)}
+                        onChange={() => setShippingMethod(m.code)}
                         className="mt-1 h-4 w-4 accent-primary"
                       />
                       <div>

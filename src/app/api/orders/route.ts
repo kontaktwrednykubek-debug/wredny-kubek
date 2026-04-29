@@ -2,9 +2,6 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isValidPhone, normalizePhone } from "@/lib/phone";
-import { SHIPPING_METHODS, getShippingMethod } from "@/config/shipping";
-
-const SHIPPING_IDS = SHIPPING_METHODS.map((m) => m.id) as [string, ...string[]];
 
 const bodySchema = z.object({
   shipping: z.object({
@@ -23,7 +20,7 @@ const bodySchema = z.object({
       .min(3)
       .max(10)
       .regex(/^\d{2}-\d{3}$/, "Kod pocztowy w formacie 00-000"),
-    shippingMethod: z.enum(SHIPPING_IDS),
+    shippingMethod: z.string().min(2).max(50),
     parcelCode: z.string().max(40).optional(),
     note: z.string().max(500).optional(),
   }),
@@ -61,9 +58,22 @@ export async function POST(req: Request) {
 
   const { shipping, items } = parsed.data;
 
-  // Walidacja: paczkomat wymaga kodu paczkomatu.
-  const method = getShippingMethod(shipping.shippingMethod);
-  if (method?.requiresParcelCode && !shipping.parcelCode?.trim()) {
+  // Walidacja metody dostawy z bazy.
+  const { data: methodRow } = await supabase
+    .from("shipping_methods")
+    .select(
+      "code, name, price_grosze, requires_parcel_code, carrier, is_active",
+    )
+    .eq("code", shipping.shippingMethod)
+    .maybeSingle();
+
+  if (!methodRow || !methodRow.is_active) {
+    return NextResponse.json(
+      { error: "Nieznana lub nieaktywna metoda dostawy." },
+      { status: 400 },
+    );
+  }
+  if (methodRow.requires_parcel_code && !shipping.parcelCode?.trim()) {
     return NextResponse.json(
       { error: "Wymagany kod paczkomatu / punktu odbioru." },
       { status: 400 },
@@ -73,8 +83,9 @@ export async function POST(req: Request) {
   const normalizedShipping = {
     ...shipping,
     phone: normalizePhone(shipping.phone),
-    shippingMethodName: method?.name ?? shipping.shippingMethod,
-    shippingPriceGr: method?.priceGrosze ?? 0,
+    shippingMethodName: methodRow.name,
+    shippingPriceGr: methodRow.price_grosze,
+    shippingCarrier: methodRow.carrier ?? null,
   };
 
   const rows = items.map((it) => ({
@@ -85,6 +96,7 @@ export async function POST(req: Request) {
     quantity: it.quantity,
     preview_url: it.previewUrl ?? null,
     shipping_info: normalizedShipping,
+    shipping_carrier: methodRow.carrier ?? null,
     status: "PENDING" as const,
   }));
 

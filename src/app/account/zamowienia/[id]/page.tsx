@@ -4,6 +4,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { BackLink } from "@/components/BackLink";
 import { formatPrice } from "@/lib/utils";
 import { getProduct } from "@/config/products";
+import { backfillOrderPreviews } from "@/lib/orderPreviews";
 
 export const metadata = { title: "Szczegóły zamówienia" };
 
@@ -59,6 +60,9 @@ export default async function OrderDetailsPage({
     .maybeSingle();
 
   if (!order) notFound();
+
+  const [filled] = await backfillOrderPreviews(supabase, [order]);
+  Object.assign(order, filled);
 
   const product = (() => {
     try {

@@ -1,25 +1,30 @@
 import type * as React from "react";
 import { CheckCircle2, Clock, Package, TrendingUp } from "lucide-react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { backfillOrderPreviews } from "@/lib/orderPreviews";
 import { formatPrice } from "@/lib/utils";
 import { OrderStatusSelect } from "./OrderStatusSelect";
+import {
+  OrderShippingActions,
+  OrderThumbnail,
+} from "./OrderShippingActions";
 
 export const metadata = { title: "Zamówienia" };
 
-/** Statusy uznawane za „zarobione" — przeszły opłacenie. */
 const PAID_STATUSES = ["PAID", "IN_PRODUCTION", "SHIPPED", "DELIVERED"];
 
 export default async function AdminOrdersPage() {
   const supabase = createSupabaseServerClient();
-  const { data: orders } = await supabase
+  const { data: rawOrders } = await supabase
     .from("orders")
     .select(
-      "id, user_id, product_id, amount_grosze, quantity, status, shipping_info, created_at",
+      "id, user_id, product_id, amount_grosze, quantity, status, shipping_info, created_at, preview_url, shipping_carrier, shipping_label_url, shipping_tracking_number, shipping_label_status",
     )
     .order("created_at", { ascending: false })
     .limit(200);
 
-  const list = orders ?? [];
+  const orders = await backfillOrderPreviews(supabase, rawOrders ?? []);
+  const list = orders;
   const paid = list.filter((o) => PAID_STATUSES.includes(o.status));
   const pending = list.filter((o) => o.status === "PENDING");
   const paidRevenue = paid.reduce((s, o) => s + (o.amount_grosze ?? 0), 0);
@@ -29,7 +34,6 @@ export default async function AdminOrdersPage() {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Zamówienia</h1>
 
-      {/* Statystyki */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           icon={<Package className="h-5 w-5" />}
@@ -53,54 +57,87 @@ export default async function AdminOrdersPage() {
           value={formatPrice(avgPaid)}
         />
       </div>
-      {!orders?.length ? (
+
+      {list.length === 0 ? (
         <p className="text-muted-foreground">Brak zamówień.</p>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-border">
-          <table className="w-full text-sm">
-            <thead className="bg-muted text-left">
-              <tr>
-                <th className="p-3">#</th>
-                <th className="p-3">Data</th>
-                <th className="p-3">Produkt</th>
-                <th className="p-3">Klient</th>
-                <th className="p-3 text-right">Kwota</th>
-                <th className="p-3">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {orders.map((o) => {
-                const ship = (o.shipping_info ?? {}) as Record<string, string>;
-                return (
-                  <tr key={o.id} className="border-t border-border">
-                    <td className="p-3 font-mono text-xs">
-                      {o.id.slice(0, 8)}
-                    </td>
-                    <td className="p-3">
+        <div className="space-y-3">
+          {list.map((o) => {
+            const ship = (o.shipping_info ?? {}) as Record<
+              string,
+              string | undefined
+            >;
+            return (
+              <article
+                key={o.id}
+                className="rounded-2xl border border-border bg-card p-4"
+              >
+                <div className="flex flex-wrap items-start gap-3">
+                  <OrderThumbnail
+                    src={o.preview_url}
+                    alt={o.product_id ?? ""}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-baseline gap-x-2">
+                      <p className="font-semibold">
+                        {o.product_id} ×{o.quantity ?? 1}
+                      </p>
+                      <code className="font-mono text-xs text-muted-foreground">
+                        #{o.id.slice(0, 8)}
+                      </code>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
                       {new Date(o.created_at).toLocaleString("pl-PL")}
-                    </td>
-                    <td className="p-3">
-                      {o.product_id} ×{o.quantity ?? 1}
-                    </td>
-                    <td className="p-3">
-                      {ship.fullName ?? "—"}
+                    </p>
+                    <p className="mt-1 text-sm">
+                      <span className="font-medium">
+                        {ship.fullName ?? "—"}
+                      </span>
                       {ship.city && (
-                        <span className="block text-xs text-muted-foreground">
-                          {ship.city}
+                        <span className="text-muted-foreground">
+                          {" "}
+                          · {ship.city}
                         </span>
                       )}
-                    </td>
-                    <td className="p-3 text-right font-medium">
+                      {ship.shippingMethodName && (
+                        <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-[11px]">
+                          {ship.shippingMethodName as string}
+                        </span>
+                      )}
+                    </p>
+                    {ship.parcelCode && (
+                      <p className="text-xs">
+                        <span className="text-muted-foreground">
+                          Paczkomat:
+                        </span>{" "}
+                        <code className="font-mono">{ship.parcelCode}</code>
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="text-right">
+                    <p className="text-lg font-bold text-primary">
                       {formatPrice(o.amount_grosze)}
-                    </td>
-                    <td className="p-3">
+                    </p>
+                    <div className="mt-1">
                       <OrderStatusSelect id={o.id} status={o.status} />
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-3 border-t border-border/50 pt-3">
+                  <OrderShippingActions
+                    orderId={o.id}
+                    status={o.status}
+                    carrier={o.shipping_carrier ?? null}
+                    labelUrl={o.shipping_label_url ?? null}
+                    trackingNumber={o.shipping_tracking_number ?? null}
+                    labelStatus={o.shipping_label_status ?? null}
+                  />
+                </div>
+              </article>
+            );
+          })}
         </div>
       )}
     </div>
