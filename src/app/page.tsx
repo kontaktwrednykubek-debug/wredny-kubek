@@ -110,7 +110,7 @@ export default async function HomePage() {
                   </h3>
                   <p className="mt-1 max-w-xl text-sm text-white/90 sm:text-base">
                     Nasze kubki znajdziesz też na Allegro Lokalnie — z opcją
-                    odbioru osobistego i znanymi metodami płatności.
+                    odbioru w paczkomacie InPost i znanymi metodami płatności.
                   </p>
                 </div>
               </div>
