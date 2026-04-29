@@ -49,7 +49,7 @@ export default async function HomePage() {
               fill
               priority
               sizes="(min-width: 768px) 50vw, 100vw"
-              className="object-contain drop-shadow-[0_25px_25px_rgba(0,0,0,0.35)]"
+              className="scale-110 object-contain drop-shadow-[0_25px_25px_rgba(0,0,0,0.35)]"
             />
           </div>
         </div>
