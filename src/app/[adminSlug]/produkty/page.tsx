@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus, Star, Trash2 } from "lucide-react";
+import { Plus, Star } from "lucide-react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/lib/utils";
@@ -87,7 +87,10 @@ export default async function AdminProductsPage({
                       {Number(p.rating).toFixed(1)} ({p.reviews_count})
                     </span>
                   </div>
-                  <ProductsAdminActions slug={p.slug} />
+                  <ProductsAdminActions
+                    slug={p.slug}
+                    adminSlug={params.adminSlug}
+                  />
                 </div>
               </article>
             );

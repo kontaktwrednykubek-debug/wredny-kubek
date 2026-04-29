@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { brand } from "@/config/theme";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -79,6 +80,46 @@ export default async function HomePage() {
             </Link>
           </div>
           <ProductCarousel products={products} />
+        </div>
+      </section>
+
+      {/* BANER ALLEGRO */}
+      <section className="bg-background">
+        <div className="container mx-auto px-5 sm:px-6 lg:px-10 xl:px-12">
+          <a
+            href="https://allegrolokalnie.pl/uzytkownik/Client:126072599"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group relative block overflow-hidden rounded-3xl border border-[#FF5A00]/30 bg-gradient-to-r from-[#FF5A00] via-[#ff7a2a] to-[#ffb152] p-6 shadow-md transition hover:shadow-xl sm:p-8"
+          >
+            <div
+              aria-hidden
+              className="absolute -right-10 -top-10 h-48 w-48 rounded-full bg-white/15 blur-2xl"
+            />
+            <div className="relative flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-4 sm:items-center">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/95 text-[#FF5A00] shadow-sm sm:h-16 sm:w-16">
+                  <ShoppingBag className="h-7 w-7 sm:h-8 sm:w-8" />
+                </div>
+                <div className="text-white">
+                  <span className="inline-block rounded-full bg-white/20 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider backdrop-blur">
+                    Allegro Lokalnie
+                  </span>
+                  <h3 className="mt-2 text-xl font-extrabold leading-tight sm:text-2xl md:text-3xl">
+                    Wolisz kupić na Allegro?
+                  </h3>
+                  <p className="mt-1 max-w-xl text-sm text-white/90 sm:text-base">
+                    Nasze kubki znajdziesz też na Allegro Lokalnie — z opcją
+                    odbioru osobistego i znanymi metodami płatności.
+                  </p>
+                </div>
+              </div>
+              <span className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-[#FF5A00] shadow transition group-hover:scale-[1.03] sm:text-base">
+                Sprawdź Allegro
+                <span aria-hidden>→</span>
+              </span>
+            </div>
+          </a>
         </div>
       </section>
 

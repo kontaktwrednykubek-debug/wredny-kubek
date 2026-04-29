@@ -1,5 +1,5 @@
 import { BackLink } from "@/components/BackLink";
-import { NewProductForm } from "./NewProductForm";
+import { ProductForm } from "../ProductForm";
 
 export const metadata = { title: "Nowy produkt" };
 
@@ -21,7 +21,7 @@ export default function NewProductPage({
           przesłane do bezpiecznego magazynu Supabase.
         </p>
       </div>
-      <NewProductForm adminSlug={params.adminSlug} />
+      <ProductForm adminSlug={params.adminSlug} mode="create" />
     </div>
   );
 }

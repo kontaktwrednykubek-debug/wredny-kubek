@@ -10,6 +10,27 @@ const MAX_IMAGES = 10;
 
 type Spec = { key: string; value: string };
 
+type Variants = {
+  colors?: { name: string; hex: string }[];
+  sizes?: string[];
+};
+
+export type ProductInitial = {
+  slug: string;
+  title: string;
+  description: string;
+  category: string;
+  price_grosze: number;
+  images: string[];
+  specs: Record<string, string>;
+  variants: Variants;
+  rating: number;
+  reviews_count: number;
+};
+
+const CONDITIONS = ["Nowy", "Używany"] as const;
+const QUANTITIES = Array.from({ length: 30 }, (_, i) => String(i + 1));
+
 function slugify(s: string): string {
   return s
     .toLowerCase()
@@ -20,35 +41,77 @@ function slugify(s: string): string {
     .slice(0, 80);
 }
 
-export function NewProductForm({ adminSlug }: { adminSlug: string }) {
+export function ProductForm({
+  adminSlug,
+  initial,
+  mode = "create",
+}: {
+  adminSlug: string;
+  initial?: ProductInitial;
+  mode?: "create" | "edit";
+}) {
   const router = useRouter();
-  const [title, setTitle] = React.useState("");
-  const [slug, setSlug] = React.useState("");
-  const [slugTouched, setSlugTouched] = React.useState(false);
-  const [description, setDescription] = React.useState("");
-  const [category, setCategory] = React.useState("merch");
-  const [priceZl, setPriceZl] = React.useState("");
-  const [rating, setRating] = React.useState(0);
-  const [reviewsCount, setReviewsCount] = React.useState("");
-  const [images, setImages] = React.useState<string[]>([]);
-  const [specs, setSpecs] = React.useState<Spec[]>([
-    { key: "Pojemność", value: "" },
-    { key: "Materiał", value: "" },
-  ]);
+  const isEdit = mode === "edit";
 
-  // Warianty (opcjonalne) — admin sam zaznacza, co ma być widoczne.
-  const [hasColors, setHasColors] = React.useState(false);
-  const [colors, setColors] = React.useState<{ name: string; hex: string }[]>([
-    { name: "Czarny", hex: "#000000" },
-  ]);
-  const [hasSizes, setHasSizes] = React.useState(false);
-  const [sizesText, setSizesText] = React.useState("S, M, L, XL");
+  const [title, setTitle] = React.useState(initial?.title ?? "");
+  const [slug, setSlug] = React.useState(initial?.slug ?? "");
+  const [slugTouched, setSlugTouched] = React.useState(isEdit);
+  const [description, setDescription] = React.useState(
+    initial?.description ?? "",
+  );
+  const [category, setCategory] = React.useState(initial?.category ?? "merch");
+  const [priceZl, setPriceZl] = React.useState(
+    initial ? (initial.price_grosze / 100).toFixed(2) : "",
+  );
+  const [rating, setRating] = React.useState(initial?.rating ?? 0);
+  const [reviewsCount, setReviewsCount] = React.useState(
+    initial ? String(initial.reviews_count) : "",
+  );
+  const [images, setImages] = React.useState<string[]>(initial?.images ?? []);
+
+  // Wymagane pola wydzielone ze specs:
+  const [condition, setCondition] = React.useState<string>(
+    initial?.specs?.["Stan"] ?? "Nowy",
+  );
+  const [quantity, setQuantity] = React.useState<string>(
+    initial?.specs?.["Ilość"] ?? "1",
+  );
+
+  // Pozostałe specs (bez Stan/Ilość)
+  const [specs, setSpecs] = React.useState<Spec[]>(() => {
+    if (initial?.specs) {
+      const rest = Object.entries(initial.specs).filter(
+        ([k]) => k !== "Stan" && k !== "Ilość",
+      );
+      return rest.length > 0
+        ? rest.map(([key, value]) => ({ key, value }))
+        : [{ key: "Pojemność", value: "" }];
+    }
+    return [
+      { key: "Pojemność", value: "" },
+      { key: "Materiał", value: "" },
+    ];
+  });
+
+  // Warianty
+  const [hasColors, setHasColors] = React.useState(
+    Boolean(initial?.variants?.colors?.length),
+  );
+  const [colors, setColors] = React.useState<{ name: string; hex: string }[]>(
+    initial?.variants?.colors ?? [{ name: "Czarny", hex: "#000000" }],
+  );
+  const [hasSizes, setHasSizes] = React.useState(
+    Boolean(initial?.variants?.sizes?.length),
+  );
+  const [sizesText, setSizesText] = React.useState(
+    initial?.variants?.sizes?.join(", ") ?? "S, M, L, XL",
+  );
+
   const [uploading, setUploading] = React.useState(false);
   const [submitting, setSubmitting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
 
-  // Auto-slug z tytułu, póki user ręcznie nie dotknął.
   React.useEffect(() => {
     if (!slugTouched) setSlug(slugify(title));
   }, [title, slugTouched]);
@@ -106,19 +169,31 @@ export function NewProductForm({ adminSlug }: { adminSlug: string }) {
       setError("Tytuł i slug są wymagane.");
       return;
     }
+    if (!CONDITIONS.includes(condition as (typeof CONDITIONS)[number])) {
+      setError("Pole 'Stan' jest wymagane.");
+      return;
+    }
+    const qInt = parseInt(quantity, 10);
+    if (!Number.isFinite(qInt) || qInt < 1 || qInt > 30) {
+      setError("Pole 'Ilość' musi być liczbą 1–30.");
+      return;
+    }
     const priceGr = Math.round(parseFloat(priceZl.replace(",", ".")) * 100);
     if (!Number.isFinite(priceGr) || priceGr < 0) {
       setError("Nieprawidłowa cena.");
       return;
     }
-    const specsObj: Record<string, string> = {};
+    const specsObj: Record<string, string> = {
+      Stan: condition,
+      Ilość: String(qInt),
+    };
     for (const s of specs) {
-      if (s.key.trim()) specsObj[s.key.trim()] = s.value.trim();
+      const k = s.key.trim();
+      if (k && k !== "Stan" && k !== "Ilość") {
+        specsObj[k] = s.value.trim();
+      }
     }
-    const variants: {
-      colors?: { name: string; hex: string }[];
-      sizes?: string[];
-    } = {};
+    const variants: Variants = {};
     if (hasColors && colors.length > 0) {
       variants.colors = colors.filter((c) => c.name.trim() && c.hex);
     }
@@ -129,27 +204,33 @@ export function NewProductForm({ adminSlug }: { adminSlug: string }) {
         .filter(Boolean);
       if (arr.length > 0) variants.sizes = arr;
     }
+
+    const payload = {
+      slug,
+      title,
+      description,
+      category,
+      priceGrosze: priceGr,
+      images,
+      specs: specsObj,
+      variants,
+      rating,
+      reviewsCount: parseInt(reviewsCount || "0", 10) || 0,
+    };
+
     setSubmitting(true);
     try {
-      const res = await fetch("/api/shop-products", {
-        method: "POST",
+      const url = isEdit
+        ? `/api/shop-products/${initial!.slug}`
+        : "/api/shop-products";
+      const res = await fetch(url, {
+        method: isEdit ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          slug,
-          title,
-          description,
-          category,
-          priceGrosze: priceGr,
-          images,
-          specs: specsObj,
-          variants,
-          rating,
-          reviewsCount: parseInt(reviewsCount || "0", 10) || 0,
-        }),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
-        setError(j.error ?? "Nie udało się utworzyć produktu");
+        setError(j.error ?? "Nie udało się zapisać produktu");
         return;
       }
       router.push(`/${adminSlug}/produkty`);
@@ -322,7 +403,7 @@ export function NewProductForm({ adminSlug }: { adminSlug: string }) {
         </p>
       </fieldset>
 
-      {/* Warianty (opcjonalne) */}
+      {/* Warianty */}
       <fieldset className="space-y-4 rounded-2xl border border-border bg-card p-5">
         <legend className="px-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
           Warianty (opcjonalne)
@@ -331,7 +412,6 @@ export function NewProductForm({ adminSlug }: { adminSlug: string }) {
           Zaznacz, co ma być widoczne na stronie produktu jako wybór dla klienta.
         </p>
 
-        {/* Kolory */}
         <div className="space-y-3 rounded-xl border border-border/60 p-3">
           <label className="flex items-center gap-2 text-sm font-medium">
             <input
@@ -402,7 +482,6 @@ export function NewProductForm({ adminSlug }: { adminSlug: string }) {
           )}
         </div>
 
-        {/* Rozmiary */}
         <div className="space-y-3 rounded-xl border border-border/60 p-3">
           <label className="flex items-center gap-2 text-sm font-medium">
             <input
@@ -431,39 +510,76 @@ export function NewProductForm({ adminSlug }: { adminSlug: string }) {
       </fieldset>
 
       {/* Dane techniczne */}
-      <fieldset className="space-y-3 rounded-2xl border border-border bg-card p-5">
+      <fieldset className="space-y-4 rounded-2xl border border-border bg-card p-5">
         <legend className="px-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
           Dane techniczne
         </legend>
-        {specs.map((s, i) => (
-          <div key={i} className="flex gap-2">
-            <input
-              placeholder="Nazwa parametru"
-              value={s.key}
-              onChange={(e) => updateSpec(i, { key: e.target.value })}
-              className={`${inputCls} flex-1`}
-            />
-            <input
-              placeholder="Wartość"
-              value={s.value}
-              onChange={(e) => updateSpec(i, { value: e.target.value })}
-              className={`${inputCls} flex-1`}
-            />
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={() => removeSpec(i)}
-              aria-label="Usuń parametr"
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Stan" required>
+            <select
+              value={condition}
+              onChange={(e) => setCondition(e.target.value)}
+              className={inputCls}
+              required
             >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
-        ))}
-        <Button type="button" variant="outline" size="sm" onClick={addSpec}>
-          <Plus className="h-4 w-4" />
-          Dodaj parametr
-        </Button>
+              {CONDITIONS.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Ilość" required>
+            <select
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
+              className={inputCls}
+              required
+            >
+              {QUANTITIES.map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </div>
+
+        <div className="space-y-3 border-t border-border/50 pt-4">
+          <p className="text-xs text-muted-foreground">
+            Dodatkowe parametry techniczne (opcjonalne).
+          </p>
+          {specs.map((s, i) => (
+            <div key={i} className="flex gap-2">
+              <input
+                placeholder="Nazwa parametru"
+                value={s.key}
+                onChange={(e) => updateSpec(i, { key: e.target.value })}
+                className={`${inputCls} flex-1`}
+              />
+              <input
+                placeholder="Wartość"
+                value={s.value}
+                onChange={(e) => updateSpec(i, { value: e.target.value })}
+                className={`${inputCls} flex-1`}
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => removeSpec(i)}
+                aria-label="Usuń parametr"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          ))}
+          <Button type="button" variant="outline" size="sm" onClick={addSpec}>
+            <Plus className="h-4 w-4" />
+            Dodaj parametr
+          </Button>
+        </div>
       </fieldset>
 
       {error && (
@@ -475,7 +591,7 @@ export function NewProductForm({ adminSlug }: { adminSlug: string }) {
       <div className="flex justify-end gap-2">
         <Button type="submit" disabled={submitting || uploading} size="lg">
           {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-          Dodaj produkt
+          {isEdit ? "Zapisz zmiany" : "Dodaj produkt"}
         </Button>
       </div>
     </form>
