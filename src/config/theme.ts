@@ -55,6 +55,6 @@ export const darkTheme: ThemePalette = {
 };
 
 export const brand = {
-  name: "Kubkomania",
+  name: "WrednyKubek",
   tagline: "Stwórz swój własny merch",
 } as const;
