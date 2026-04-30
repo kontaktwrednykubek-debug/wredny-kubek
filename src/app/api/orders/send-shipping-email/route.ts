@@ -3,7 +3,7 @@ import { Resend } from "resend";
 import { render } from "@react-email/render";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { ShippingNotificationEmail } from "@/emails/ShippingNotificationEmail";
-import { resolveResendFrom } from "@/lib/email/sendOrderEmail";
+import { resolveResendFrom, resolveResendTo } from "@/lib/email/sendOrderEmail";
 
 export async function POST(req: Request) {
   const supabase = createSupabaseServerClient();
@@ -90,7 +90,7 @@ export async function POST(req: Request) {
 
     const result = await resend.emails.send({
       from,
-      to: userProfile.email,
+      to: resolveResendTo(userProfile.email),
       subject: `${firstName}, Twój Wredny Kubek właśnie zwiał z magazynu! 🏃💨`,
       html,
     });

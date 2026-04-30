@@ -45,6 +45,22 @@ export function resolveResendFrom(): string {
 }
 
 /**
+ * W trybie sandbox Resend (bez zweryfikowanej domeny) pozwala wysyłać
+ * tylko na adres właściciela konta. Ustawiając RESEND_SANDBOX_OVERRIDE_TO
+ * możesz wymusić wszystkie maile na ten adres (do testów).
+ */
+export function resolveResendTo(intendedTo: string): string {
+  const override = process.env.RESEND_SANDBOX_OVERRIDE_TO?.trim();
+  if (override) {
+    console.warn(
+      `[email] SANDBOX OVERRIDE: zamiast ${intendedTo} wysyłam na ${override}`,
+    );
+    return override;
+  }
+  return intendedTo;
+}
+
+/**
  * Wysyła email potwierdzający zamówienie.
  * W trybie sandbox używa onboarding@resend.dev jako nadawcy
  * (dojdzie tylko na adres email konta Resend).
@@ -101,7 +117,7 @@ export async function sendOrderConfirmationEmail(params: {
 
   const result = await resend.emails.send({
     from,
-    to: params.to,
+    to: resolveResendTo(params.to),
     subject: `Dziękujemy za zamówienie #${params.orderId.slice(0, 8).toUpperCase()} — Wredny Kubek`,
     html,
   });
