@@ -129,6 +129,7 @@ export default async function AdminOrdersPage() {
                   <OrderShippingActions
                     orderId={o.id}
                     shipping={(o.shipping_info ?? null) as never}
+                    status={o.status}
                   />
                 </div>
               </article>

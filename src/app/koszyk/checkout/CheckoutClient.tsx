@@ -28,6 +28,7 @@ export function CheckoutClient({
   const [error, setError] = React.useState<string | null>(null);
   const [phoneError, setPhoneError] = React.useState<string | null>(null);
   const [zipError, setZipError] = React.useState<string | null>(null);
+  const [parcelCodeError, setParcelCodeError] = React.useState<string | null>(null);
 
   const [form, setForm] = React.useState({
     fullName: "",
@@ -66,25 +67,30 @@ export function CheckoutClient({
   }
   function validateZip(value: string) {
     if (!value) return setZipError(null);
+    // Akceptuj polski format (00-000) lub międzynarodowy (3-6 cyfr bez myślnika)
+    const isValid = /^\d{2}-\d{3}$/.test(value) || /^\d{3,6}$/.test(value);
     setZipError(
-      /^\d{2}-\d{3}$/.test(value) ? null : "Format: 00-000 (np. 02-345).",
+      isValid ? null : "Format: 00-000 (PL) lub 1234 (międzynarodowy).",
     );
   }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setParcelCodeError(null);
 
     if (!isValidPhone(form.phone)) {
       setPhoneError("Nieprawidłowy numer telefonu.");
       return;
     }
-    if (!/^\d{2}-\d{3}$/.test(form.zip)) {
-      setZipError("Kod pocztowy w formacie 00-000.");
+    // Akceptuj polski format (00-000) lub międzynarodowy (3-6 cyfr)
+    const isValidZip = /^\d{2}-\d{3}$/.test(form.zip) || /^\d{3,6}$/.test(form.zip);
+    if (!isValidZip) {
+      setZipError("Format: 00-000 (PL) lub 1234 (międzynarodowy).");
       return;
     }
     if (requiresParcelCode && !form.parcelCode.trim()) {
-      setError("Wpisz kod paczkomatu lub punktu odbioru.");
+      setParcelCodeError("Musisz wpisać kod paczkomatu (np. WAW123M). Kliknij przycisk poniżej, aby znaleźć najbliższy paczkomat.");
       return;
     }
 
@@ -174,13 +180,13 @@ export function CheckoutClient({
                   }}
                   onBlur={(e) => validatePhone(e.target.value)}
                   className={`${inputCls} ${
-                    phoneError ? "border-destructive" : ""
+                    phoneError ? "border-destructive ring-2 ring-destructive/20" : ""
                   }`}
                   aria-invalid={Boolean(phoneError)}
                 />
                 {phoneError && (
-                  <span className="mt-1 block text-xs text-destructive">
-                    {phoneError}
+                  <span className="mt-1 block text-sm font-medium text-destructive">
+                    ⚠️ {phoneError}
                   </span>
                 )}
               </label>
@@ -225,14 +231,17 @@ export function CheckoutClient({
                     }}
                     onBlur={(e) => validateZip(e.target.value)}
                     className={`${inputCls} ${
-                      zipError ? "border-destructive" : ""
+                      zipError ? "border-destructive ring-2 ring-destructive/20" : ""
                     }`}
+                    aria-invalid={Boolean(zipError)}
                   />
+                  {zipError && (
+                    <span className="mt-1 block text-sm font-medium text-destructive">
+                      ⚠️ {zipError}
+                    </span>
+                  )}
                 </label>
               </div>
-              {zipError && (
-                <p className="-mt-2 text-xs text-destructive">{zipError}</p>
-              )}
 
               <label className="block">
                 <span className="mb-1 block text-sm font-medium">
@@ -298,31 +307,46 @@ export function CheckoutClient({
               })}
 
               {requiresParcelCode && (
-                <label className="block pt-2">
-                  <span className="mb-1 block text-sm font-medium">
-                    Kod paczkomatu / punktu odbioru
-                  </span>
-                  <input
-                    required
-                    placeholder="np. WAW123M"
-                    value={form.parcelCode}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, parcelCode: e.target.value }))
-                    }
-                    className={inputCls}
-                  />
-                  <span className="mt-1 block text-xs text-muted-foreground">
-                    Znajdziesz na{" "}
-                    <a
-                      href="https://inpost.pl/znajdz-paczkomat"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary underline-offset-2 hover:underline"
+                <div className="block pt-2 space-y-3">
+                  <label className="block">
+                    <span className="mb-1 block text-sm font-medium">
+                      Kod paczkomatu / punktu odbioru <span className="text-destructive">*</span>
+                    </span>
+                    <input
+                      required
+                      placeholder="np. WAW123M"
+                      value={form.parcelCode}
+                      onChange={(e) => {
+                        setForm((f) => ({ ...f, parcelCode: e.target.value }));
+                        setParcelCodeError(null);
+                      }}
+                      className={`${inputCls} ${
+                        parcelCodeError ? "border-destructive ring-2 ring-destructive/20" : ""
+                      }`}
+                      aria-invalid={Boolean(parcelCodeError)}
+                    />
+                    {parcelCodeError && (
+                      <span className="mt-1 block text-sm font-medium text-destructive">
+                        ⚠️ {parcelCodeError}
+                      </span>
+                    )}
+                  </label>
+                  
+                  <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
+                    <p className="mb-3 text-sm font-semibold text-foreground">
+                      📍 Sprawdź, gdzie znajduje się Twój paczkomat
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-full border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                      onClick={() => window.open('https://inpost.pl/znajdz-paczkomat', '_blank', 'noopener,noreferrer')}
                     >
-                      inpost.pl/znajdz-paczkomat
-                    </a>
-                  </span>
-                </label>
+                      Otwórz mapę paczkomatów InPost
+                    </Button>
+                  </div>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -370,7 +394,7 @@ export function CheckoutClient({
             type="submit"
             className="w-full"
             size="lg"
-            disabled={loading || Boolean(phoneError) || Boolean(zipError)}
+            disabled={loading || Boolean(phoneError) || Boolean(zipError) || Boolean(parcelCodeError)}
           >
             {loading && <Loader2 className="h-4 w-4 animate-spin" />}
             Złóż zamówienie

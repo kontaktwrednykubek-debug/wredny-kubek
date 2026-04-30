@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Check, Copy, ImageOff, Tag, X } from "lucide-react";
+import { Check, Copy, ImageOff, Mail, Tag, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 type Shipping = {
@@ -20,14 +20,43 @@ type Shipping = {
 export function OrderShippingActions({
   shipping,
   orderId,
+  status,
 }: {
   shipping: Shipping | null;
   orderId: string;
+  status: string;
 }) {
   const [open, setOpen] = React.useState(false);
+  const [sendingEmail, setSendingEmail] = React.useState(false);
+  const [emailSent, setEmailSent] = React.useState(false);
+
+  async function sendShippingEmail() {
+    setSendingEmail(true);
+    try {
+      const res = await fetch("/api/orders/send-shipping-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId }),
+      });
+
+      if (res.ok) {
+        setEmailSent(true);
+        setTimeout(() => setEmailSent(false), 3000);
+      } else {
+        alert("Nie udało się wysłać emaila. Sprawdź konsolę.");
+      }
+    } catch (error) {
+      console.error("Error sending email:", error);
+      alert("Błąd wysyłania emaila.");
+    } finally {
+      setSendingEmail(false);
+    }
+  }
+
+  const isShipped = status === "SHIPPED" || status === "DELIVERED";
 
   return (
-    <>
+    <div className="flex flex-wrap gap-2">
       <Button
         size="sm"
         variant="outline"
@@ -37,6 +66,29 @@ export function OrderShippingActions({
         <Tag className="h-3 w-3" />
         Pokaż etykietę
       </Button>
+
+      {isShipped && (
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={sendShippingEmail}
+          disabled={sendingEmail || emailSent}
+          className={emailSent ? "border-emerald-500 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20" : ""}
+        >
+          {emailSent ? (
+            <>
+              <Check className="h-3 w-3" />
+              Email wysłany
+            </>
+          ) : (
+            <>
+              <Mail className="h-3 w-3" />
+              {sendingEmail ? "Wysyłanie..." : "Wyślij email o wysyłce"}
+            </>
+          )}
+        </Button>
+      )}
+
       {open && (
         <LabelDialog
           shipping={shipping ?? {}}
@@ -44,7 +96,7 @@ export function OrderShippingActions({
           onClose={() => setOpen(false)}
         />
       )}
-    </>
+    </div>
   );
 }
 

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isValidPhone, normalizePhone } from "@/lib/phone";
+import { sendOrderConfirmationEmail } from "@/lib/email/sendOrderEmail";
 
 const bodySchema = z.object({
   shipping: z.object({
@@ -19,7 +20,10 @@ const bodySchema = z.object({
       .string()
       .min(3)
       .max(10)
-      .regex(/^\d{2}-\d{3}$/, "Kod pocztowy w formacie 00-000"),
+      .refine(
+        (val) => /^\d{2}-\d{3}$/.test(val) || /^\d{3,6}$/.test(val),
+        "Kod pocztowy w formacie 00-000 (PL) lub 1234 (międzynarodowy)"
+      ),
     shippingMethod: z.string().min(2).max(50),
     parcelCode: z.string().max(40).optional(),
     note: z.string().max(500).optional(),
@@ -109,5 +113,42 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ orderId: data?.[0]?.id, count: data?.length ?? 0 });
+  const firstOrderId = data?.[0]?.id as string | undefined;
+
+  // Wyślij email potwierdzający (best-effort — nie blokuj odpowiedzi błędem maila)
+  if (firstOrderId) {
+    try {
+      const itemsTotal = items.reduce(
+        (s, it) => s + it.unitPriceGr * it.quantity,
+        0,
+      );
+      await sendOrderConfirmationEmail({
+        to: user.email ?? "",
+        orderId: firstOrderId,
+        customerName: shipping.fullName,
+        items: items.map((it) => ({
+          productId: it.productId,
+          label: it.productId,
+          quantity: it.quantity,
+          unitPriceGr: it.unitPriceGr,
+          previewUrl: it.previewUrl ?? null,
+        })),
+        shipping: {
+          fullName: shipping.fullName,
+          address: shipping.address,
+          city: shipping.city,
+          zip: shipping.zip,
+          phone: normalizedShipping.phone,
+          methodName: methodRow.name,
+          parcelCode: shipping.parcelCode,
+        },
+        totalGr: itemsTotal + (methodRow.price_grosze ?? 0),
+        shippingPriceGr: methodRow.price_grosze ?? 0,
+      });
+    } catch (err) {
+      console.error("[orders] sendOrderConfirmationEmail failed:", err);
+    }
+  }
+
+  return NextResponse.json({ orderId: firstOrderId, count: data?.length ?? 0 });
 }

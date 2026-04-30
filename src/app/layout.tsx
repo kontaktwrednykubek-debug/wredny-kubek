@@ -27,10 +27,11 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
+      { url: "/wk.svg", type: "image/svg+xml" },
       { url: "/wk.kubek.png", type: "image/png" },
       { url: "/icons/favicon-32.png", sizes: "32x32", type: "image/png" },
     ],
-    shortcut: "/wk.kubek.png",
+    shortcut: "/wk.svg",
     apple: "/icons/apple-touch-icon.png",
   },
   robots: {
