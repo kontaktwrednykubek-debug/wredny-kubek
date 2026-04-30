@@ -1,18 +1,6 @@
 import * as React from "react";
-import {
-  Body,
-  Button,
-  Column,
-  Container,
-  Head,
-  Hr,
-  Html,
-  Img,
-  Preview,
-  Row,
-  Section,
-  Text,
-} from "@react-email/components";
+import { Button, Section, Text } from "@react-email/components";
+import { EmailShell, EMAIL_COLORS } from "./_shared";
 
 export type OrderEmailItem = {
   productId: string;
@@ -41,16 +29,6 @@ export type OrderEmailProps = {
   logoUrl: string;
 };
 
-const COLORS = {
-  bg: "#0f0f0f",
-  card: "#1a1a1a",
-  border: "#2a2a2a",
-  text: "#f5f5f5",
-  muted: "#a0a0a0",
-  primary: "#dc2626", // red-600
-  primaryDark: "#991b1b",
-};
-
 function formatPrice(gr: number) {
   return `${(gr / 100).toFixed(2).replace(".", ",")} zł`;
 }
@@ -65,448 +43,393 @@ export function OrderConfirmationEmail({
   trackingUrl,
   logoUrl,
 }: OrderEmailProps) {
-  const itemsTotal = items.reduce(
-    (s, it) => s + it.unitPriceGr * it.quantity,
-    0,
-  );
+  const firstName = customerName.split(" ")[0];
+  const orderShort = orderId.slice(0, 8).toUpperCase();
 
   return (
-    <Html>
-      <Head />
-      <Preview>Dziękujemy za zamówienie #{orderId.slice(0, 8)} — Wredny Kubek</Preview>
-      <Body
+    <EmailShell
+      preview={`${firstName}, mamy to! Zamówienie #${orderShort} klepnięte. ☕🔥`}
+      logoUrl={logoUrl}
+    >
+      <Section
         style={{
-          backgroundColor: COLORS.bg,
-          color: COLORS.text,
-          fontFamily:
-            "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-          margin: 0,
-          padding: 0,
+          backgroundColor: EMAIL_COLORS.card,
+          borderRadius: "12px",
+          border: `1px solid ${EMAIL_COLORS.border}`,
+          padding: "32px 24px",
+          marginBottom: "16px",
         }}
       >
-        <Container
+        <Text
           style={{
-            maxWidth: "600px",
-            margin: "0 auto",
-            padding: "20px",
+            fontSize: "20px",
+            fontWeight: "bold",
+            color: EMAIL_COLORS.text,
+            margin: "0 0 16px 0",
           }}
         >
-          {/* Header z logo */}
-          <Section
+          Siema {firstName}!
+        </Text>
+
+        <Text
+          style={{
+            fontSize: "16px",
+            color: EMAIL_COLORS.text,
+            lineHeight: "1.6",
+            margin: "0 0 20px 0",
+          }}
+        >
+          Wdech, wydech... Stało się. Twoje pieniądze bezpiecznie do nas dotarły,
+          a my oficjalnie przyjęliśmy wyzwanie przygotowania Twojego{" "}
+          <strong style={{ color: EMAIL_COLORS.primary }}>Wrednego Kubka</strong>.
+        </Text>
+
+        {/* Numer zamówienia */}
+        <div
+          style={{
+            backgroundColor: EMAIL_COLORS.bg,
+            borderRadius: "8px",
+            padding: "12px 16px",
+            margin: "16px 0",
+            border: `1px solid ${EMAIL_COLORS.primary}`,
+          }}
+        >
+          <Text
             style={{
-              backgroundColor: COLORS.card,
-              borderRadius: "12px",
-              border: `1px solid ${COLORS.border}`,
-              padding: "32px 24px",
-              textAlign: "center",
-              borderTop: `4px solid ${COLORS.primary}`,
+              fontSize: "11px",
+              color: EMAIL_COLORS.muted,
+              textTransform: "uppercase",
+              letterSpacing: "1px",
+              margin: "0 0 4px 0",
             }}
           >
-            <Img
-              src={logoUrl}
-              alt="Wredny Kubek"
-              width="80"
-              height="80"
-              style={{ margin: "0 auto", display: "block" }}
-            />
-            <Text
-              style={{
-                color: COLORS.primary,
-                fontSize: "28px",
-                fontWeight: "bold",
-                margin: "16px 0 0 0",
-                letterSpacing: "0.5px",
-              }}
-            >
-              WREDNY KUBEK
-            </Text>
-            <Text
-              style={{
-                color: COLORS.muted,
-                fontSize: "14px",
-                margin: "4px 0 0 0",
-              }}
-            >
-              Personalizowane kubki, które robią różnicę
-            </Text>
-          </Section>
-
-          {/* Tytuł */}
-          <Section style={{ padding: "32px 0 16px" }}>
-            <Text
-              style={{
-                fontSize: "24px",
-                fontWeight: "bold",
-                color: COLORS.text,
-                margin: "0 0 8px 0",
-              }}
-            >
-              Dziękujemy za zamówienie! 🎉
-            </Text>
-            <Text
-              style={{
-                fontSize: "16px",
-                color: COLORS.muted,
-                margin: 0,
-                lineHeight: "1.5",
-              }}
-            >
-              Cześć <strong style={{ color: COLORS.text }}>{customerName}</strong>,
-              otrzymaliśmy Twoje zamówienie i właśnie zaczynamy nad nim pracować.
-            </Text>
-          </Section>
-
-          {/* Numer zamówienia */}
-          <Section
+            Numer zamówienia
+          </Text>
+          <Text
             style={{
-              backgroundColor: COLORS.card,
-              borderRadius: "12px",
-              border: `1px solid ${COLORS.border}`,
-              padding: "20px 24px",
-              marginBottom: "16px",
+              fontSize: "18px",
+              fontFamily: "monospace",
+              color: EMAIL_COLORS.primary,
+              fontWeight: "bold",
+              margin: 0,
             }}
           >
-            <Text
-              style={{
-                fontSize: "12px",
-                color: COLORS.muted,
-                textTransform: "uppercase",
-                letterSpacing: "1px",
-                margin: "0 0 4px 0",
-              }}
-            >
-              Numer zamówienia
-            </Text>
-            <Text
-              style={{
-                fontSize: "20px",
-                fontFamily: "monospace",
-                color: COLORS.primary,
-                fontWeight: "bold",
-                margin: 0,
-              }}
-            >
-              #{orderId.slice(0, 8).toUpperCase()}
-            </Text>
-          </Section>
+            #{orderShort}
+          </Text>
+        </div>
 
-          {/* Lista produktów */}
-          <Section
+        <Text
+          style={{
+            fontSize: "18px",
+            fontWeight: "bold",
+            color: EMAIL_COLORS.text,
+            margin: "24px 0 12px 0",
+          }}
+        >
+          Co się teraz dzieje w kwaterze głównej?
+        </Text>
+
+        <div
+          style={{
+            backgroundColor: EMAIL_COLORS.bg,
+            borderRadius: "8px",
+            padding: "16px 20px",
+            marginBottom: "20px",
+          }}
+        >
+          <Text
             style={{
-              backgroundColor: COLORS.card,
-              borderRadius: "12px",
-              border: `1px solid ${COLORS.border}`,
-              padding: "24px",
-              marginBottom: "16px",
+              fontSize: "15px",
+              color: EMAIL_COLORS.text,
+              lineHeight: "1.7",
+              margin: "8px 0",
             }}
           >
-            <Text
-              style={{
-                fontSize: "16px",
-                fontWeight: "bold",
-                color: COLORS.text,
-                margin: "0 0 16px 0",
-                borderBottom: `1px solid ${COLORS.border}`,
-                paddingBottom: "12px",
-              }}
-            >
-              📦 Twoje produkty
-            </Text>
-
-            {items.map((item, idx) => (
-              <Row
-                key={idx}
-                style={{
-                  marginBottom: idx < items.length - 1 ? "16px" : "0",
-                  paddingBottom: idx < items.length - 1 ? "16px" : "0",
-                  borderBottom:
-                    idx < items.length - 1
-                      ? `1px solid ${COLORS.border}`
-                      : "none",
-                }}
-              >
-                <Column style={{ width: "72px", verticalAlign: "top" }}>
-                  {item.previewUrl ? (
-                    <Img
-                      src={item.previewUrl}
-                      alt={item.label}
-                      width="64"
-                      height="64"
-                      style={{
-                        borderRadius: "8px",
-                        border: `1px solid ${COLORS.border}`,
-                        objectFit: "cover",
-                      }}
-                    />
-                  ) : (
-                    <div
-                      style={{
-                        width: "64px",
-                        height: "64px",
-                        borderRadius: "8px",
-                        backgroundColor: COLORS.bg,
-                        border: `1px solid ${COLORS.border}`,
-                      }}
-                    />
-                  )}
-                </Column>
-                <Column style={{ verticalAlign: "top", paddingLeft: "12px" }}>
-                  <Text
-                    style={{
-                      fontSize: "14px",
-                      fontWeight: "bold",
-                      color: COLORS.text,
-                      margin: "0 0 4px 0",
-                    }}
-                  >
-                    {item.label}
-                  </Text>
-                  <Text
-                    style={{
-                      fontSize: "12px",
-                      color: COLORS.muted,
-                      margin: "0 0 4px 0",
-                    }}
-                  >
-                    Ilość: {item.quantity} × {formatPrice(item.unitPriceGr)}
-                  </Text>
-                  <Text
-                    style={{
-                      fontSize: "14px",
-                      fontWeight: "bold",
-                      color: COLORS.primary,
-                      margin: 0,
-                    }}
-                  >
-                    {formatPrice(item.unitPriceGr * item.quantity)}
-                  </Text>
-                </Column>
-              </Row>
-            ))}
-          </Section>
-
-          {/* Podsumowanie kosztów */}
-          <Section
+            🎯 <strong>Wybieramy ideał:</strong> Szukamy najładniejszego kubka,
+            który godnie zniesie Twój ulubiony napój.
+          </Text>
+          <Text
             style={{
-              backgroundColor: COLORS.card,
-              borderRadius: "12px",
-              border: `1px solid ${COLORS.border}`,
-              padding: "20px 24px",
-              marginBottom: "16px",
+              fontSize: "15px",
+              color: EMAIL_COLORS.text,
+              lineHeight: "1.7",
+              margin: "8px 0",
             }}
           >
-            <Row>
-              <Column>
-                <Text
-                  style={{
-                    color: COLORS.muted,
-                    fontSize: "14px",
-                    margin: "0 0 8px 0",
-                  }}
-                >
-                  Produkty
-                </Text>
-              </Column>
-              <Column align="right">
-                <Text
-                  style={{
-                    color: COLORS.text,
-                    fontSize: "14px",
-                    margin: "0 0 8px 0",
-                  }}
-                >
-                  {formatPrice(itemsTotal)}
-                </Text>
-              </Column>
-            </Row>
-            <Row>
-              <Column>
-                <Text
-                  style={{
-                    color: COLORS.muted,
-                    fontSize: "14px",
-                    margin: "0 0 12px 0",
-                  }}
-                >
-                  Dostawa {shipping.methodName ? `(${shipping.methodName})` : ""}
-                </Text>
-              </Column>
-              <Column align="right">
-                <Text
-                  style={{
-                    color: COLORS.text,
-                    fontSize: "14px",
-                    margin: "0 0 12px 0",
-                  }}
-                >
-                  {shippingPriceGr === 0 ? "Gratis" : formatPrice(shippingPriceGr)}
-                </Text>
-              </Column>
-            </Row>
-            <Hr style={{ borderColor: COLORS.border, margin: "8px 0" }} />
-            <Row>
-              <Column>
-                <Text
-                  style={{
-                    color: COLORS.text,
-                    fontSize: "18px",
-                    fontWeight: "bold",
-                    margin: "8px 0 0 0",
-                  }}
-                >
-                  Razem
-                </Text>
-              </Column>
-              <Column align="right">
-                <Text
-                  style={{
-                    color: COLORS.primary,
-                    fontSize: "22px",
-                    fontWeight: "bold",
-                    margin: "8px 0 0 0",
-                  }}
-                >
-                  {formatPrice(totalGr)}
-                </Text>
-              </Column>
-            </Row>
-          </Section>
-
-          {/* Adres dostawy */}
-          <Section
+            🎨 <strong>Personalizacja:</strong> Nasi spece od „wredności"
+            zaczynają nanosić Twój wzór. Robimy to z chirurgiczną precyzją.
+          </Text>
+          <Text
             style={{
-              backgroundColor: COLORS.card,
-              borderRadius: "12px",
-              border: `1px solid ${COLORS.border}`,
-              padding: "20px 24px",
-              marginBottom: "16px",
+              fontSize: "15px",
+              color: EMAIL_COLORS.text,
+              lineHeight: "1.7",
+              margin: "8px 0",
+            }}
+          >
+            📦 <strong>Pakowanie:</strong> Owijamy go tak mocno, żeby przetrwał
+            nawet spotkanie z najbardziej niezdarnym kurierem świata.
+          </Text>
+        </div>
+
+        {/* Twoje łupy */}
+        <Text
+          style={{
+            fontSize: "18px",
+            fontWeight: "bold",
+            color: EMAIL_COLORS.text,
+            margin: "24px 0 12px 0",
+          }}
+        >
+          Twoje łupy:
+        </Text>
+
+        <div
+          style={{
+            backgroundColor: EMAIL_COLORS.bg,
+            borderRadius: "8px",
+            padding: "16px 20px",
+            marginBottom: "20px",
+          }}
+        >
+          {items.map((item, idx) => (
+            <div
+              key={idx}
+              style={{
+                paddingBottom: idx < items.length - 1 ? "12px" : "0",
+                marginBottom: idx < items.length - 1 ? "12px" : "0",
+                borderBottom:
+                  idx < items.length - 1
+                    ? `1px solid ${EMAIL_COLORS.border}`
+                    : "none",
+              }}
+            >
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <tbody>
+                  <tr>
+                    <td style={{ width: "64px", verticalAlign: "top" }}>
+                      {item.previewUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={item.previewUrl}
+                          alt={item.label}
+                          width="56"
+                          height="56"
+                          style={{
+                            borderRadius: "8px",
+                            border: `1px solid ${EMAIL_COLORS.border}`,
+                            objectFit: "cover",
+                            display: "block",
+                          }}
+                        />
+                      ) : (
+                        <div
+                          style={{
+                            width: "56px",
+                            height: "56px",
+                            borderRadius: "8px",
+                            backgroundColor: EMAIL_COLORS.card,
+                            border: `1px solid ${EMAIL_COLORS.border}`,
+                          }}
+                        />
+                      )}
+                    </td>
+                    <td style={{ verticalAlign: "top", paddingLeft: "12px" }}>
+                      <Text
+                        style={{
+                          fontSize: "14px",
+                          fontWeight: "bold",
+                          color: EMAIL_COLORS.text,
+                          margin: "0 0 4px 0",
+                        }}
+                      >
+                        {item.quantity}× {item.label}
+                      </Text>
+                      <Text
+                        style={{
+                          fontSize: "13px",
+                          color: EMAIL_COLORS.primary,
+                          fontWeight: "bold",
+                          margin: 0,
+                        }}
+                      >
+                        {formatPrice(item.unitPriceGr * item.quantity)}
+                      </Text>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          ))}
+
+          {/* Dostawa */}
+          <div
+            style={{
+              marginTop: "12px",
+              paddingTop: "12px",
+              borderTop: `1px solid ${EMAIL_COLORS.border}`,
             }}
           >
             <Text
               style={{
-                fontSize: "16px",
-                fontWeight: "bold",
-                color: COLORS.text,
-                margin: "0 0 12px 0",
-              }}
-            >
-              🚚 Adres dostawy
-            </Text>
-            <Text
-              style={{
-                color: COLORS.text,
-                fontSize: "14px",
-                lineHeight: "1.6",
-                margin: 0,
-              }}
-            >
-              <strong>{shipping.fullName}</strong>
-              <br />
-              {shipping.address}
-              <br />
-              {shipping.zip} {shipping.city}
-              <br />
-              📞 {shipping.phone}
-            </Text>
-            {shipping.parcelCode && (
-              <Text
-                style={{
-                  marginTop: "12px",
-                  padding: "10px 12px",
-                  backgroundColor: COLORS.bg,
-                  borderRadius: "6px",
-                  border: `1px solid ${COLORS.primary}`,
-                  fontSize: "13px",
-                  color: COLORS.text,
-                }}
-              >
-                <strong>Paczkomat:</strong>{" "}
-                <span
-                  style={{
-                    fontFamily: "monospace",
-                    color: COLORS.primary,
-                    fontWeight: "bold",
-                  }}
-                >
-                  {shipping.parcelCode}
-                </span>
-              </Text>
-            )}
-          </Section>
-
-          {/* CTA */}
-          <Section style={{ textAlign: "center", padding: "24px 0" }}>
-            <Button
-              href={trackingUrl}
-              style={{
-                backgroundColor: COLORS.primary,
-                color: "#ffffff",
-                padding: "16px 32px",
-                borderRadius: "8px",
-                fontWeight: "bold",
-                fontSize: "16px",
-                textDecoration: "none",
-                display: "inline-block",
-              }}
-            >
-              Sprawdź status zamówienia →
-            </Button>
-            <Text
-              style={{
-                color: COLORS.muted,
-                fontSize: "12px",
-                marginTop: "12px",
-              }}
-            >
-              Lub skopiuj link:{" "}
-              <a
-                href={trackingUrl}
-                style={{ color: COLORS.primary, wordBreak: "break-all" }}
-              >
-                {trackingUrl}
-              </a>
-            </Text>
-          </Section>
-
-          <Hr style={{ borderColor: COLORS.border, margin: "16px 0" }} />
-
-          {/* Footer z danymi sklepu */}
-          <Section style={{ padding: "16px 0", textAlign: "center" }}>
-            <Text
-              style={{
-                color: COLORS.text,
                 fontSize: "13px",
-                fontWeight: "bold",
-                margin: "0 0 4px 0",
-              }}
-            >
-              Wredny Kubek — Milena
-            </Text>
-            <Text
-              style={{
-                color: COLORS.muted,
-                fontSize: "12px",
-                lineHeight: "1.5",
+                color: EMAIL_COLORS.muted,
                 margin: 0,
               }}
             >
-              ul. Nieznana 13, 00-000 Niewidoczna
-              <br />
-              tel. +48 00 000 00 00
+              Dostawa{" "}
+              {shipping.methodName ? `(${shipping.methodName})` : ""}:{" "}
+              {shippingPriceGr === 0 ? "Gratis" : formatPrice(shippingPriceGr)}
             </Text>
+          </div>
+
+          {/* Suma */}
+          <table
+            style={{
+              width: "100%",
+              borderCollapse: "collapse",
+              marginTop: "8px",
+              paddingTop: "8px",
+              borderTop: `2px solid ${EMAIL_COLORS.primary}`,
+            }}
+          >
+            <tbody>
+              <tr>
+                <td>
+                  <Text
+                    style={{
+                      fontSize: "16px",
+                      fontWeight: "bold",
+                      color: EMAIL_COLORS.text,
+                      margin: "8px 0 0 0",
+                    }}
+                  >
+                    Razem:
+                  </Text>
+                </td>
+                <td style={{ textAlign: "right" }}>
+                  <Text
+                    style={{
+                      fontSize: "20px",
+                      fontWeight: "bold",
+                      color: EMAIL_COLORS.primary,
+                      margin: "8px 0 0 0",
+                    }}
+                  >
+                    {formatPrice(totalGr)}
+                  </Text>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        {/* Adres dostawy */}
+        <Text
+          style={{
+            fontSize: "18px",
+            fontWeight: "bold",
+            color: EMAIL_COLORS.text,
+            margin: "24px 0 12px 0",
+          }}
+        >
+          Gdzie to wyślemy?
+        </Text>
+
+        <div
+          style={{
+            backgroundColor: EMAIL_COLORS.bg,
+            borderRadius: "8px",
+            padding: "16px 20px",
+            marginBottom: "20px",
+          }}
+        >
+          <Text
+            style={{
+              color: EMAIL_COLORS.text,
+              fontSize: "14px",
+              lineHeight: "1.6",
+              margin: 0,
+            }}
+          >
+            <strong>{shipping.fullName}</strong>
+            <br />
+            {shipping.address}
+            <br />
+            {shipping.zip} {shipping.city}
+            <br />
+            📞 {shipping.phone}
+          </Text>
+          {shipping.parcelCode && (
             <Text
               style={{
-                color: COLORS.muted,
-                fontSize: "11px",
-                marginTop: "16px",
+                marginTop: "12px",
+                padding: "10px 12px",
+                backgroundColor: EMAIL_COLORS.card,
+                borderRadius: "6px",
+                border: `1px solid ${EMAIL_COLORS.primary}`,
+                fontSize: "13px",
+                color: EMAIL_COLORS.text,
               }}
             >
-              © {new Date().getFullYear()} Wredny Kubek. Wszystkie prawa zastrzeżone.
+              <strong>📍 Paczkomat:</strong>{" "}
+              <span
+                style={{
+                  fontFamily: "monospace",
+                  color: EMAIL_COLORS.primary,
+                  fontWeight: "bold",
+                }}
+              >
+                {shipping.parcelCode}
+              </span>
             </Text>
-          </Section>
-        </Container>
-      </Body>
-    </Html>
+          )}
+        </div>
+
+        <Text
+          style={{
+            fontSize: "15px",
+            color: EMAIL_COLORS.text,
+            lineHeight: "1.6",
+            margin: "20px 0",
+          }}
+        >
+          Damy Ci znać, jak tylko paczka nabierze mocy prawnej i ruszy w drogę.
+          Na razie możesz spokojnie zaplanować, co do niego wlejesz jako
+          pierwsze. 😉
+        </Text>
+
+        {/* CTA */}
+        <div style={{ textAlign: "center", margin: "24px 0 8px" }}>
+          <Button
+            href={trackingUrl}
+            style={{
+              backgroundColor: EMAIL_COLORS.primary,
+              color: "#0f0f0f",
+              padding: "14px 28px",
+              borderRadius: "8px",
+              fontWeight: "bold",
+              fontSize: "15px",
+              textDecoration: "none",
+              display: "inline-block",
+            }}
+          >
+            Sprawdź status zamówienia →
+          </Button>
+        </div>
+
+        <Text
+          style={{
+            fontSize: "14px",
+            color: EMAIL_COLORS.muted,
+            textAlign: "center",
+            margin: "16px 0 0 0",
+          }}
+        >
+          Dzięki za zaufanie! 🙏
+        </Text>
+      </Section>
+    </EmailShell>
   );
 }
 
