@@ -5,12 +5,14 @@ import { EmailShell, EMAIL_COLORS } from "./_shared";
 export type ShippingEmailProps = {
   customerName: string;
   orderId: string;
+  trackingNumber: string;
   logoUrl: string;
 };
 
 export function ShippingNotificationEmail({
   customerName,
   orderId,
+  trackingNumber,
   logoUrl,
 }: ShippingEmailProps) {
   const firstName = customerName.split(" ")[0];
@@ -117,20 +119,79 @@ export function ShippingNotificationEmail({
           </Text>
         </div>
 
+        {/* Numer przesyłki */}
         <Text
           style={{
             fontSize: "16px",
             color: EMAIL_COLORS.text,
-            margin: "24px 0 16px 0",
+            margin: "24px 0 12px 0",
             fontWeight: "bold",
+          }}
+        >
+          Twój numer przesyłki:
+        </Text>
+
+        <div
+          style={{
+            backgroundColor: EMAIL_COLORS.bg,
+            borderRadius: "8px",
+            padding: "16px 20px",
+            border: `2px solid ${EMAIL_COLORS.primary}`,
+            margin: "0 0 20px 0",
+            textAlign: "center",
+          }}
+        >
+          <Text
+            style={{
+              fontSize: "11px",
+              color: EMAIL_COLORS.muted,
+              textTransform: "uppercase",
+              letterSpacing: "1px",
+              margin: "0 0 6px 0",
+            }}
+          >
+              List przewozowy
+          </Text>
+          <Text
+            style={{
+              fontSize: "22px",
+              fontFamily: "monospace",
+              color: EMAIL_COLORS.primary,
+              fontWeight: "bold",
+              letterSpacing: "1px",
+              margin: 0,
+              wordBreak: "break-all",
+            }}
+          >
+            {trackingNumber}
+          </Text>
+          <Text
+            style={{
+              fontSize: "12px",
+              color: EMAIL_COLORS.muted,
+              margin: "8px 0 0 0",
+            }}
+          >
+            Skopiuj numer i wklej go na stronie kuriera, jeśli przycisk poniżej
+            nie wypełni go automatycznie.
+          </Text>
+        </div>
+
+        <Text
+          style={{
+            fontSize: "16px",
+            color: EMAIL_COLORS.text,
+            margin: "16px 0",
+            fontWeight: "bold",
+            textAlign: "center",
           }}
         >
           Sprawdź, gdzie jest Twój buntownik:
         </Text>
 
-        <div style={{ textAlign: "center", margin: "24px 0" }}>
+        <div style={{ textAlign: "center", margin: "16px 0 24px" }}>
           <Button
-            href="https://www.epaka.pl/sledzenie-przesylek"
+            href={`https://www.epaka.pl/sledzenie-przesylek?nr=${encodeURIComponent(trackingNumber)}`}
             style={{
               backgroundColor: EMAIL_COLORS.primary,
               color: "#0f0f0f",

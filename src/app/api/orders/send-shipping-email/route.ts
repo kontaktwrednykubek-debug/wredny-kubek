@@ -26,11 +26,20 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
-  const { orderId } = await req.json();
+  const { orderId, trackingNumber } = await req.json();
 
   if (!orderId) {
     return NextResponse.json({ error: "orderId is required" }, { status: 400 });
   }
+
+  if (!trackingNumber || typeof trackingNumber !== "string" || !trackingNumber.trim()) {
+    return NextResponse.json(
+      { error: "Numer przesyłki jest wymagany" },
+      { status: 400 },
+    );
+  }
+
+  const cleanTrackingNumber = trackingNumber.trim();
 
   // Pobierz dane zamówienia
   const { data: order } = await supabase
@@ -84,6 +93,7 @@ export async function POST(req: Request) {
       ShippingNotificationEmail({
         customerName,
         orderId: order.id,
+        trackingNumber: cleanTrackingNumber,
         logoUrl,
       })
     );

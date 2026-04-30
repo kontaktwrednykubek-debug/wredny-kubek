@@ -27,21 +27,32 @@ export function OrderShippingActions({
   status: string;
 }) {
   const [open, setOpen] = React.useState(false);
+  const [emailDialogOpen, setEmailDialogOpen] = React.useState(false);
   const [sendingEmail, setSendingEmail] = React.useState(false);
   const [emailSent, setEmailSent] = React.useState(false);
+  const [trackingNumber, setTrackingNumber] = React.useState("");
 
   async function sendShippingEmail() {
+    if (!trackingNumber.trim()) {
+      alert("Wpisz numer przesyłki.");
+      return;
+    }
     setSendingEmail(true);
     try {
       const res = await fetch("/api/orders/send-shipping-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId }),
+        body: JSON.stringify({
+          orderId,
+          trackingNumber: trackingNumber.trim(),
+        }),
       });
 
       const body = await res.json().catch(() => ({}));
       if (res.ok) {
         setEmailSent(true);
+        setEmailDialogOpen(false);
+        setTrackingNumber("");
         setTimeout(() => setEmailSent(false), 3000);
       } else {
         console.error("[send-shipping-email] Response:", body);
@@ -75,7 +86,7 @@ export function OrderShippingActions({
         <Button
           size="sm"
           variant="outline"
-          onClick={sendShippingEmail}
+          onClick={() => setEmailDialogOpen(true)}
           disabled={sendingEmail || emailSent}
           className={emailSent ? "border-emerald-500 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20" : ""}
         >
@@ -87,10 +98,25 @@ export function OrderShippingActions({
           ) : (
             <>
               <Mail className="h-3 w-3" />
-              {sendingEmail ? "Wysyłanie..." : "Wyślij email o wysyłce"}
+              Wyślij email o wysyłce
             </>
           )}
         </Button>
+      )}
+
+      {emailDialogOpen && (
+        <ShippingEmailDialog
+          trackingNumber={trackingNumber}
+          onChange={setTrackingNumber}
+          onSend={sendShippingEmail}
+          onClose={() => {
+            if (!sendingEmail) {
+              setEmailDialogOpen(false);
+              setTrackingNumber("");
+            }
+          }}
+          sending={sendingEmail}
+        />
       )}
 
       {open && (
@@ -100,6 +126,105 @@ export function OrderShippingActions({
           onClose={() => setOpen(false)}
         />
       )}
+    </div>
+  );
+}
+
+function ShippingEmailDialog({
+  trackingNumber,
+  onChange,
+  onSend,
+  onClose,
+  sending,
+}: {
+  trackingNumber: string;
+  onChange: (v: string) => void;
+  onSend: () => void;
+  onClose: () => void;
+  sending: boolean;
+}) {
+  React.useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !sending) onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose, sending]);
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <header className="flex items-center justify-between border-b border-border px-5 py-3">
+          <h2 className="text-base font-semibold">Wyślij email o wysyłce</h2>
+          <button
+            onClick={onClose}
+            disabled={sending}
+            aria-label="Zamknij"
+            className="rounded-full p-1.5 text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:opacity-50"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </header>
+
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            onSend();
+          }}
+          className="space-y-4 px-5 py-4"
+        >
+          <div>
+            <label
+              htmlFor="tracking-number"
+              className="mb-1.5 block text-sm font-medium"
+            >
+              Numer przesyłki / list przewozowy
+            </label>
+            <input
+              id="tracking-number"
+              type="text"
+              value={trackingNumber}
+              onChange={(e) => onChange(e.target.value)}
+              placeholder="np. 6800123456789"
+              autoFocus
+              disabled={sending}
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
+            />
+            <p className="mt-1.5 text-xs text-muted-foreground">
+              Numer pojawi się w mailu do klienta wraz z linkiem do śledzenia
+              na epaka.pl.
+            </p>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onClose}
+              disabled={sending}
+            >
+              Anuluj
+            </Button>
+            <Button
+              type="submit"
+              size="sm"
+              disabled={sending || !trackingNumber.trim()}
+            >
+              <Mail className="h-3 w-3" />
+              {sending ? "Wysyłanie..." : "Wyślij email"}
+            </Button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
