@@ -200,7 +200,7 @@ function MethodRow({
             className={inputCls}
           />
         </Field>
-        <Field label="Przewoźnik (Furgonetka)">
+        <Field label="Przewoźnik">
           <select
             value={draft.carrier}
             onChange={(e) =>

@@ -18,7 +18,7 @@ export default async function AdminOrdersPage() {
   const { data: rawOrders } = await supabase
     .from("orders")
     .select(
-      "id, user_id, product_id, amount_grosze, quantity, status, shipping_info, created_at, preview_url, shipping_carrier, shipping_label_url, shipping_tracking_number, shipping_label_status",
+      "id, user_id, product_id, amount_grosze, quantity, status, shipping_info, created_at, preview_url",
     )
     .order("created_at", { ascending: false })
     .limit(200);
@@ -128,11 +128,7 @@ export default async function AdminOrdersPage() {
                 <div className="mt-3 border-t border-border/50 pt-3">
                   <OrderShippingActions
                     orderId={o.id}
-                    status={o.status}
-                    carrier={o.shipping_carrier ?? null}
-                    labelUrl={o.shipping_label_url ?? null}
-                    trackingNumber={o.shipping_tracking_number ?? null}
-                    labelStatus={o.shipping_label_status ?? null}
+                    shipping={(o.shipping_info ?? null) as never}
                   />
                 </div>
               </article>
