@@ -3,6 +3,7 @@ import { Resend } from "resend";
 import { render } from "@react-email/render";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { ShippingNotificationEmail } from "@/emails/ShippingNotificationEmail";
+import { resolveResendFrom } from "@/lib/email/sendOrderEmail";
 
 export async function POST(req: Request) {
   const supabase = createSupabaseServerClient();
@@ -70,10 +71,13 @@ export async function POST(req: Request) {
     process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? "";
   const logoUrl = `${appUrl}/wk.svg`;
 
-  const from =
-    process.env.RESEND_FROM_EMAIL && !process.env.RESEND_FROM_EMAIL.includes("xxx")
-      ? process.env.RESEND_FROM_EMAIL
-      : "Wredny Kubek <onboarding@resend.dev>";
+  const from = resolveResendFrom();
+
+  console.log("[shipping-email] Wysyłka:", {
+    from,
+    to: userProfile.email,
+    orderId: order.id,
+  });
 
   try {
     const html = await render(
@@ -84,19 +88,31 @@ export async function POST(req: Request) {
       })
     );
 
-    await resend.emails.send({
+    const result = await resend.emails.send({
       from,
       to: userProfile.email,
       subject: `${firstName}, Twój Wredny Kubek właśnie zwiał z magazynu! 🏃💨`,
       html,
     });
 
-    return NextResponse.json({ success: true });
+    if (result.error) {
+      console.error("[shipping-email] Resend error:", result.error);
+      return NextResponse.json(
+        {
+          error: result.error.message,
+          details: result.error,
+          hint: "W sandbox Resend możesz wysłać mail TYLKO na email konta Resend (kontakt.wrednykubek@gmail.com). Zweryfikuj domenę w Resend, aby wysyłać na dowolne adresy.",
+        },
+        { status: 500 },
+      );
+    }
+
+    return NextResponse.json({ success: true, id: result.data?.id });
   } catch (error) {
-    console.error("Error sending email:", error);
+    console.error("[shipping-email] Exception:", error);
     return NextResponse.json(
-      { error: "Failed to send email" },
-      { status: 500 }
+      { error: error instanceof Error ? error.message : "Failed to send email" },
+      { status: 500 },
     );
   }
 }

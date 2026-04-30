@@ -6,6 +6,45 @@ import {
 } from "@/emails/OrderConfirmationEmail";
 
 /**
+ * Zwraca poprawny adres nadawcy dla Resend.
+ * Jeśli RESEND_FROM_EMAIL używa niezweryfikowanej darmowej domeny
+ * (gmail, outlook, yahoo itp.), automatycznie przełącza się na
+ * sandboxowy `onboarding@resend.dev` — inaczej Resend zwraca 403.
+ */
+export function resolveResendFrom(): string {
+  const raw = process.env.RESEND_FROM_EMAIL?.trim();
+  const fallback = "Wredny Kubek <onboarding@resend.dev>";
+
+  if (!raw || raw.includes("xxx")) return fallback;
+
+  // Wyciągnij czysty email z formatu "Name <email@x>"
+  const match = raw.match(/<([^>]+)>/);
+  const email = (match?.[1] ?? raw).toLowerCase();
+  const domain = email.split("@")[1] ?? "";
+
+  const blockedDomains = [
+    "gmail.com",
+    "googlemail.com",
+    "outlook.com",
+    "hotmail.com",
+    "yahoo.com",
+    "icloud.com",
+    "wp.pl",
+    "o2.pl",
+    "interia.pl",
+  ];
+
+  if (blockedDomains.includes(domain)) {
+    console.warn(
+      `[email] Domena ${domain} nie może być nadawcą w Resend. Używam ${fallback}`,
+    );
+    return fallback;
+  }
+
+  return raw;
+}
+
+/**
  * Wysyła email potwierdzający zamówienie.
  * W trybie sandbox używa onboarding@resend.dev jako nadawcy
  * (dojdzie tylko na adres email konta Resend).
@@ -39,10 +78,13 @@ export async function sendOrderConfirmationEmail(params: {
   const trackingUrl = `${appUrl}/account/zamowienia?ok=${params.orderId}`;
   const logoUrl = `${appUrl}/wk.svg`;
 
-  const from =
-    process.env.RESEND_FROM_EMAIL && !process.env.RESEND_FROM_EMAIL.includes("xxx")
-      ? process.env.RESEND_FROM_EMAIL
-      : "Wredny Kubek <onboarding@resend.dev>";
+  const from = resolveResendFrom();
+
+  console.log("[email] Wysyłka:", {
+    from,
+    to: params.to,
+    orderId: params.orderId,
+  });
 
   const html = await render(
     OrderConfirmationEmail({

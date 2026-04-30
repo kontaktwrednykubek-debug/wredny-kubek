@@ -39,11 +39,15 @@ export function OrderShippingActions({
         body: JSON.stringify({ orderId }),
       });
 
+      const body = await res.json().catch(() => ({}));
       if (res.ok) {
         setEmailSent(true);
         setTimeout(() => setEmailSent(false), 3000);
       } else {
-        alert("Nie udało się wysłać emaila. Sprawdź konsolę.");
+        console.error("[send-shipping-email] Response:", body);
+        const msg = body?.error ?? "Nieznany błąd";
+        const hint = body?.hint ? `\n\n💡 ${body.hint}` : "";
+        alert(`Nie udało się wysłać emaila:\n\n${msg}${hint}`);
       }
     } catch (error) {
       console.error("Error sending email:", error);
