@@ -129,8 +129,29 @@ export function CheckoutClient({
         return;
       }
       const { orderId } = await res.json();
+
+      // Utwórz sesję Stripe Checkout i przekieruj na stronę płatności
+      const sessionRes = await fetch("/api/checkout/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId }),
+      });
+      if (!sessionRes.ok) {
+        const err = await sessionRes.json().catch(() => ({}));
+        setError(
+          err.error ?? "Nie udało się rozpocząć płatności. Spróbuj ponownie.",
+        );
+        return;
+      }
+      const { url } = await sessionRes.json();
+      if (!url) {
+        setError("Brak adresu płatności Stripe.");
+        return;
+      }
+
+      // Czyścimy koszyk PRZED redirectem — zamówienie jest już w bazie jako PENDING
       clear();
-      router.push(`/account/zamowienia?ok=${orderId}`);
+      window.location.href = url;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Błąd zamówienia");
     } finally {

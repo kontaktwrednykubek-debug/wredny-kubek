@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isValidPhone, normalizePhone } from "@/lib/phone";
-import { sendOrderConfirmationEmail } from "@/lib/email/sendOrderEmail";
 
 const bodySchema = z.object({
   shipping: z.object({
@@ -115,40 +114,7 @@ export async function POST(req: Request) {
 
   const firstOrderId = data?.[0]?.id as string | undefined;
 
-  // Wyślij email potwierdzający (best-effort — nie blokuj odpowiedzi błędem maila)
-  if (firstOrderId) {
-    try {
-      const itemsTotal = items.reduce(
-        (s, it) => s + it.unitPriceGr * it.quantity,
-        0,
-      );
-      await sendOrderConfirmationEmail({
-        to: user.email ?? "",
-        orderId: firstOrderId,
-        customerName: shipping.fullName,
-        items: items.map((it) => ({
-          productId: it.productId,
-          label: it.productId,
-          quantity: it.quantity,
-          unitPriceGr: it.unitPriceGr,
-          previewUrl: it.previewUrl ?? null,
-        })),
-        shipping: {
-          fullName: shipping.fullName,
-          address: shipping.address,
-          city: shipping.city,
-          zip: shipping.zip,
-          phone: normalizedShipping.phone,
-          methodName: methodRow.name,
-          parcelCode: shipping.parcelCode,
-        },
-        totalGr: itemsTotal + (methodRow.price_grosze ?? 0),
-        shippingPriceGr: methodRow.price_grosze ?? 0,
-      });
-    } catch (err) {
-      console.error("[orders] sendOrderConfirmationEmail failed:", err);
-    }
-  }
-
+  // UWAGA: email potwierdzający NIE jest wysyłany tutaj — dopiero po
+  // potwierdzeniu płatności przez Stripe webhook (checkout.session.completed).
   return NextResponse.json({ orderId: firstOrderId, count: data?.length ?? 0 });
 }
