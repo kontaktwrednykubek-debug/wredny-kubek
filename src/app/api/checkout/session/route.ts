@@ -103,6 +103,9 @@ export async function POST(req: Request) {
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
     line_items,
+    // Polskie metody płatności: karty, BLIK, Przelewy24 i Link.
+    // (Klarna celowo wyłączona.)
+    payment_method_types: ["card", "blik", "p24", "link"],
     customer_email: user.email ?? undefined,
     metadata: {
       orderId: order.id,
