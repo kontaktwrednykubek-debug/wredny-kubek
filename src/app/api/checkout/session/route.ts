@@ -47,7 +47,7 @@ export async function POST(req: Request) {
   const { data: order, error: orderErr } = await supabase
     .from("orders")
     .select(
-      "id, user_id, product_id, quantity, amount_grosze, preview_url, shipping_info, status",
+      "id, user_id, product_id, quantity, amount_grosze, preview_url, shipping_info, status, discount_code_id, discount_grosze",
     )
     .eq("id", orderId)
     .maybeSingle();
@@ -70,6 +70,22 @@ export async function POST(req: Request) {
     (order.amount_grosze ?? 0) / Math.max(1, order.quantity ?? 1);
   const shippingPriceGr = Number(shipping.shippingPriceGr ?? 0);
 
+  // Dociągamy informacje o kodzie rabatowym (jeśli użyty) — potrzebujemy typu
+  // i stripe_promotion_code_id.
+  type DiscountRow = {
+    type: "percent" | "fixed" | "free_shipping";
+    stripe_promotion_code_id: string | null;
+  };
+  let discountCodeRow: DiscountRow | null = null;
+  if (order.discount_code_id) {
+    const { data: dc } = await supabase
+      .from("discount_codes")
+      .select("type, stripe_promotion_code_id")
+      .eq("id", order.discount_code_id)
+      .maybeSingle();
+    if (dc) discountCodeRow = dc as unknown as DiscountRow;
+  }
+
   const stripe = new Stripe(env.STRIPE_SECRET_KEY);
 
   const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = [
@@ -86,8 +102,10 @@ export async function POST(req: Request) {
     },
   ];
 
-  // Dostawa jako osobna pozycja (jeśli > 0)
-  if (shippingPriceGr > 0) {
+  // Dostawa jako osobna pozycja (jeśli > 0). Jeśli kod rabatowy to free_shipping —
+  // pomijamy pozycję dostawy (darmowa dostawa).
+  const freeShipping = discountCodeRow?.type === "free_shipping";
+  if (shippingPriceGr > 0 && !freeShipping) {
     line_items.push({
       quantity: 1,
       price_data: {
@@ -100,6 +118,16 @@ export async function POST(req: Request) {
     });
   }
 
+  // Rabat percent/fixed: przekazujemy Stripe PromotionCode — Stripe pokaże i zastosuje.
+  const discounts: Stripe.Checkout.SessionCreateParams.Discount[] = [];
+  if (
+    discountCodeRow &&
+    discountCodeRow.type !== "free_shipping" &&
+    discountCodeRow.stripe_promotion_code_id
+  ) {
+    discounts.push({ promotion_code: discountCodeRow.stripe_promotion_code_id });
+  }
+
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
     line_items,
@@ -107,10 +135,13 @@ export async function POST(req: Request) {
     // automatycznie wyświetli wszystkie metody włączone w Dashboard (karta, BLIK,
     // Przelewy24, Link itd.). Aby wyłączyć np. Klarna, wyłącz ją w:
     // Stripe Dashboard → Settings → Payment methods.
+    // UWAGA: Stripe wymaga allow_promotion_codes: false gdy przekazujemy discounts[]
+    ...(discounts.length > 0 ? { discounts } : { allow_promotion_codes: true }),
     customer_email: user.email ?? undefined,
     metadata: {
       orderId: order.id,
       userId: user.id,
+      discountCodeId: order.discount_code_id ?? "",
     },
     success_url: `${env.NEXT_PUBLIC_APP_URL}/account/zamowienia?ok=${order.id}`,
     cancel_url: `${env.NEXT_PUBLIC_APP_URL}/koszyk/checkout?status=cancel&orderId=${order.id}`,

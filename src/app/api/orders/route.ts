@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import { isValidPhone, normalizePhone } from "@/lib/phone";
+import { validateDiscountCode } from "@/lib/discount/service";
 
 const bodySchema = z.object({
   shipping: z.object({
@@ -39,6 +41,7 @@ const bodySchema = z.object({
     )
     .min(1)
     .max(50),
+  discountCode: z.string().max(40).nullable().optional(),
 });
 
 export async function POST(req: Request) {
@@ -59,7 +62,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const { shipping, items } = parsed.data;
+  const { shipping, items, discountCode } = parsed.data;
 
   // Walidacja metody dostawy z bazy.
   const { data: methodRow } = await supabase
@@ -91,7 +94,31 @@ export async function POST(req: Request) {
     shippingCarrier: methodRow.carrier ?? null,
   };
 
-  const rows = items.map((it) => ({
+  // Walidacja kodu rabatowego (jeśli podany) — serwer musi ponownie go sprawdzić
+  // (klient może być skompromitowany).
+  let discountCodeId: string | null = null;
+  let discountGrosze = 0;
+  if (discountCode) {
+    const itemsTotalGrosze = items.reduce((s, it) => s + it.unitPriceGr * it.quantity, 0);
+    const service = createSupabaseServiceClient();
+    const v = await validateDiscountCode({
+      supabase: service,
+      code: discountCode,
+      userId: user.id,
+      itemsTotalGrosze,
+      shippingGrosze: methodRow.price_grosze ?? 0,
+    });
+    if (!v.valid || !v.code) {
+      return NextResponse.json(
+        { error: v.error ?? "Nieprawid\u0142owy kod rabatowy." },
+        { status: 400 },
+      );
+    }
+    discountCodeId = v.code.id;
+    discountGrosze = v.discountGrosze;
+  }
+
+  const rows = items.map((it, idx) => ({
     user_id: user.id,
     design_id: it.designId,
     product_id: it.productId,
@@ -101,6 +128,10 @@ export async function POST(req: Request) {
     shipping_info: normalizedShipping,
     shipping_carrier: methodRow.carrier ?? null,
     status: "PENDING" as const,
+    // Rabat zapisujemy tylko na pierwszym wierszu — będziemy go stosować do
+    // całej sesji Stripe (jednej transakcji).
+    discount_code_id: idx === 0 ? discountCodeId : null,
+    discount_grosze: idx === 0 ? discountGrosze : 0,
   }));
 
   const { data, error } = await supabase

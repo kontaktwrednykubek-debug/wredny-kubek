@@ -66,7 +66,7 @@ export async function POST(req: Request) {
   const { data: orderRow, error: orderErr } = await supabase
     .from("orders")
     .select(
-      "id, user_id, product_id, quantity, amount_grosze, shipping_info, preview_url",
+      "id, user_id, product_id, quantity, amount_grosze, shipping_info, preview_url, discount_code_id, discount_grosze",
     )
     .eq("id", orderId)
     .maybeSingle();
@@ -78,6 +78,32 @@ export async function POST(req: Request) {
 
   // Oznacz jako PAID
   await supabase.from("orders").update({ status: "PAID" }).eq("id", orderId);
+
+  // Jeśli użyto kodu rabatowego — zapisz użycie i zainkrementuj licznik.
+  if (orderRow.discount_code_id) {
+    try {
+      await supabase.from("discount_code_uses").insert({
+        discount_code_id: orderRow.discount_code_id,
+        user_id: orderRow.user_id,
+        order_id: orderRow.id,
+        discount_grosze: orderRow.discount_grosze ?? 0,
+      });
+      // Inkrement times_used (atomowo via RPC lub prosty update z odczytem)
+      const { data: dc } = await supabase
+        .from("discount_codes")
+        .select("times_used")
+        .eq("id", orderRow.discount_code_id)
+        .maybeSingle();
+      if (dc) {
+        await supabase
+          .from("discount_codes")
+          .update({ times_used: (dc.times_used ?? 0) + 1 })
+          .eq("id", orderRow.discount_code_id);
+      }
+    } catch (err) {
+      console.error("[stripe-webhook] discount code usage tracking failed:", err);
+    }
+  }
 
   // Pobierz email klienta z profilu (fallback do session)
   const { data: profile } = await supabase

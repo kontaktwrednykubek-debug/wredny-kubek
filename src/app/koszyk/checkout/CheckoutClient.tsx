@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Truck } from "lucide-react";
+import { Loader2, Truck, Tag, X, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCart, cartTotalGr } from "@/features/cart/useCart";
@@ -30,6 +30,17 @@ export function CheckoutClient({
   const [zipError, setZipError] = React.useState<string | null>(null);
   const [parcelCodeError, setParcelCodeError] = React.useState<string | null>(null);
 
+  // Kod rabatowy
+  const [discountInput, setDiscountInput] = React.useState("");
+  const [discount, setDiscount] = React.useState<{
+    code: string;
+    type: "percent" | "fixed" | "free_shipping";
+    value: number | null;
+    grosze: number;
+  } | null>(null);
+  const [discountError, setDiscountError] = React.useState<string | null>(null);
+  const [discountChecking, setDiscountChecking] = React.useState(false);
+
   const [form, setForm] = React.useState({
     fullName: "",
     phone: "",
@@ -54,8 +65,66 @@ export function CheckoutClient({
   const itemsTotal = cartTotalGr(items);
   const method = methods.find((m) => m.code === shippingMethod);
   const shippingPrice = method?.priceGrosze ?? 0;
-  const total = itemsTotal + shippingPrice;
+  const effectiveShipping = discount?.type === "free_shipping" ? 0 : shippingPrice;
+  const discountGrosze = discount?.grosze ?? 0;
+  const total = Math.max(0, itemsTotal - discountGrosze) + effectiveShipping;
   const requiresParcelCode = method?.requiresParcelCode ?? false;
+
+  // Ponowna walidacja rabatu gdy zmienia się koszyk/dostawa
+  React.useEffect(() => {
+    if (!discount) return;
+    // Re-validate w tle (bez blokowania UI) — aby uaktualnić kwotę dla free_shipping/percent
+    void revalidateDiscount(discount.code, false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [itemsTotal, shippingPrice]);
+
+  async function revalidateDiscount(code: string, showError: boolean) {
+    setDiscountChecking(true);
+    setDiscountError(null);
+    try {
+      const res = await fetch("/api/discount-codes/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code,
+          itemsTotalGrosze: itemsTotal,
+          shippingGrosze: shippingPrice,
+        }),
+      });
+      const j = await res.json();
+      if (res.status === 401) {
+        router.push("/login?next=/koszyk/checkout");
+        return;
+      }
+      if (!j.valid) {
+        if (showError) setDiscountError(j.error ?? "Nieprawid\u0142owy kod.");
+        setDiscount(null);
+        return;
+      }
+      setDiscount({
+        code: j.code.code,
+        type: j.code.type,
+        value: j.code.value,
+        grosze: j.discountGrosze,
+      });
+    } catch {
+      if (showError) setDiscountError("B\u0142\u0105d po\u0142\u0105czenia. Spr\u00f3buj ponownie.");
+    } finally {
+      setDiscountChecking(false);
+    }
+  }
+
+  async function applyDiscount() {
+    const code = discountInput.trim().toUpperCase();
+    if (!code) return;
+    await revalidateDiscount(code, true);
+  }
+
+  function removeDiscount() {
+    setDiscount(null);
+    setDiscountInput("");
+    setDiscountError(null);
+  }
 
   function validatePhone(value: string) {
     if (!value) return setPhoneError(null);
@@ -117,6 +186,7 @@ export function CheckoutClient({
             unitPriceGr: i.unitPriceGr,
             previewUrl: i.previewUrl ?? null,
           })),
+          discountCode: discount?.code ?? null,
         }),
       });
       if (res.status === 401) {
@@ -403,10 +473,79 @@ export function CheckoutClient({
             <span className="text-muted-foreground">
               Dostawa ({method?.name})
             </span>
-            <span>
+            <span className={discount?.type === "free_shipping" ? "line-through text-muted-foreground" : ""}>
               {shippingPrice === 0 ? "Gratis" : formatPrice(shippingPrice)}
             </span>
           </div>
+          {discount?.type === "free_shipping" && (
+            <div className="flex justify-between text-sm">
+              <span className="text-emerald-600">Dostawa po rabacie</span>
+              <span className="font-semibold text-emerald-600">Gratis</span>
+            </div>
+          )}
+          {discount && discount.type !== "free_shipping" && discountGrosze > 0 && (
+            <div className="flex justify-between text-sm text-emerald-600">
+              <span>Rabat ({discount.code})</span>
+              <span className="font-semibold">− {formatPrice(discountGrosze)}</span>
+            </div>
+          )}
+
+          {/* Pole kodu rabatowego */}
+          <div className="border-t border-border pt-3">
+            {!discount ? (
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                  <Tag className="mr-1 inline h-3 w-3" /> Kod rabatowy
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={discountInput}
+                    onChange={(e) => {
+                      setDiscountInput(e.target.value.toUpperCase());
+                      setDiscountError(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        void applyDiscount();
+                      }
+                    }}
+                    placeholder="WPISZ KOD"
+                    className={`${inputCls} font-mono text-xs uppercase`}
+                    disabled={discountChecking}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={applyDiscount}
+                    disabled={discountChecking || !discountInput.trim()}
+                  >
+                    {discountChecking ? <Loader2 className="h-3 w-3 animate-spin" /> : "Zastosuj"}
+                  </Button>
+                </div>
+                {discountError && (
+                  <p className="mt-1 text-xs text-destructive">⚠️ {discountError}</p>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center justify-between rounded-lg bg-emerald-500/10 p-2 text-sm">
+                <span className="flex items-center gap-1.5 font-mono font-semibold text-emerald-700">
+                  <Check className="h-4 w-4" /> {discount.code}
+                </span>
+                <button
+                  type="button"
+                  onClick={removeDiscount}
+                  className="text-emerald-700/70 hover:text-emerald-700"
+                  aria-label="Usuń kod"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            )}
+          </div>
+
           <div className="flex justify-between border-t border-border pt-3 text-lg font-bold">
             <span>Razem</span>
             <span className="text-primary">{formatPrice(total)}</span>

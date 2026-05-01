@@ -44,6 +44,7 @@ export default async function HiddenLayout({
     { href: `${base}/zamowienia`, label: "Zamówienia" },
     { href: `${base}/produkty`, label: "Produkty" },
     { href: `${base}/dostawa`, label: "Dostawa" },
+    { href: `${base}/rabaty`, label: "Rabaty" },
     { href: `${base}/uzytkownicy`, label: "Użytkownicy" },
   ];
   return (
