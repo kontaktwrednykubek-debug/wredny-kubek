@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import Stripe from "stripe";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import { env } from "@/lib/env";
 
 export const runtime = "nodejs";
@@ -78,11 +79,16 @@ export async function POST(req: Request) {
   };
   let discountCodeRow: DiscountRow | null = null;
   if (order.discount_code_id) {
-    const { data: dc } = await supabase
+    // UWAGA: discount_codes ma RLS “tylko admin” — musimy użyć service clienta.
+    const service = createSupabaseServiceClient();
+    const { data: dc, error: dcErr } = await service
       .from("discount_codes")
       .select("type, stripe_promotion_code_id")
       .eq("id", order.discount_code_id)
       .maybeSingle();
+    if (dcErr) {
+      console.error("[checkout/session] discount_codes read error:", dcErr);
+    }
     if (dc) discountCodeRow = dc as unknown as DiscountRow;
   }
 
@@ -128,24 +134,43 @@ export async function POST(req: Request) {
     discounts.push({ promotion_code: discountCodeRow.stripe_promotion_code_id });
   }
 
-  const session = await stripe.checkout.sessions.create({
-    mode: "payment",
-    line_items,
-    // Metody płatności: pomijamy `payment_method_types` celowo — Stripe Checkout
-    // automatycznie wyświetli wszystkie metody włączone w Dashboard (karta, BLIK,
-    // Przelewy24, Link itd.). Aby wyłączyć np. Klarna, wyłącz ją w:
-    // Stripe Dashboard → Settings → Payment methods.
-    // UWAGA: Stripe wymaga allow_promotion_codes: false gdy przekazujemy discounts[]
-    ...(discounts.length > 0 ? { discounts } : { allow_promotion_codes: true }),
-    customer_email: user.email ?? undefined,
-    metadata: {
+  let session: Stripe.Checkout.Session;
+  try {
+    session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      line_items,
+      // Metody płatności: pomijamy `payment_method_types` celowo — Stripe Checkout
+      // automatycznie wyświetli wszystkie metody włączone w Dashboard (karta, BLIK,
+      // Przelewy24, Link itd.).
+      // UWAGA: Stripe wymaga allow_promotion_codes: false gdy przekazujemy discounts[]
+      ...(discounts.length > 0 ? { discounts } : { allow_promotion_codes: true }),
+      customer_email: user.email ?? undefined,
+      metadata: {
+        orderId: order.id,
+        userId: user.id,
+        discountCodeId: order.discount_code_id ?? "",
+      },
+      success_url: `${env.NEXT_PUBLIC_APP_URL}/account/zamowienia?ok=${order.id}`,
+      cancel_url: `${env.NEXT_PUBLIC_APP_URL}/koszyk/checkout?status=cancel&orderId=${order.id}`,
+    });
+  } catch (err) {
+    console.error("[checkout/session] Stripe.checkout.sessions.create failed:", {
+      err,
       orderId: order.id,
-      userId: user.id,
-      discountCodeId: order.discount_code_id ?? "",
-    },
-    success_url: `${env.NEXT_PUBLIC_APP_URL}/account/zamowienia?ok=${order.id}`,
-    cancel_url: `${env.NEXT_PUBLIC_APP_URL}/koszyk/checkout?status=cancel&orderId=${order.id}`,
-  });
+      hasDiscounts: discounts.length > 0,
+      discountType: discountCodeRow?.type,
+      promoCodeId: discountCodeRow?.stripe_promotion_code_id,
+    });
+    return NextResponse.json(
+      {
+        error:
+          err instanceof Error
+            ? `Stripe: ${err.message}`
+            : "Stripe session creation failed",
+      },
+      { status: 500 },
+    );
+  }
 
   if (!session.url) {
     return NextResponse.json(
