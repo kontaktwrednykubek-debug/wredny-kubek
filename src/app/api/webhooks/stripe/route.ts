@@ -120,6 +120,32 @@ export async function POST(req: Request) {
 
   const shipping = (orderRow.shipping_info ?? {}) as Record<string, string>;
 
+  // Pobierz kod rabatowy (jeśli był użyty) — by pokazać go w mailu i obsłużyć free_shipping.
+  let appliedDiscountCode: string | null = null;
+  let appliedDiscountType: "percent" | "fixed" | "free_shipping" | null = null;
+  if (orderRow.discount_code_id) {
+    const { data: dc } = await supabase
+      .from("discount_codes")
+      .select("code, type")
+      .eq("id", orderRow.discount_code_id)
+      .maybeSingle();
+    if (dc) {
+      appliedDiscountCode = (dc as { code: string }).code;
+      appliedDiscountType = (dc as { type: typeof appliedDiscountType }).type;
+    }
+  }
+
+  // Poprawne wyliczenie totalGr (po rabacie):
+  //  - rabat percent/fixed: amount - discount + shipping
+  //  - rabat free_shipping: amount + 0 (dostawa gratis)
+  //  - bez rabatu: amount + shipping
+  const itemsAmount = orderRow.amount_grosze ?? 0;
+  const fullShipping = Number(shipping.shippingPriceGr ?? 0);
+  const discountGrosze = orderRow.discount_grosze ?? 0;
+  const freeShipping = appliedDiscountType === "free_shipping";
+  const effectiveShipping = freeShipping ? 0 : fullShipping;
+  const totalGr = Math.max(0, itemsAmount - discountGrosze) + effectiveShipping;
+
   try {
     await sendOrderConfirmationEmail({
       to,
@@ -144,10 +170,11 @@ export async function POST(req: Request) {
         methodName: shipping.shippingMethodName,
         parcelCode: shipping.parcelCode,
       },
-      totalGr:
-        (orderRow.amount_grosze ?? 0) +
-        Number(shipping.shippingPriceGr ?? 0),
-      shippingPriceGr: Number(shipping.shippingPriceGr ?? 0),
+      totalGr,
+      shippingPriceGr: fullShipping,
+      discountCode: appliedDiscountCode,
+      discountGrosze: discountGrosze > 0 ? discountGrosze : undefined,
+      freeShipping,
     });
   } catch (err) {
     console.error("[stripe-webhook] sendOrderConfirmationEmail failed:", err);

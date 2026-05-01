@@ -81,6 +81,9 @@ export async function sendOrderConfirmationEmail(params: {
   };
   totalGr: number;
   shippingPriceGr: number;
+  discountCode?: string | null;
+  discountGrosze?: number;
+  freeShipping?: boolean;
 }) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
@@ -110,6 +113,9 @@ export async function sendOrderConfirmationEmail(params: {
       shipping: params.shipping,
       totalGr: params.totalGr,
       shippingPriceGr: params.shippingPriceGr,
+      discountCode: params.discountCode,
+      discountGrosze: params.discountGrosze,
+      freeShipping: params.freeShipping,
       trackingUrl,
       logoUrl,
     }),

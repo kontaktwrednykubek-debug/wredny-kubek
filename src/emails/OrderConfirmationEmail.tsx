@@ -23,8 +23,15 @@ export type OrderEmailProps = {
     methodName?: string;
     parcelCode?: string;
   };
+  /** Suma KOŃCOWA do zapłaty (po rabatach). */
   totalGr: number;
   shippingPriceGr: number;
+  /** Kod rabatowy zastosowany do tego zamówienia (opcjonalnie). */
+  discountCode?: string | null;
+  /** Wartość rabatu w groszach (opcjonalnie). */
+  discountGrosze?: number;
+  /** Czy rabat to darmowa dostawa — wtedy linijka dostawy pokazuje „Gratis”. */
+  freeShipping?: boolean;
   trackingUrl: string;
   logoUrl: string;
 };
@@ -40,6 +47,9 @@ export function OrderConfirmationEmail({
   shipping,
   totalGr,
   shippingPriceGr,
+  discountCode,
+  discountGrosze,
+  freeShipping,
   trackingUrl,
   logoUrl,
 }: OrderEmailProps) {
@@ -279,9 +289,48 @@ export function OrderConfirmationEmail({
             >
               Dostawa{" "}
               {shipping.methodName ? `(${shipping.methodName})` : ""}:{" "}
-              {shippingPriceGr === 0 ? "Gratis" : formatPrice(shippingPriceGr)}
+              {freeShipping || shippingPriceGr === 0
+                ? "Gratis"
+                : formatPrice(shippingPriceGr)}
+              {freeShipping && shippingPriceGr > 0 && (
+                <span
+                  style={{ marginLeft: 8, textDecoration: "line-through", opacity: 0.5 }}
+                >
+                  {formatPrice(shippingPriceGr)}
+                </span>
+              )}
             </Text>
           </div>
+
+          {/* Rabat (percent/fixed) */}
+          {discountCode && discountGrosze && discountGrosze > 0 && !freeShipping && (
+            <div style={{ marginTop: "6px" }}>
+              <Text
+                style={{
+                  fontSize: "13px",
+                  color: EMAIL_COLORS.primary,
+                  fontWeight: "bold",
+                  margin: 0,
+                }}
+              >
+                Rabat ({discountCode}): − {formatPrice(discountGrosze)}
+              </Text>
+            </div>
+          )}
+          {discountCode && freeShipping && (
+            <div style={{ marginTop: "6px" }}>
+              <Text
+                style={{
+                  fontSize: "13px",
+                  color: EMAIL_COLORS.primary,
+                  fontWeight: "bold",
+                  margin: 0,
+                }}
+              >
+                Kod rabatowy ({discountCode}): darmowa dostawa
+              </Text>
+            </div>
+          )}
 
           {/* Suma */}
           <table
