@@ -94,6 +94,15 @@ export async function POST(req: Request) {
 
   const stripe = new Stripe(env.STRIPE_SECRET_KEY);
 
+  // Stripe wymaga URL <= 2048 znakow i tylko http(s) (nie akceptuje data: URI).
+  const previewUrl = order.preview_url ?? null;
+  const validImage =
+    previewUrl &&
+    previewUrl.length <= 2048 &&
+    /^https?:\/\//i.test(previewUrl)
+      ? previewUrl
+      : null;
+
   const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = [
     {
       quantity: order.quantity ?? 1,
@@ -102,7 +111,7 @@ export async function POST(req: Request) {
         unit_amount: Math.round(unitPriceGr),
         product_data: {
           name: order.product_id,
-          images: order.preview_url ? [order.preview_url] : undefined,
+          images: validImage ? [validImage] : undefined,
         },
       },
     },
