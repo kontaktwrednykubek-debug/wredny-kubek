@@ -40,6 +40,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ received: true });
   }
 
+  // Diagnostyka konfiguracji środowiska (logujemy tylko fakt obecności + długości)
+  console.log("[stripe-webhook] env check", {
+    hasServiceRoleKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+    serviceRoleKeyLen: process.env.SUPABASE_SERVICE_ROLE_KEY?.length ?? 0,
+    hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+    hasResendKey: !!process.env.RESEND_API_KEY,
+    resendKeyLen: process.env.RESEND_API_KEY?.length ?? 0,
+  });
+
   const session = event.data.object as Stripe.Checkout.Session;
   const orderId = session.metadata?.orderId;
   const customerEmail =
