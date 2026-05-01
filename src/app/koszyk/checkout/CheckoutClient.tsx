@@ -65,8 +65,11 @@ export function CheckoutClient({
   const itemsTotal = cartTotalGr(items);
   const method = methods.find((m) => m.code === shippingMethod);
   const shippingPrice = method?.priceGrosze ?? 0;
-  const effectiveShipping = discount?.type === "free_shipping" ? 0 : shippingPrice;
-  const discountGrosze = discount?.grosze ?? 0;
+  const isFreeShipping = discount?.type === "free_shipping";
+  const effectiveShipping = isFreeShipping ? 0 : shippingPrice;
+  // Rabat odejmujemy od produktow tylko dla percent/fixed.
+  // free_shipping NIE obniza ceny produktow — jedynym efektem jest wyzerowana dostawa.
+  const discountGrosze = isFreeShipping ? 0 : (discount?.grosze ?? 0);
   const total = Math.max(0, itemsTotal - discountGrosze) + effectiveShipping;
   const requiresParcelCode = method?.requiresParcelCode ?? false;
 

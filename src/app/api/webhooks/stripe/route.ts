@@ -137,14 +137,17 @@ export async function POST(req: Request) {
 
   // Poprawne wyliczenie totalGr (po rabacie):
   //  - rabat percent/fixed: amount - discount + shipping
-  //  - rabat free_shipping: amount + 0 (dostawa gratis)
+  //  - rabat free_shipping: amount + 0 (dostawa gratis, NIE odejmujemy od produktow)
   //  - bez rabatu: amount + shipping
   const itemsAmount = orderRow.amount_grosze ?? 0;
   const fullShipping = Number(shipping.shippingPriceGr ?? 0);
-  const discountGrosze = orderRow.discount_grosze ?? 0;
+  const rawDiscount = orderRow.discount_grosze ?? 0;
   const freeShipping = appliedDiscountType === "free_shipping";
   const effectiveShipping = freeShipping ? 0 : fullShipping;
-  const totalGr = Math.max(0, itemsAmount - discountGrosze) + effectiveShipping;
+  // Dla free_shipping discount_grosze symbolicznie przechowuje wartosc zaoszczedzonej
+  // dostawy — NIE odejmujemy go od produktow.
+  const itemsDiscount = freeShipping ? 0 : rawDiscount;
+  const totalGr = Math.max(0, itemsAmount - itemsDiscount) + effectiveShipping;
 
   try {
     await sendOrderConfirmationEmail({
@@ -173,7 +176,7 @@ export async function POST(req: Request) {
       totalGr,
       shippingPriceGr: fullShipping,
       discountCode: appliedDiscountCode,
-      discountGrosze: discountGrosze > 0 ? discountGrosze : undefined,
+      discountGrosze: rawDiscount > 0 ? rawDiscount : undefined,
       freeShipping,
     });
   } catch (err) {
