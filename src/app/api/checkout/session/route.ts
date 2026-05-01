@@ -103,9 +103,10 @@ export async function POST(req: Request) {
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
     line_items,
-    // Polskie metody płatności: karty, BLIK, Przelewy24 i Link.
-    // (Klarna celowo wyłączona.)
-    payment_method_types: ["card", "blik", "p24", "link"],
+    // Metody płatności: pomijamy `payment_method_types` celowo — Stripe Checkout
+    // automatycznie wyświetli wszystkie metody włączone w Dashboard (karta, BLIK,
+    // Przelewy24, Link itd.). Aby wyłączyć np. Klarna, wyłącz ją w:
+    // Stripe Dashboard → Settings → Payment methods.
     customer_email: user.email ?? undefined,
     metadata: {
       orderId: order.id,
