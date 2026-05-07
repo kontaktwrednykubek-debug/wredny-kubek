@@ -8,6 +8,7 @@ import { validateDiscountCode } from "@/lib/discount/service";
 const bodySchema = z.object({
   shipping: z.object({
     fullName: z.string().min(2).max(120),
+    email: z.string().email().optional(),
     phone: z
       .string()
       .min(6)
@@ -34,6 +35,7 @@ const bodySchema = z.object({
       z.object({
         designId: z.string().uuid().nullable(),
         productId: z.string().min(1).max(120),
+        label: z.string().max(300).optional(),
         quantity: z.number().int().min(1).max(999),
         unitPriceGr: z.number().int().min(0),
         previewUrl: z.string().url().optional().nullable(),
@@ -132,6 +134,7 @@ export async function POST(req: Request) {
     user_id: user.id,
     design_id: it.designId,
     product_id: it.productId,
+    label: it.label ?? null,
     amount_grosze: it.unitPriceGr * it.quantity,
     quantity: it.quantity,
     preview_url: it.previewUrl ?? null,

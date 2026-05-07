@@ -5,6 +5,9 @@ export const metadata = { title: "Zamówienie" };
 
 export default async function CheckoutPage() {
   const supabase = createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const userEmail = user?.email ?? null;
+
   const { data } = await supabase
     .from("shipping_methods")
     .select(
@@ -24,5 +27,5 @@ export default async function CheckoutPage() {
     ).sort((a, b) => a.min_quantity - b.min_quantity),
   }));
 
-  return <CheckoutClient methods={methods} />;
+  return <CheckoutClient methods={methods} userEmail={userEmail} />;
 }

@@ -28,6 +28,7 @@ const statusBadge: Record<string, string> = {
 
 type Shipping = {
   fullName?: string;
+  email?: string;
   phone?: string;
   address?: string;
   city?: string;
@@ -53,7 +54,7 @@ export default async function OrderDetailsPage({
   const { data: order } = await supabase
     .from("orders")
     .select(
-      "id, product_id, amount_grosze, quantity, status, created_at, preview_url, shipping_info, design_id",
+      "id, product_id, label, amount_grosze, quantity, status, created_at, preview_url, shipping_info, design_id",
     )
     .eq("id", params.id)
     .eq("user_id", user.id)
@@ -125,7 +126,7 @@ export default async function OrderDetailsPage({
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-lg font-semibold">
-                {product?.name ?? order.product_id}
+                {(order.label as string | null) ?? product?.name ?? order.product_id}
               </p>
               <p className="mt-1 text-sm text-muted-foreground">
                 Ilość: <span className="font-medium">{order.quantity}</span>
@@ -189,6 +190,13 @@ export default async function OrderDetailsPage({
               label="Odbiorca"
               value={shipping.fullName ?? "—"}
             />
+            {shipping.email && (
+              <Detail
+                icon={<Phone className="h-4 w-4" />}
+                label="E-mail"
+                value={shipping.email}
+              />
+            )}
             <Detail
               icon={<Phone className="h-4 w-4" />}
               label="Telefon"

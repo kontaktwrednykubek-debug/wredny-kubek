@@ -66,7 +66,7 @@ export async function POST(req: Request) {
   const { data: orderRow, error: orderErr } = await supabase
     .from("orders")
     .select(
-      "id, user_id, product_id, quantity, amount_grosze, shipping_info, preview_url, discount_code_id, discount_grosze",
+      "id, user_id, product_id, label, quantity, amount_grosze, shipping_info, preview_url, discount_code_id, discount_grosze",
     )
     .eq("id", orderId)
     .maybeSingle();
@@ -157,7 +157,7 @@ export async function POST(req: Request) {
       items: [
         {
           productId: orderRow.product_id,
-          label: orderRow.product_id,
+          label: (orderRow.label as string | null) ?? orderRow.product_id,
           quantity: orderRow.quantity ?? 1,
           unitPriceGr:
             (orderRow.amount_grosze ?? 0) / (orderRow.quantity ?? 1),

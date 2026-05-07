@@ -18,7 +18,7 @@ export default async function AdminOrdersPage() {
   const { data: rawOrders } = await supabase
     .from("orders")
     .select(
-      "id, user_id, product_id, amount_grosze, quantity, status, shipping_info, created_at, preview_url",
+      "id, user_id, product_id, label, amount_grosze, quantity, status, shipping_info, created_at, preview_url",
     )
     .order("created_at", { ascending: false })
     .limit(200);
@@ -80,7 +80,7 @@ export default async function AdminOrdersPage() {
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-baseline gap-x-2">
                       <p className="font-semibold">
-                        {o.product_id} ×{o.quantity ?? 1}
+                        {(o.label as string | null) ?? o.product_id} ×{o.quantity ?? 1}
                       </p>
                       <code className="font-mono text-xs text-muted-foreground">
                         #{o.id.slice(0, 8)}

@@ -28,6 +28,7 @@ const statusBadge: Record<string, string> = {
 type OrderRow = {
   id: string;
   product_id: string;
+  label: string | null;
   amount_grosze: number;
   quantity: number;
   status: string;
@@ -98,7 +99,7 @@ export function OrdersClient({ orders }: { orders: OrderRow[] }) {
 
             <div className="min-w-0 flex-1">
               <p className="truncate font-semibold">
-                {product?.name ?? o.product_id}{" "}
+                {o.label ?? product?.name ?? o.product_id}{" "}
                 <span className="text-muted-foreground">×{o.quantity ?? 1}</span>
               </p>
               <p className="mt-0.5 text-xs text-muted-foreground">

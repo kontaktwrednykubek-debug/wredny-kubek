@@ -37,8 +37,10 @@ function calcShippingPrice(
 
 export function CheckoutClient({
   methods,
+  userEmail,
 }: {
   methods: CheckoutShippingMethod[];
+  userEmail?: string | null;
 }) {
   const router = useRouter();
   const { items, clear } = useCart();
@@ -61,6 +63,7 @@ export function CheckoutClient({
 
   const [form, setForm] = React.useState({
     fullName: "",
+    email: userEmail ?? "",
     phone: "",
     address: "",
     city: "",
@@ -193,6 +196,7 @@ export function CheckoutClient({
         body: JSON.stringify({
           shipping: {
             fullName: form.fullName,
+            email: form.email || undefined,
             phone: form.phone,
             address: form.address,
             city: form.city,
@@ -204,6 +208,7 @@ export function CheckoutClient({
           items: items.map((i) => ({
             designId: i.designId,
             productId: i.productId,
+            label: i.label,
             quantity: i.quantity,
             unitPriceGr: i.unitPriceGr,
             previewUrl: i.previewUrl ?? null,
@@ -273,6 +278,23 @@ export function CheckoutClient({
                   value={form.fullName}
                   onChange={(e) =>
                     setForm((f) => ({ ...f, fullName: e.target.value }))
+                  }
+                  className={inputCls}
+                />
+              </label>
+
+              <label className="block">
+                <span className="mb-1 block text-sm font-medium">
+                  Adres e-mail
+                </span>
+                <input
+                  type="email"
+                  required
+                  autoComplete="email"
+                  placeholder="twoj@email.pl"
+                  value={form.email}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, email: e.target.value }))
                   }
                   className={inputCls}
                 />

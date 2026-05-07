@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 
 type Shipping = {
   fullName?: string;
+  email?: string;
   phone?: string;
   address?: string;
   city?: string;
@@ -247,6 +248,7 @@ function LabelDialog({
 
   const fields: { label: string; value: string | undefined }[] = [
     { label: "Imię i nazwisko", value: shipping.fullName },
+    { label: "E-mail", value: shipping.email },
     { label: "Telefon", value: shipping.phone },
     { label: "Adres", value: shipping.address },
     {
