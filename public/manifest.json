@@ -8,6 +8,12 @@
   "background_color": "#fbf8f1",
   "theme_color": "#43c8d3",
   "orientation": "portrait",
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {"name": "Sklep", "short_name": "Sklep", "description": "Przeglądaj produkty", "url": "/sklep", "icons": [{"src": "/icons/icon-96.png", "sizes": "96x96"}]},
+    {"name": "Edytor", "short_name": "Edytor", "description": "Stwórz projekt", "url": "/edytor", "icons": [{"src": "/icons/icon-96.png", "sizes": "96x96"}]},
+    {"name": "Koszyk", "short_name": "Koszyk", "description": "Twój koszyk", "url": "/koszyk", "icons": [{"src": "/icons/icon-96.png", "sizes": "96x96"}]}
+  ],
   "icons": [
     {
       "src": "/icons/icon-192.png",

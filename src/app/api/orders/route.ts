@@ -36,6 +36,7 @@ const bodySchema = z.object({
         designId: z.string().uuid().nullable(),
         productId: z.string().min(1).max(120),
         label: z.string().max(300).optional(),
+        variantColor: z.string().max(100).optional(),
         quantity: z.number().int().min(1).max(999),
         unitPriceGr: z.number().int().min(0),
         previewUrl: z.string().url().optional().nullable(),
@@ -65,6 +66,27 @@ export async function POST(req: Request) {
   }
 
   const { shipping, items, discountCode } = parsed.data;
+
+  // Walidacja stanu magazynowego dla każdego wariantu (tylko shop products)
+  for (const item of items) {
+    if (!item.productId.startsWith("shop:")) continue;
+    const slug = item.productId.slice("shop:".length);
+    if (!item.variantColor) continue;
+    const { data: product } = await supabase
+      .from("shop_products")
+      .select("variant_stock")
+      .eq("slug", slug)
+      .maybeSingle();
+    if (!product) continue;
+    const stock = (product.variant_stock as Record<string, number>) ?? {};
+    const available = stock[item.variantColor] ?? 0;
+    if (item.quantity > available) {
+      return NextResponse.json(
+        { error: `Produktu w wariancie "${item.variantColor}" pozostało tylko ${available} szt.` },
+        { status: 400 }
+      );
+    }
+  }
 
   // Walidacja metody dostawy z bazy (wraz z tierami cenowymi).
   const { data: methodRow } = await supabase
@@ -135,6 +157,7 @@ export async function POST(req: Request) {
     design_id: it.designId,
     product_id: it.productId,
     label: it.label ?? null,
+    variant_color: it.variantColor ?? null,
     amount_grosze: it.unitPriceGr * it.quantity,
     quantity: it.quantity,
     preview_url: it.previewUrl ?? null,

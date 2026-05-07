@@ -209,6 +209,7 @@ export function CheckoutClient({
             designId: i.designId,
             productId: i.productId,
             label: i.label,
+            variantColor: i.variant?.color,
             quantity: i.quantity,
             unitPriceGr: i.unitPriceGr,
             previewUrl: i.previewUrl ?? null,
