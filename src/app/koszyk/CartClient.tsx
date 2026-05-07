@@ -4,11 +4,12 @@ import Link from "next/link";
 import Image from "next/image";
 import { Trash2, Minus, Plus, ShoppingBag, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useCart, cartTotalGr } from "@/features/cart/useCart";
+import { useCart, cartTotalGr, useAutoClearCart } from "@/features/cart/useCart";
 import { formatPrice } from "@/lib/utils";
 
 export function CartClient() {
   const { items, setQuantity, remove, clear } = useCart();
+  useAutoClearCart(); // Auto-clear shop items without variant on mount
   
   // Check for shop items without variants
   const itemsWithoutVariant = items.filter(
