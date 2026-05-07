@@ -57,6 +57,7 @@ export default async function ProductDetailsPage({
       <BackLink href="/sklep" label="Wróć do sklepu" />
 
       <div className="grid gap-8 lg:grid-cols-2">
+        {/* Lewa kolumna: galeria → opis → dane techniczne */}
         <div className="flex flex-col gap-6">
           <ProductGalleryClient images={images} title={product.title} />
           {body && (
@@ -67,8 +68,27 @@ export default async function ProductDetailsPage({
               <p className="whitespace-pre-line text-sm leading-relaxed text-foreground/80">{body}</p>
             </div>
           )}
+          {Object.keys(specs).length > 0 && (
+            <div className="rounded-2xl border border-border bg-card p-5">
+              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                Dane techniczne
+              </h2>
+              <dl className="grid gap-2 text-sm">
+                {Object.entries(specs).map(([k, v]) => (
+                  <div
+                    key={k}
+                    className="flex justify-between gap-3 border-b border-border/50 py-1.5 last:border-b-0"
+                  >
+                    <dt className="text-muted-foreground">{k}</dt>
+                    <dd className="text-right font-medium">{v}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          )}
         </div>
 
+        {/* Prawa kolumna: tytuł, cena, warianty, przyciski */}
         <div className="space-y-5">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">
@@ -130,25 +150,6 @@ export default async function ProductDetailsPage({
               cover={images[0] ?? null}
               variants={variants}
             />
-          )}
-
-          {Object.keys(specs).length > 0 && (
-            <div className="rounded-2xl border border-border bg-card p-5">
-              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                Dane techniczne
-              </h2>
-              <dl className="grid gap-2 text-sm">
-                {Object.entries(specs).map(([k, v]) => (
-                  <div
-                    key={k}
-                    className="flex justify-between gap-3 border-b border-border/50 py-1.5 last:border-b-0"
-                  >
-                    <dt className="text-muted-foreground">{k}</dt>
-                    <dd className="text-right font-medium">{v}</dd>
-                  </div>
-                ))}
-              </dl>
-            </div>
           )}
         </div>
       </div>
