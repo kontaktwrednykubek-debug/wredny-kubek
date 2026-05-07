@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { BuyNowSection } from "./BuyNowSection";
 
 type Variants = {
@@ -27,27 +28,54 @@ export function ProductPageClient({
   showVariantStock: boolean;
   variantStockMap: Record<string, number>;
 }) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [variantStockMap, setVariantStockMap] = React.useState(initialStockMap);
+  const [isRefreshing, setIsRefreshing] = React.useState(false);
 
+  // Refresh stock after payment completion
+  React.useEffect(() => {
+    const paymentSuccess = searchParams.get("payment") === "success";
+    const paymentCanceled = searchParams.get("payment") === "canceled";
+    
+    if (paymentSuccess || paymentCanceled) {
+      // Clean URL params
+      const cleanUrl = window.location.pathname;
+      window.history.replaceState({}, "", cleanUrl);
+      
+      // Refresh stock after payment
+      refreshStock();
+    }
+  }, [searchParams, slug]);
+  
   // Listen for stock updates from other tabs (after purchase)
   React.useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === `stock-update-${slug}` && e.newValue) {
-        // Refresh stock from server
-        fetch(`/api/shop-products/${slug}`)
-          .then((res) => res.json())
-          .then((data) => {
-            if (data.variant_stock) {
-              setVariantStockMap(data.variant_stock);
-            }
-          })
-          .catch((err) => console.error("Failed to refresh stock:", err));
+        refreshStock();
       }
     };
 
     window.addEventListener("storage", handleStorageChange);
     return () => window.removeEventListener("storage", handleStorageChange);
   }, [slug]);
+  
+  async function refreshStock() {
+    setIsRefreshing(true);
+    try {
+      const res = await fetch(`/api/shop-products/${slug}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.variant_stock) {
+          setVariantStockMap(data.variant_stock);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to refresh stock:", err);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }
 
   return (
     <BuyNowSection

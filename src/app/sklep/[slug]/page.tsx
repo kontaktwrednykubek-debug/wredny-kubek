@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { BackLink } from "@/components/BackLink";
 import { formatPrice } from "@/lib/utils";
 import { ProductGalleryClient } from "./ProductGalleryClient";
-import { BuyNowSection } from "./BuyNowSection";
+import { ProductPageClient } from "./ProductPageClient";
 
 export async function generateMetadata({
   params,
@@ -125,7 +125,7 @@ export default async function ProductDetailsPage({
               </Link>
             </div>
           ) : (
-            <BuyNowSection
+            <ProductPageClient
               slug={product.slug}
               title={product.title}
               priceGrosze={product.price_grosze}

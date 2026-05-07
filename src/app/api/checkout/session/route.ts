@@ -159,7 +159,7 @@ export async function POST(req: Request) {
         userId: user.id,
         discountCodeId: order.discount_code_id ?? "",
       },
-      success_url: `${env.NEXT_PUBLIC_APP_URL}/account/zamowienia?ok=${order.id}`,
+      success_url: `${env.NEXT_PUBLIC_APP_URL}/sklep/${order.product_id.replace('shop:', '')}?payment=success`,
       cancel_url: `${env.NEXT_PUBLIC_APP_URL}/koszyk/checkout?status=cancel&orderId=${order.id}`,
     });
   } catch (err) {
