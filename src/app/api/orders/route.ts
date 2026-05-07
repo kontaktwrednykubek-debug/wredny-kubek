@@ -66,14 +66,35 @@ export async function POST(req: Request) {
   }
 
   const { shipping, items, discountCode } = parsed.data;
+  
+  console.log("[orders-api] Request items:", items.map(i => ({
+    productId: i.productId,
+    variantColor: i.variantColor,
+    quantity: i.quantity,
+    label: i.label
+  })));
 
   // Atomowa walidacja i rezerwacja stanu magazynowego (zapobieganie race conditions)
   for (const item of items) {
-    if (!item.productId.startsWith("shop:")) continue;
+    if (!item.productId.startsWith("shop:")) {
+      console.log(`[orders-api] Skipping non-shop product: ${item.productId}`);
+      continue;
+    }
     const slug = item.productId.slice("shop:".length);
-    if (!item.variantColor) continue;
+    if (!item.variantColor) {
+      console.log(`[orders-api] Skipping item without variantColor: ${item.productId}`);
+      continue;
+    }
+    
+    console.log(`[orders-api] Processing stock reservation for ${slug}, variant: ${item.variantColor}, qty: ${item.quantity}`);
     
     // Użyj atomowej operacji UPDATE z warunkiem, aby zarezerwować sztuki
+    console.log(`[orders-api] Calling RPC reserve_variant_stock with params:`, {
+      p_slug: slug,
+      p_variant_color: item.variantColor,
+      p_quantity: item.quantity,
+    });
+    
     const { data: product, error: updateError } = await supabase.rpc(
       "reserve_variant_stock",
       {
@@ -82,6 +103,8 @@ export async function POST(req: Request) {
         p_quantity: item.quantity,
       }
     );
+    
+    console.log(`[orders-api] RPC response:`, { data: product, error: updateError });
     
     if (updateError) {
       console.error(`[orders-api] Stock reservation failed for ${slug}:`, updateError);
@@ -97,6 +120,8 @@ export async function POST(req: Request) {
     
     // RPC zwraca nowy stan lub null jeśli nie udało się zarezerwować
     const newStock = product as number | null;
+    console.log(`[orders-api] New stock after reservation: ${newStock}`);
+    
     if (newStock === null) {
       // Pobierz aktualny stan dla komunikatu błędu
       const { data: currentProduct } = await supabase
@@ -107,6 +132,8 @@ export async function POST(req: Request) {
       
       const stock = (currentProduct?.variant_stock as Record<string, number>) ?? {};
       const available = stock[item.variantColor] ?? 0;
+      
+      console.log(`[orders-api] Out of stock - available: ${available}, requested: ${item.quantity}`);
       
       return NextResponse.json(
         { 
