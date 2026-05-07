@@ -62,6 +62,7 @@ export function BuyNowSection({
   // Listen for variants refresh event
   React.useEffect(() => {
     const handleRefresh = (event: CustomEvent) => {
+      console.log(`[BuyNowSection] Got refresh event for slug:`, event.detail.slug, `current slug:`, slug);
       if (event.detail.slug === slug) {
         console.log(`[BuyNowSection] Refreshing variants for ${slug}`);
         fetchVariants();
@@ -69,7 +70,11 @@ export function BuyNowSection({
     };
     
     window.addEventListener('variants-refresh', handleRefresh as EventListener);
-    return () => window.removeEventListener('variants-refresh', handleRefresh as EventListener);
+    console.log(`[BuyNowSection] Added event listener for ${slug}`);
+    return () => {
+      console.log(`[BuyNowSection] Removed event listener for ${slug}`);
+      window.removeEventListener('variants-refresh', handleRefresh as EventListener);
+    };
   }, [slug, fetchVariants]);
   
   const maxQty = showVariantStock && color ? 

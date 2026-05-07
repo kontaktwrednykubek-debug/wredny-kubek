@@ -74,6 +74,7 @@ export function ProductPageClient({
         console.log(`[ProductPageClient] Variants API response data:`, data);
         // Trigger re-render by forcing BuyNowSection to refetch
         // This will automatically update the stock counts
+        console.log(`[ProductPageClient] Dispatching variants-refresh event for ${slug}`);
         window.dispatchEvent(new CustomEvent('variants-refresh', { detail: { slug } }));
       } else {
         console.error(`[ProductPageClient] Variants API error: ${res.status}`);
