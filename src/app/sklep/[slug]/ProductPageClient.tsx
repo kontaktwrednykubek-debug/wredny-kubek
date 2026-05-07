@@ -64,23 +64,22 @@ export function ProductPageClient({
   }, [slug]);
   
   async function refreshStock() {
-    console.log(`[ProductPageClient] Refreshing stock for ${slug}...`);
+    console.log(`[ProductPageClient] Refreshing variants for ${slug}...`);
     setIsRefreshing(true);
     try {
-      const res = await fetch(`/api/shop-products/${slug}`);
-      console.log(`[ProductPageClient] API response status: ${res.status}`);
+      const res = await fetch(`/api/shop-products/${slug}/variants`);
+      console.log(`[ProductPageClient] Variants API response status: ${res.status}`);
       if (res.ok) {
         const data = await res.json();
-        console.log(`[ProductPageClient] API response data:`, data);
-        if (data.variant_stock) {
-          console.log(`[ProductPageClient] Updating stock from:`, variantStockMap, "to:", data.variant_stock);
-          setVariantStockMap(data.variant_stock);
-        }
+        console.log(`[ProductPageClient] Variants API response data:`, data);
+        // Trigger re-render by forcing BuyNowSection to refetch
+        // This will automatically update the stock counts
+        window.dispatchEvent(new CustomEvent('variants-refresh', { detail: { slug } }));
       } else {
-        console.error(`[ProductPageClient] API error: ${res.status}`);
+        console.error(`[ProductPageClient] Variants API error: ${res.status}`);
       }
     } catch (err) {
-      console.error("[ProductPageClient] Failed to refresh stock:", err);
+      console.error("[ProductPageClient] Failed to refresh variants:", err);
     } finally {
       setIsRefreshing(false);
     }
@@ -94,9 +93,7 @@ export function ProductPageClient({
       title={title}
       priceGrosze={priceGrosze}
       cover={cover}
-      variants={variants}
       showVariantStock={showVariantStock}
-      variantStockMap={variantStockMap}
     />
   );
 }

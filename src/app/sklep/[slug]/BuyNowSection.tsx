@@ -7,11 +7,12 @@ import { ShoppingCart, Check, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/features/cart/useCart";
 
-type Variants = {
-  colors?: { name: string; hex: string }[];
-  cupColors?: { id: string; name: string; imageUrl: string }[];
-  capacities?: string[];
-  sizes?: string[];
+type Variant = {
+  id: string;
+  name: string;
+  imageUrl: string;
+  sortOrder: number;
+  stockCount: number;
 };
 
 export function BuyNowSection({
@@ -19,84 +20,72 @@ export function BuyNowSection({
   title,
   priceGrosze,
   cover,
-  variants,
-  showVariantStock = false,
-  variantStockMap = {},
+  showVariantStock,
 }: {
   slug: string;
   title: string;
   priceGrosze: number;
   cover: string | null;
-  variants: Variants;
-  showVariantStock?: boolean;
-  variantStockMap?: Record<string, number>;
+  showVariantStock: boolean;
 }) {
   const router = useRouter();
-  const add = useCart((s) => s.add);
-  const { items, setQuantity } = useCart();
-  const colors = variants.colors ?? [];
-  const cupColors = variants.cupColors ?? [];
-  const capacities = variants.capacities ?? [];
-  const sizes = variants.sizes ?? [];
-
-  const [color, setColor] = React.useState<string | null>(
-    cupColors[0]?.id ?? colors[0]?.name ?? null,
-  );
-  const [capacity, setCapacity] = React.useState<string | null>(capacities[0] ?? null);
-  const [size, setSize] = React.useState<string | null>(sizes[0] ?? null);
+  const add = useCart((state) => state.add);
+  const [variants, setVariants] = React.useState<Variant[]>([]);
+  const [color, setColor] = React.useState<string | null>(null);
   const [qty, setQty] = React.useState(1);
   const [added, setAdded] = React.useState(false);
+  const [isLoading, setIsLoading] = React.useState(true);
 
-  // Maksymalna dostępna ilość dla wybranego koloru (tylko gdy showVariantStock)
-  const maxQty = React.useMemo(() => {
-    if (!showVariantStock || !color) return 999;
-    const s = variantStockMap[color];
-    return typeof s === "number" ? Math.max(0, s) : 999;
-  }, [showVariantStock, color, variantStockMap]);
-
-  // Gdy zmieniony kolor → przytnij qty do nowego limitu
-  React.useEffect(() => {
-    setQty((q) => Math.min(q, Math.max(1, maxQty)));
-  }, [maxQty]);
-
-  // Aktualizuj maxQty w istniejących itemach w koszyku gdy zmieni się wariant
-  React.useEffect(() => {
-    if (!color) return;
-    items.forEach((item) => {
-      if (item.productId === `shop:${slug}` && item.variant?.color !== color) {
-        setQuantity(item.id, item.quantity); // wyzwalaczy clamp z nowym maxQty
-      }
-    });
-  }, [color, slug, items, setQuantity]);
-
-  // Synchronizacja stanu magazynowego między kartami
-  React.useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === `stock-update-${slug}` && e.newValue) {
-        const data = JSON.parse(e.newValue);
-        if (data.variantStockMap) {
-          // Trigger re-render by forcing variantStockMap update via parent
-          // Since we can't mutate props, we'll just log for now; real sync needs parent state
-          console.log(`Stock updated for ${slug}:`, data.variantStockMap);
+  // Fetch variants from API
+  const fetchVariants = React.useCallback(async () => {
+    try {
+      const res = await fetch(`/api/shop-products/${slug}/variants`);
+      if (res.ok) {
+        const data = await res.json();
+        setVariants(data.variants || []);
+        // Auto-select first variant
+        if (data.variants?.length > 0 && !color) {
+          setColor(data.variants[0].id);
         }
       }
-    };
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, [slug]);
-
-  function buildLabel(): string {
-    const parts: string[] = [title];
-    if (color) {
-      const cupC = cupColors.find((c) => c.id === color);
-      parts.push(cupC?.name ?? color);
+    } catch (err) {
+      console.error("Failed to fetch variants:", err);
+    } finally {
+      setIsLoading(false);
     }
-    if (capacity) parts.push(capacity);
-    if (size) parts.push(size);
-    return parts.join(" · ");
-  }
+  }, [slug, color]);
 
-  function addToCart(redirect: boolean) {
+  React.useEffect(() => {
+    fetchVariants();
+  }, [fetchVariants]);
+  
+  // Listen for variants refresh event
+  React.useEffect(() => {
+    const handleRefresh = (event: CustomEvent) => {
+      if (event.detail.slug === slug) {
+        console.log(`[BuyNowSection] Refreshing variants for ${slug}`);
+        fetchVariants();
+      }
+    };
+    
+    window.addEventListener('variants-refresh', handleRefresh as EventListener);
+    return () => window.removeEventListener('variants-refresh', handleRefresh as EventListener);
+  }, [slug, fetchVariants]);
+  
+  const maxQty = showVariantStock && color ? 
+    (variants.find(v => v.id === color)?.stockCount ?? 999) : 999;
+
+  const buildLabel = () => {
+    const variant = variants.find(v => v.id === color);
+    if (!variant) return title;
+    return `${title} - ${variant.name}`;
+  };
+
+  const handleAdd = (redirect = false) => {
+    if (!color || maxQty < 1) return;
+    const variant = variants.find(v => v.id === color);
+    if (!variant) return;
+    
     add({
       designId: null,
       productId: `shop:${slug}`,
@@ -106,8 +95,7 @@ export function BuyNowSection({
       quantity: qty,
       maxQty: maxQty < 999 ? maxQty : undefined,
       variant: {
-        color: color ?? undefined,
-        size: size ?? undefined,
+        color: variant.id,
       },
     });
     if (redirect) router.push("/koszyk");
@@ -115,54 +103,77 @@ export function BuyNowSection({
       setAdded(true);
       setTimeout(() => setAdded(false), 2000);
     }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <div className="animate-pulse">
+          <div className="h-4 bg-muted rounded w-1/4 mb-2"></div>
+          <div className="h-10 bg-muted rounded"></div>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-4">
       {/* Kolory kubka z obrazkami */}
-      {cupColors.length > 0 && (
+      {variants.length > 0 && (
         <div>
           <p className="mb-2 text-sm font-medium">
             Kolor:{" "}
             <span className="text-muted-foreground">
-              {cupColors.find((c) => c.id === color)?.name ?? ""}
+              {variants.find((c) => c.id === color)?.name ?? ""}
             </span>
             {showVariantStock && color && (() => {
-              const s = variantStockMap[color];
-              if (s === undefined) return null;
+              const variant = variants.find(v => v.id === color);
+              if (!variant) return null;
               return (
                 <span className={`ml-2 text-xs font-normal ${
-                  s === 0 ? "text-destructive" : "text-muted-foreground"
+                  variant.stockCount === 0 ? "text-destructive" : "text-muted-foreground"
                 }`}>
-                  {s === 0 ? "— brak na stanie" : `— ${s} szt. dostępnych`}
+                  {variant.stockCount === 0 ? "— brak na stanie" : `— ${variant.stockCount} szt. dostępnych`}
                 </span>
               );
             })()}
           </p>
           <div className="flex flex-wrap gap-3">
-            {cupColors.map((c) => {
-              const stock = variantStockMap[c.id];
-              const outOfStock = showVariantStock && stock === 0;
+            {variants.map((c) => {
+              const stock = c.stockCount;
+              const isDisabled = showVariantStock && stock === 0;
               return (
                 <button
                   key={c.id}
                   type="button"
+                  disabled={isDisabled}
                   onClick={() => setColor(c.id)}
-                  aria-label={c.name}
-                  title={outOfStock ? `${c.name} — brak na stanie` : c.name}
-                  disabled={outOfStock}
-                  className={`relative h-16 w-16 overflow-hidden rounded-xl border-2 transition ${
-                    outOfStock
-                      ? "cursor-not-allowed border-border opacity-40"
-                      : color === c.id
-                        ? "border-primary ring-2 ring-primary/40"
-                        : "border-border hover:border-primary/50"
+                  className={`relative overflow-hidden rounded-lg border-2 transition-all ${
+                    color === c.id
+                      ? "border-primary ring-2 ring-primary/20"
+                      : isDisabled
+                      ? "border-muted bg-muted cursor-not-allowed opacity-50"
+                      : "border-border hover:border-primary/50"
                   }`}
                 >
-                  {c.imageUrl ? (
-                    <Image src={c.imageUrl} alt={c.name} fill className="object-cover" unoptimized />
-                  ) : (
-                    <span className="flex h-full items-center justify-center text-[10px] text-muted-foreground">{c.name}</span>
+                  <div className="relative h-12 w-12 sm:h-16 sm:w-16">
+                    <Image
+                      src={c.imageUrl}
+                      alt={c.name}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 640px) 48px, 64px"
+                    />
+                    {isDisabled && (
+                      <div className="absolute inset-0 bg-muted/60 flex items-center justify-center">
+                        <Package className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                    )}
+                  </div>
+                  {color === c.id && (
+                    <div className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary flex items-center justify-center">
+                      <Check className="h-3 w-3 text-primary-foreground" />
+                    </div>
                   )}
                 </button>
               );
@@ -171,135 +182,54 @@ export function BuyNowSection({
         </div>
       )}
 
-      {/* Stare hex-kolory (backward compat) */}
-      {cupColors.length === 0 && colors.length > 0 && (
-        <div>
-          <p className="mb-2 text-sm font-medium">
-            Kolor: <span className="text-muted-foreground">{color}</span>
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {colors.map((c) => (
-              <button
-                key={c.name}
-                type="button"
-                onClick={() => setColor(c.name)}
-                aria-label={c.name}
-                title={c.name}
-                className={`h-9 w-9 rounded-full border-2 transition ${
-                  color === c.name
-                    ? "border-primary ring-2 ring-primary/30"
-                    : "border-border hover:border-primary/60"
-                }`}
-                style={{ background: c.hex }}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Pojemność kubka */}
-      {capacities.length > 0 && (
-        <div>
-          <p className="mb-2 text-sm font-medium">Pojemność</p>
-          <div className="flex flex-wrap gap-2">
-            {capacities.map((cap) => (
-              <button
-                key={cap}
-                type="button"
-                onClick={() => setCapacity(cap)}
-                className={`rounded-xl border-2 px-4 py-2 text-sm font-medium transition ${
-                  capacity === cap
-                    ? "border-primary bg-primary/5 text-primary ring-2 ring-primary/30"
-                    : "border-border hover:border-primary/60"
-                }`}
-              >
-                {cap}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {sizes.length > 0 && (
-        <div>
-          <p className="mb-2 text-sm font-medium">Rozmiar</p>
-          <div className="flex flex-wrap gap-2">
-            {sizes.map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => setSize(s)}
-                className={`min-w-[3rem] rounded-lg border px-3 py-2 text-sm font-medium transition ${
-                  size === s
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "border-border hover:border-primary"
-                }`}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div>
-        <p className="mb-2 text-sm font-medium">
-          Ilość
-        </p>
-        {showVariantStock && maxQty < 999 && (
-          <div className="mb-3 flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-3 py-2">
-            <Package className="h-4 w-4 text-primary" />
-            <span className="text-sm font-medium text-primary">
-              Dostępnych sztuk: <span className="font-bold">{maxQty}</span>
-            </span>
-          </div>
-        )}
-        <div className={`inline-flex items-center rounded-lg border ${
-          showVariantStock && maxQty < 999 ? "border-primary/40" : "border-border"
-        }`}>
+      {/* Ilość */}
+      <div className="space-y-2">
+        <p className="text-sm font-medium">Ilość:</p>
+        <div className="flex items-center gap-3">
           <button
             type="button"
-            onClick={() => setQty((q) => Math.max(1, q - 1))}
-            className="px-3 py-2 text-lg hover:bg-muted"
-            aria-label="Mniej"
+            disabled={qty <= 1}
+            onClick={() => setQty(Math.max(1, qty - 1))}
+            className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-background hover:bg-muted disabled:opacity-50"
           >
-            −
+            -
           </button>
-          <span className="min-w-[3ch] px-2 text-center font-medium">
-            {qty}
-          </span>
+          <span className="w-12 text-center font-medium">{qty}</span>
           <button
             type="button"
-            onClick={() => setQty((q) => Math.min(maxQty, q + 1))}
             disabled={qty >= maxQty}
-            className={`px-3 py-2 text-lg hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40 ${
-              qty >= maxQty ? "bg-muted text-muted-foreground" : ""
-            }`}
-            aria-label="Więcej"
+            onClick={() => setQty(Math.min(maxQty, qty + 1))}
+            className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-background hover:bg-muted disabled:opacity-50"
           >
             +
           </button>
+          {showVariantStock && maxQty < 999 && (
+            <span className="text-xs text-muted-foreground">
+              (max: {maxQty} szt.)
+            </span>
+          )}
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-3 pt-2">
-        <Button size="lg" className="flex-1" onClick={() => addToCart(true)}>
+      {/* Przyciski */}
+      <div className="flex gap-3">
+        <Button
+          size="lg"
+          onClick={() => handleAdd(false)}
+          disabled={!color || maxQty === 0}
+          className="flex-1"
+        >
           <ShoppingCart className="h-4 w-4" />
-          Kup teraz
+          {added ? "Dodano!" : "Do koszyka"}
         </Button>
         <Button
           size="lg"
+          onClick={() => handleAdd(true)}
+          disabled={!color || maxQty === 0}
           variant="outline"
-          onClick={() => addToCart(false)}
+          className="flex-1"
         >
-          {added ? (
-            <>
-              <Check className="h-4 w-4" />
-              Dodano
-            </>
-          ) : (
-            "Dodaj do koszyka"
-          )}
+          Kup teraz
         </Button>
       </div>
     </div>

@@ -57,20 +57,20 @@ export default async function ProductDetailsPage({
     (product.variant_stock as Record<string, number>) ?? {};
 
   return (
-    <section className="container mx-auto max-w-6xl px-4 py-8">
+    <section className="container mx-auto max-w-6xl px-4 py-6 sm:py-8">
       <BackLink href="/sklep" label="Wróć do sklepu" />
 
-      <div className="grid gap-8 lg:grid-cols-2">
+      <div className="grid gap-6 lg:gap-8 lg:grid-cols-2">
         {/* Lewa kolumna: tylko galeria */}
-        <div>
+        <div className="order-1">
           <ProductGalleryClient images={images} title={product.title} />
         </div>
 
         {/* Prawa kolumna (mobile: pod galerią): tytuł → opinie → cena → warianty/kup → opis → dane techniczne */}
-        <div className="flex flex-col gap-5">
+        <div className="order-2 flex flex-col gap-4 sm:gap-5">
           {/* Tytuł + opinie */}
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
               {product.title}
             </h1>
             <div className="mt-2 flex items-center gap-2">
@@ -93,7 +93,7 @@ export default async function ProductDetailsPage({
           </div>
 
           {/* Cena */}
-          <p className="text-3xl font-bold text-primary">
+          <p className="text-2xl sm:text-3xl font-bold text-primary">
             {formatPrice(product.price_grosze)}
           </p>
 
@@ -106,7 +106,7 @@ export default async function ProductDetailsPage({
 
           {/* Warianty + kup teraz */}
           {product.category === "merch" ? (
-            <div className="space-y-3 rounded-2xl border border-primary/30 bg-primary/5 p-5">
+            <div className="space-y-3 rounded-xl sm:rounded-2xl border border-primary/30 bg-primary/5 p-4 sm:p-5">
               <div className="flex items-start gap-3">
                 <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
                 <div>
