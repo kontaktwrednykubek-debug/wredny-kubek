@@ -2,14 +2,31 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-const upsertSchema = z.object({
-  code: z.string().min(2).max(50).regex(/^[a-z0-9_]+$/),
-  name: z.string().min(2).max(100),
-  description: z.string().max(300).default(""),
-  priceGrosze: z.number().int().min(0).max(100000),
-  requiresParcelCode: z.boolean().default(false),
-  carrier: z.string().max(40).optional().nullable(),
-  isActive: z.boolean().default(true),
+/**
+ * GET /api/categories — lista kategorii (publiczne).
+ */
+export async function GET() {
+  const supabase = createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("categories")
+    .select("id, slug, name, description, parent_id, image_url, sort_order")
+    .order("sort_order", { ascending: true });
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+  return NextResponse.json({ categories: data ?? [] });
+}
+
+const createSchema = z.object({
+  slug: z
+    .string()
+    .min(2)
+    .max(80)
+    .regex(/^[a-z0-9-]+$/, "Slug: małe litery, cyfry, myślniki"),
+  name: z.string().min(2).max(120),
+  description: z.string().max(500).optional().default(""),
+  parentId: z.string().uuid().nullable().optional(),
+  imageUrl: z.string().url().nullable().optional(),
   sortOrder: z.number().int().min(0).max(99999).default(100),
 });
 
@@ -30,27 +47,13 @@ async function requireAdmin() {
   return { error: null, supabase };
 }
 
-export async function GET() {
-  const supabase = createSupabaseServerClient();
-  const { data, error } = await supabase
-    .from("shipping_methods")
-    .select(
-      "id, code, name, description, price_grosze, requires_parcel_code, carrier, is_active, sort_order, shipping_method_tiers(id, min_quantity, price_grosze)",
-    )
-    .order("sort_order", { ascending: true });
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-  return NextResponse.json({ methods: data ?? [] });
-}
-
 export async function POST(req: Request) {
   const auth = await requireAdmin();
   if (auth.error) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
   const json = await req.json().catch(() => null);
-  const parsed = upsertSchema.safeParse(json);
+  const parsed = createSchema.safeParse(json);
   if (!parsed.success) {
     return NextResponse.json(
       { error: "bad_request", details: parsed.error.flatten() },
@@ -59,15 +62,13 @@ export async function POST(req: Request) {
   }
   const p = parsed.data;
   const { data, error } = await auth.supabase
-    .from("shipping_methods")
+    .from("categories")
     .insert({
-      code: p.code,
+      slug: p.slug,
       name: p.name,
       description: p.description,
-      price_grosze: p.priceGrosze,
-      requires_parcel_code: p.requiresParcelCode,
-      carrier: p.carrier ?? null,
-      is_active: p.isActive,
+      parent_id: p.parentId ?? null,
+      image_url: p.imageUrl ?? null,
       sort_order: p.sortOrder,
     })
     .select()
@@ -75,5 +76,5 @@ export async function POST(req: Request) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-  return NextResponse.json({ method: data });
+  return NextResponse.json({ category: data });
 }

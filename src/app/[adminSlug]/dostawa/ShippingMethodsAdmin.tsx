@@ -6,6 +6,12 @@ import { Loader2, Plus, Trash2, Save, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/lib/utils";
 
+export type ShippingTier = {
+  id: string;
+  min_quantity: number;
+  price_grosze: number;
+};
+
 export type ShippingMethodRow = {
   id: string;
   code: string;
@@ -16,6 +22,7 @@ export type ShippingMethodRow = {
   carrier: string | null;
   is_active: boolean;
   sort_order: number;
+  tiers: ShippingTier[];
 };
 
 const CARRIERS = [
@@ -91,6 +98,7 @@ export function ShippingMethodsAdmin({
               onSave={(updated) => patch(m.id, updated)}
               onDelete={() => remove(m.id)}
               busy={busy === m.id}
+              onTiersChange={() => router.refresh()}
             />
           ))}
         </div>
@@ -119,12 +127,14 @@ function MethodRow({
   onSave,
   onDelete,
   busy,
+  onTiersChange,
 }: {
   method: ShippingMethodRow;
   onPatch: (p: Partial<ShippingMethodRow>) => void;
   onSave: (p: Partial<ShippingMethodRow>) => void | Promise<void>;
   onDelete: () => void;
   busy: boolean;
+  onTiersChange: () => void;
 }) {
   const [draft, setDraft] = React.useState({
     name: method.name,
@@ -275,6 +285,8 @@ function MethodRow({
           Zapisz
         </Button>
       </div>
+
+      <TiersEditor methodId={method.id} tiers={method.tiers} onChanged={onTiersChange} />
     </div>
   );
 }
@@ -421,6 +433,165 @@ function NewMethodForm({
           Dodaj
         </Button>
       </div>
+    </div>
+  );
+}
+
+function TiersEditor({
+  methodId,
+  tiers,
+  onChanged,
+}: {
+  methodId: string;
+  tiers: ShippingTier[];
+  onChanged: () => void;
+}) {
+  const [localTiers, setLocalTiers] = React.useState<ShippingTier[]>(
+    [...tiers].sort((a, b) => a.min_quantity - b.min_quantity),
+  );
+  const [newQty, setNewQty] = React.useState("");
+  const [newPrice, setNewPrice] = React.useState("");
+  const [busy, setBusy] = React.useState<string | null>(null);
+  const [addBusy, setAddBusy] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    setLocalTiers([...tiers].sort((a, b) => a.min_quantity - b.min_quantity));
+  }, [tiers]);
+
+  async function addTier() {
+    const qty = parseInt(newQty, 10);
+    const price = parseInt(newPrice, 10);
+    if (!qty || qty < 1 || isNaN(price) || price < 0) {
+      setError("Podaj poprawną ilość (≥1) i cenę (gr, ≥0).");
+      return;
+    }
+    setError(null);
+    setAddBusy(true);
+    try {
+      const res = await fetch(`/api/shipping-methods/${methodId}/tiers`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ minQuantity: qty, priceGrosze: price }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        setError(j.error ?? "Błąd zapisu.");
+        return;
+      }
+      setNewQty("");
+      setNewPrice("");
+      onChanged();
+    } finally {
+      setAddBusy(false);
+    }
+  }
+
+  async function removeTier(tierId: string) {
+    setBusy(tierId);
+    try {
+      await fetch(`/api/shipping-methods/${methodId}/tiers/${tierId}`, {
+        method: "DELETE",
+      });
+      setLocalTiers((prev) => prev.filter((t) => t.id !== tierId));
+      onChanged();
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  return (
+    <div className="mt-4 space-y-2 border-t border-border pt-4">
+      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        Cennik wg ilości sztuk
+      </p>
+      <p className="text-xs text-muted-foreground">
+        Jeśli koszyk zawiera ≥ N sztuk, zastosowana zostanie podana cena.
+        Fallback: cena podstawowa powyżej.
+      </p>
+
+      {localTiers.length === 0 ? (
+        <p className="text-xs text-muted-foreground italic">
+          Brak progów — wszystkie zamówienia płacą cenę podstawową.
+        </p>
+      ) : (
+        <div className="space-y-1">
+          {localTiers.map((t) => (
+            <div
+              key={t.id}
+              className="flex items-center justify-between rounded-lg border border-border bg-muted/40 px-3 py-1.5 text-sm"
+            >
+              <span>
+                ≥{" "}
+                <span className="font-semibold">{t.min_quantity}</span>{" "}
+                {t.min_quantity === 1 ? "szt." : "szt."}
+                {" → "}
+                <span className="font-semibold text-primary">
+                  {formatPrice(t.price_grosze)}
+                </span>
+              </span>
+              <button
+                onClick={() => removeTier(t.id)}
+                disabled={busy === t.id}
+                className="ml-2 text-destructive hover:opacity-70 disabled:opacity-40"
+                aria-label="Usuń próg"
+              >
+                {busy === t.id ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <Trash2 className="h-3 w-3" />
+                )}
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="flex flex-wrap items-end gap-2">
+        <label className="block w-28">
+          <span className="mb-1 block text-xs text-muted-foreground">
+            Min. ilość sztuk
+          </span>
+          <input
+            type="number"
+            min={1}
+            placeholder="np. 2"
+            value={newQty}
+            onChange={(e) => setNewQty(e.target.value)}
+            className={inputCls}
+          />
+        </label>
+        <label className="block w-32">
+          <span className="mb-1 block text-xs text-muted-foreground">
+            Cena (gr)
+          </span>
+          <input
+            type="number"
+            min={0}
+            placeholder="np. 1799"
+            value={newPrice}
+            onChange={(e) => setNewPrice(e.target.value)}
+            className={inputCls}
+          />
+        </label>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={addTier}
+          disabled={addBusy || !newQty || newPrice === ""}
+          className="self-end"
+        >
+          {addBusy ? (
+            <Loader2 className="h-3 w-3 animate-spin" />
+          ) : (
+            <Plus className="h-3 w-3" />
+          )}
+          Dodaj próg
+        </Button>
+      </div>
+      {error && (
+        <p className="text-xs text-destructive">{error}</p>
+      )}
     </div>
   );
 }

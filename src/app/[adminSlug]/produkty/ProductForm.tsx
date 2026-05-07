@@ -112,6 +112,18 @@ export function ProductForm({
   const [error, setError] = React.useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
 
+  // Kategorie z bazy
+  const [categories, setCategories] = React.useState<
+    { id: string; slug: string; name: string; parent_id: string | null; sort_order: number }[]
+  >([]);
+
+  React.useEffect(() => {
+    void fetch("/api/categories")
+      .then((r) => r.json())
+      .then((j) => setCategories(j.categories ?? []))
+      .catch(() => setCategories([]));
+  }, []);
+
   React.useEffect(() => {
     if (!slugTouched) setSlug(slugify(title));
   }, [title, slugTouched]);
@@ -279,12 +291,26 @@ export function ProductForm({
             onChange={(e) => setCategory(e.target.value)}
             className={inputCls}
           >
-            <option value="merch">Merch (z grafiką)</option>
-            <option value="kubek">Kubek</option>
-            <option value="koszulka">Koszulka</option>
-            <option value="bluza">Bluza</option>
-            <option value="torba">Torba</option>
-            <option value="gadzet">Gadżet</option>
+            <option value="">— wybierz —</option>
+            {categories
+              .filter((c) => c.parent_id === null)
+              .map((parent) => {
+                const children = categories.filter(
+                  (c) => c.parent_id === parent.id,
+                );
+                return (
+                  <optgroup key={parent.id} label={parent.name}>
+                    <option value={parent.slug}>
+                      {parent.name} (główna)
+                    </option>
+                    {children.map((child) => (
+                      <option key={child.id} value={child.slug}>
+                        — {child.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                );
+              })}
           </select>
         </Field>
         <Field label="Opis">

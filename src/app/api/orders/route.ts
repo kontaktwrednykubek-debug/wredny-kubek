@@ -64,11 +64,11 @@ export async function POST(req: Request) {
 
   const { shipping, items, discountCode } = parsed.data;
 
-  // Walidacja metody dostawy z bazy.
+  // Walidacja metody dostawy z bazy (wraz z tierami cenowymi).
   const { data: methodRow } = await supabase
     .from("shipping_methods")
     .select(
-      "code, name, price_grosze, requires_parcel_code, carrier, is_active",
+      "id, code, name, price_grosze, requires_parcel_code, carrier, is_active, shipping_method_tiers(min_quantity, price_grosze)",
     )
     .eq("code", shipping.shippingMethod)
     .maybeSingle();
@@ -86,11 +86,21 @@ export async function POST(req: Request) {
     );
   }
 
+  // Oblicz cenę dostawy wg tierów (lub płaska cena jako fallback).
+  const totalQty = items.reduce((s, it) => s + it.quantity, 0);
+  const tiers = (methodRow.shipping_method_tiers as { min_quantity: number; price_grosze: number }[]) ?? [];
+  let shippingPriceGr = methodRow.price_grosze;
+  if (tiers.length > 0) {
+    const sorted = [...tiers].sort((a, b) => b.min_quantity - a.min_quantity);
+    const tier = sorted.find((t) => t.min_quantity <= totalQty);
+    if (tier) shippingPriceGr = tier.price_grosze;
+  }
+
   const normalizedShipping = {
     ...shipping,
     phone: normalizePhone(shipping.phone),
     shippingMethodName: methodRow.name,
-    shippingPriceGr: methodRow.price_grosze,
+    shippingPriceGr,
     shippingCarrier: methodRow.carrier ?? null,
   };
 

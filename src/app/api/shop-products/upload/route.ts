@@ -1,12 +1,21 @@
 import { NextResponse } from "next/server";
+import sharp from "sharp";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-const MAX_BYTES = 5 * 1024 * 1024; // 5 MB
-const ALLOWED = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+export const runtime = "nodejs";
+
+const MAX_BYTES = 10 * 1024 * 1024; // 10 MB (po konwersji zostaje znacznie mniej)
+const ALLOWED = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"];
+
+// Maksymalne wymiary dla zdjęć produktów (zachowujemy proporcje, tylko ograniczamy).
+const MAX_WIDTH = 1600;
+const MAX_HEIGHT = 1600;
+const WEBP_QUALITY = 82;
 
 /**
  * POST /api/shop-products/upload — upload zdjęcia produktu (multipart/form-data).
- * Tylko ADMIN. Zwraca publiczny URL.
+ * Tylko ADMIN. Konwertuje wszystkie zdjęcia do WebP (oszczędność miejsca w bazie).
+ * Zwraca publiczny URL.
  */
 export async function POST(req: Request) {
   const supabase = createSupabaseServerClient();
@@ -37,13 +46,34 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "invalid_type" }, { status: 400 });
   }
 
-  const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
-  const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  // Konwersja → WebP (z resize'em, jeśli zbyt duże).
+  let webpBuffer: Buffer;
+  try {
+    const inputBuffer = Buffer.from(await file.arrayBuffer());
+    webpBuffer = await sharp(inputBuffer, { animated: file.type === "image/gif" })
+      .rotate() // korekcja EXIF
+      .resize({
+        width: MAX_WIDTH,
+        height: MAX_HEIGHT,
+        fit: "inside",
+        withoutEnlargement: true,
+      })
+      .webp({ quality: WEBP_QUALITY, effort: 4 })
+      .toBuffer();
+  } catch (err) {
+    console.error("[upload] sharp conversion failed:", err);
+    return NextResponse.json(
+      { error: "conversion_failed" },
+      { status: 500 },
+    );
+  }
+
+  const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.webp`;
 
   const { error } = await supabase.storage
     .from("shop-products")
-    .upload(path, file, {
-      contentType: file.type,
+    .upload(path, webpBuffer, {
+      contentType: "image/webp",
       upsert: false,
     });
   if (error) {
@@ -51,5 +81,11 @@ export async function POST(req: Request) {
   }
 
   const { data } = supabase.storage.from("shop-products").getPublicUrl(path);
-  return NextResponse.json({ url: data.publicUrl, path });
+  return NextResponse.json({
+    url: data.publicUrl,
+    path,
+    originalSize: file.size,
+    finalSize: webpBuffer.length,
+    savedBytes: file.size - webpBuffer.length,
+  });
 }

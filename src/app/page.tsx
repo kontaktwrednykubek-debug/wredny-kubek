@@ -8,17 +8,74 @@ import {
   ProductCarousel,
   type CarouselProduct,
 } from "@/features/catalog/ProductCarousel";
+import {
+  CategoryCarousel,
+  type CategoryCard,
+} from "@/features/catalog/CategoryCarousel";
 
 export default async function HomePage() {
   const supabase = createSupabaseServerClient();
-  const { data: carouselProducts } = await supabase
-    .from("shop_products")
-    .select("slug, title, price_grosze, images, rating, reviews_count")
-    .eq("is_published", true)
-    .neq("category", "merch")
-    .order("created_at", { ascending: false })
-    .limit(12);
-  const products = (carouselProducts ?? []) as CarouselProduct[];
+  const [carouselRes, categoriesRes, productsForCoverRes] = await Promise.all([
+    supabase
+      .from("shop_products")
+      .select("slug, title, price_grosze, images, rating, reviews_count")
+      .eq("is_published", true)
+      .neq("category", "merch")
+      .order("created_at", { ascending: false })
+      .limit(12),
+    supabase
+      .from("categories")
+      .select("id, slug, name, description, image_url, parent_id, sort_order")
+      .is("parent_id", null)
+      .order("sort_order", { ascending: true }),
+    supabase
+      .from("shop_products")
+      .select("category, images")
+      .eq("is_published", true)
+      .order("created_at", { ascending: false }),
+  ]);
+  const products = (carouselRes.data ?? []) as CarouselProduct[];
+
+  // Mapowanie kategorii → pierwsze zdjęcie produktu z tej kategorii (lub child).
+  const allCats = categoriesRes.data ?? [];
+  // Pobierz dzieci dla każdego rodzica (drugie zapytanie w pamięci).
+  const allCatsRes = await supabase
+    .from("categories")
+    .select("id, slug, parent_id");
+  const childrenMap = new Map<string, string[]>();
+  for (const c of allCatsRes.data ?? []) {
+    if (c.parent_id) {
+      const arr = childrenMap.get(c.parent_id as string) ?? [];
+      arr.push(c.slug as string);
+      childrenMap.set(c.parent_id as string, arr);
+    }
+  }
+  const productsByCat = new Map<string, string[]>();
+  for (const p of productsForCoverRes.data ?? []) {
+    const cat = (p.category as string | null) ?? "";
+    const imgs = (p.images as string[]) ?? [];
+    const cover = imgs[0] ?? "";
+    if (!productsByCat.has(cat)) productsByCat.set(cat, []);
+    if (cover) productsByCat.get(cat)!.push(cover);
+  }
+  const categoryCards: CategoryCard[] = allCats.map((c) => {
+    const childSlugs = childrenMap.get(c.id as string) ?? [];
+    const slugsToCheck = [c.slug as string, ...childSlugs];
+    let cover: string | null = (c.image_url as string | null) ?? null;
+    let count = 0;
+    for (const s of slugsToCheck) {
+      const arr = productsByCat.get(s) ?? [];
+      count += arr.length;
+      if (!cover && arr.length > 0) cover = arr[0];
+    }
+    return {
+      slug: c.slug as string,
+      name: c.name as string,
+      description: (c.description as string | null) ?? null,
+      imageUrl: cover,
+      productsCount: count,
+    };
+  });
   return (
     <>
       {/* HERO */}
@@ -55,6 +112,35 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* KARUZELA KATEGORII */}
+      {categoryCards.length > 0 && (
+        <section className="bg-muted/40">
+          <div className="container mx-auto px-5 py-14 sm:px-6 md:py-16 lg:px-10 xl:px-12">
+            <div className="mb-8 flex flex-col items-start gap-3 md:mb-10 md:flex-row md:items-end md:justify-between">
+              <div>
+                <span className="inline-block rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary">
+                  Kategorie
+                </span>
+                <h2 className="mt-3 text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl md:text-5xl">
+                  Wybierz swoją tematykę
+                </h2>
+                <p className="mt-3 max-w-2xl text-muted-foreground">
+                  Od popkultury po zodiak — znajdź kubek idealny dla siebie lub
+                  na prezent.
+                </p>
+              </div>
+              <Link
+                href="/sklep"
+                className="text-sm font-semibold text-primary underline-offset-4 hover:underline"
+              >
+                Zobacz sklep →
+              </Link>
+            </div>
+            <CategoryCarousel categories={categoryCards} />
+          </div>
+        </section>
+      )}
 
       {/* KARUZELA PRODUKTÓW */}
       <section className="bg-background">

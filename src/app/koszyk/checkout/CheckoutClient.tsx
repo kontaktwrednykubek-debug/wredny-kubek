@@ -9,13 +9,31 @@ import { useCart, cartTotalGr } from "@/features/cart/useCart";
 import { formatPrice } from "@/lib/utils";
 import { isValidPhone } from "@/lib/phone";
 
+export type ShippingTier = {
+  id: string;
+  min_quantity: number;
+  price_grosze: number;
+};
+
 export type CheckoutShippingMethod = {
   code: string;
   name: string;
   description: string;
   priceGrosze: number;
   requiresParcelCode: boolean;
+  tiers: ShippingTier[];
 };
+
+function calcShippingPrice(
+  method: CheckoutShippingMethod | undefined,
+  totalQty: number,
+): number {
+  if (!method) return 0;
+  if (!method.tiers || method.tiers.length === 0) return method.priceGrosze;
+  const sorted = [...method.tiers].sort((a, b) => b.min_quantity - a.min_quantity);
+  const tier = sorted.find((t) => t.min_quantity <= totalQty);
+  return tier?.price_grosze ?? method.priceGrosze;
+}
 
 export function CheckoutClient({
   methods,
@@ -63,8 +81,9 @@ export function CheckoutClient({
   if (items.length === 0) return null;
 
   const itemsTotal = cartTotalGr(items);
+  const totalQty = items.reduce((s, i) => s + i.quantity, 0);
   const method = methods.find((m) => m.code === shippingMethod);
-  const shippingPrice = method?.priceGrosze ?? 0;
+  const shippingPrice = calcShippingPrice(method, totalQty);
   const isFreeShipping = discount?.type === "free_shipping";
   const effectiveShipping = isFreeShipping ? 0 : shippingPrice;
   // Rabat odejmujemy od produktow tylko dla percent/fixed.
@@ -394,7 +413,9 @@ export function CheckoutClient({
                       </div>
                     </div>
                     <span className="shrink-0 text-sm font-bold text-primary">
-                      {m.priceGrosze === 0 ? "Gratis" : formatPrice(m.priceGrosze)}
+                      {calcShippingPrice(m, totalQty) === 0
+                        ? "Gratis"
+                        : formatPrice(calcShippingPrice(m, totalQty))}
                     </span>
                   </label>
                 );
