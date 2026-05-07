@@ -25,18 +25,11 @@ export async function GET() {
  */
 const variantsSchema = z
   .object({
-    colors: z
-      .array(z.object({ name: z.string(), hex: z.string() }))
-      .optional(),
+    colors: z.array(z.object({ name: z.string(), hex: z.string() })).optional(),
+    cupColors: z.array(z.object({ id: z.string(), name: z.string(), imageUrl: z.string() })).optional(),
+    capacities: z.array(z.string()).optional(),
     sizes: z.array(z.string()).optional(),
-    options: z
-      .array(
-        z.object({
-          label: z.string(),
-          values: z.array(z.string()),
-        }),
-      )
-      .optional(),
+    options: z.array(z.object({ label: z.string(), values: z.array(z.string()) })).optional(),
   })
   .default({});
 
@@ -48,6 +41,7 @@ const createSchema = z.object({
     .regex(/^[a-z0-9-]+$/, "Slug: małe litery, cyfry, myślniki"),
   title: z.string().min(2).max(200),
   description: z.string().max(5000).optional().default(""),
+  body: z.string().max(20000).optional().default(""),
   category: z.string().max(50).default("merch"),
   priceGrosze: z.number().int().min(0),
   images: z.array(z.string().url()).max(10).default([]),
@@ -96,6 +90,7 @@ export async function POST(req: Request) {
       slug: p.slug,
       title: p.title,
       description: p.description,
+      body: p.body,
       category: p.category,
       price_grosze: p.priceGrosze,
       images: p.images,

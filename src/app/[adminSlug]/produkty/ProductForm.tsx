@@ -10,8 +10,17 @@ const MAX_IMAGES = 10;
 
 type Spec = { key: string; value: string };
 
+type CupColorVariant = {
+  id: string;
+  name: string;
+  image_url: string | null;
+  sort_order: number;
+};
+
 type Variants = {
   colors?: { name: string; hex: string }[];
+  cupColors?: { id: string; name: string; imageUrl: string }[];
+  capacities?: string[];
   sizes?: string[];
 };
 
@@ -19,6 +28,7 @@ export type ProductInitial = {
   slug: string;
   title: string;
   description: string;
+  body: string;
   category: string;
   price_grosze: number;
   images: string[];
@@ -59,6 +69,7 @@ export function ProductForm({
   const [description, setDescription] = React.useState(
     initial?.description ?? "",
   );
+  const [body, setBody] = React.useState(initial?.body ?? "");
   const [category, setCategory] = React.useState(initial?.category ?? "merch");
   const [priceZl, setPriceZl] = React.useState(
     initial ? (initial.price_grosze / 100).toFixed(2) : "",
@@ -93,19 +104,37 @@ export function ProductForm({
     ];
   });
 
-  // Warianty
-  const [hasColors, setHasColors] = React.useState(
-    Boolean(initial?.variants?.colors?.length),
+  // Warianty — pojemności
+  const [capacities, setCapacities] = React.useState<string[]>(
+    initial?.variants?.capacities ?? [],
   );
-  const [colors, setColors] = React.useState<{ name: string; hex: string }[]>(
-    initial?.variants?.colors ?? [{ name: "Czarny", hex: "#000000" }],
+  const [capInput, setCapInput] = React.useState("");
+
+  // Warianty — kolory kubków (ID z globalnych wariantów)
+  const [selectedCupColorIds, setSelectedCupColorIds] = React.useState<string[]>(
+    initial?.variants?.cupColors?.map((c) => c.id) ?? [],
   );
-  const [hasSizes, setHasSizes] = React.useState(
-    Boolean(initial?.variants?.sizes?.length),
-  );
-  const [sizesText, setSizesText] = React.useState(
-    initial?.variants?.sizes?.join(", ") ?? "S, M, L, XL",
-  );
+  const [cupColorVariants, setCupColorVariants] = React.useState<CupColorVariant[]>([]);
+
+  React.useEffect(() => {
+    void fetch("/api/cup-variants")
+      .then((r) => r.json())
+      .then((j) => setCupColorVariants(j.variants ?? []))
+      .catch(() => setCupColorVariants([]));
+  }, []);
+
+  function toggleCupColor(id: string) {
+    setSelectedCupColorIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  }
+
+  function addCapacity() {
+    const v = capInput.trim();
+    if (!v || capacities.includes(v)) return;
+    setCapacities((prev) => [...prev, v]);
+    setCapInput("");
+  }
 
   const [uploading, setUploading] = React.useState(false);
   const [submitting, setSubmitting] = React.useState(false);
@@ -206,21 +235,18 @@ export function ProductForm({
       }
     }
     const variants: Variants = {};
-    if (hasColors && colors.length > 0) {
-      variants.colors = colors.filter((c) => c.name.trim() && c.hex);
-    }
-    if (hasSizes) {
-      const arr = sizesText
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean);
-      if (arr.length > 0) variants.sizes = arr;
+    if (capacities.length > 0) variants.capacities = capacities;
+    if (selectedCupColorIds.length > 0) {
+      variants.cupColors = cupColorVariants
+        .filter((v) => selectedCupColorIds.includes(v.id))
+        .map((v) => ({ id: v.id, name: v.name, imageUrl: v.image_url ?? "" }));
     }
 
     const payload = {
       slug,
       title,
       description,
+      body,
       category,
       priceGrosze: priceGr,
       images,
@@ -313,13 +339,25 @@ export function ProductForm({
               })}
           </select>
         </Field>
-        <Field label="Opis">
+        <Field label="Krótki opis">
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            rows={4}
+            rows={3}
             className={inputCls}
-            placeholder="Krótki opis produktu, materiały, przeznaczenie..."
+            placeholder="Krótki opis widoczny obok ceny..."
+          />
+        </Field>
+        <Field
+          label="Długi opis (pod zdjęciami)"
+          hint="Pełny opis produktu wyświetlany pod galerią zdjęć na stronie produktu."
+        >
+          <textarea
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            rows={8}
+            className={inputCls}
+            placeholder="Szczegółowy opis produktu, historia, zastosowanie, pielęgnacja..."
           />
         </Field>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -430,106 +468,107 @@ export function ProductForm({
       </fieldset>
 
       {/* Warianty */}
-      <fieldset className="space-y-4 rounded-2xl border border-border bg-card p-5">
+      <fieldset className="space-y-5 rounded-2xl border border-border bg-card p-5">
         <legend className="px-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
           Warianty (opcjonalne)
         </legend>
-        <p className="text-xs text-muted-foreground">
-          Zaznacz, co ma być widoczne na stronie produktu jako wybór dla klienta.
-        </p>
 
-        <div className="space-y-3 rounded-xl border border-border/60 p-3">
-          <label className="flex items-center gap-2 text-sm font-medium">
+        {/* Pojemność kubka */}
+        <div className="space-y-3 rounded-xl border border-border/60 p-4">
+          <p className="text-sm font-medium">Pojemność kubka</p>
+          <p className="text-xs text-muted-foreground">
+            Wpisz pojemność (np. 330 ml) i kliknij „+" lub Enter. Na stronie
+            produktu klient będzie mógł wybrać jedną opcję.
+          </p>
+          <div className="flex gap-2">
             <input
-              type="checkbox"
-              checked={hasColors}
-              onChange={(e) => setHasColors(e.target.checked)}
-              className="h-4 w-4 accent-primary"
+              type="text"
+              value={capInput}
+              onChange={(e) => setCapInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCapacity(); } }}
+              placeholder="np. 330 ml"
+              className={`${inputCls} flex-1`}
             />
-            Pokaż wybór koloru
-          </label>
-          {hasColors && (
-            <div className="space-y-2 pl-6">
-              {colors.map((c, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={c.hex}
-                    onChange={(e) =>
-                      setColors((prev) =>
-                        prev.map((x, j) =>
-                          j === i ? { ...x, hex: e.target.value } : x,
-                        ),
-                      )
-                    }
-                    className="h-9 w-12 cursor-pointer rounded border border-input bg-background"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Nazwa (np. Czarny)"
-                    value={c.name}
-                    onChange={(e) =>
-                      setColors((prev) =>
-                        prev.map((x, j) =>
-                          j === i ? { ...x, name: e.target.value } : x,
-                        ),
-                      )
-                    }
-                    className={`${inputCls} flex-1`}
-                  />
-                  <Button
+            <Button type="button" variant="outline" size="sm" onClick={addCapacity}>
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+          {capacities.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {capacities.map((cap) => (
+                <span
+                  key={cap}
+                  className="flex items-center gap-1 rounded-lg border border-primary/40 bg-primary/5 px-3 py-1 text-sm font-medium text-primary"
+                >
+                  {cap}
+                  <button
                     type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() =>
-                      setColors((prev) => prev.filter((_, j) => j !== i))
-                    }
-                    aria-label="Usuń kolor"
+                    onClick={() => setCapacities((prev) => prev.filter((c) => c !== cap))}
+                    className="ml-0.5 rounded-full hover:bg-primary/20"
+                    aria-label="Usuń"
                   >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
               ))}
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  setColors((prev) => [
-                    ...prev,
-                    { name: "", hex: "#000000" },
-                  ])
-                }
-              >
-                <Plus className="h-4 w-4" />
-                Dodaj kolor
-              </Button>
             </div>
           )}
         </div>
 
-        <div className="space-y-3 rounded-xl border border-border/60 p-3">
-          <label className="flex items-center gap-2 text-sm font-medium">
-            <input
-              type="checkbox"
-              checked={hasSizes}
-              onChange={(e) => setHasSizes(e.target.checked)}
-              className="h-4 w-4 accent-primary"
-            />
-            Pokaż wybór rozmiaru
-          </label>
-          {hasSizes && (
-            <div className="pl-6">
-              <input
-                type="text"
-                value={sizesText}
-                onChange={(e) => setSizesText(e.target.value)}
-                placeholder="S, M, L, XL"
-                className={inputCls}
-              />
-              <p className="mt-1 text-xs text-muted-foreground">
-                Rozmiary oddzielone przecinkiem.
-              </p>
+        {/* Kolory kubka */}
+        <div className="space-y-3 rounded-xl border border-border/60 p-4">
+          <p className="text-sm font-medium">Kolory kubka</p>
+          <p className="text-xs text-muted-foreground">
+            Zaznacz kolory dostępne dla tego produktu. Zarządzaj kolorami w zakładce{" "}
+            <strong>Warianty</strong>. Na stronie klient wybierze jeden kolor.
+          </p>
+          {cupColorVariants.length === 0 ? (
+            <p className="text-xs text-muted-foreground italic">
+              Brak zdefiniowanych kolorów. Dodaj je w panelu → Warianty.
+            </p>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+              {cupColorVariants.map((v) => {
+                const selected = selectedCupColorIds.includes(v.id);
+                return (
+                  <button
+                    key={v.id}
+                    type="button"
+                    onClick={() => toggleCupColor(v.id)}
+                    className={`relative overflow-hidden rounded-xl border-2 transition ${
+                      selected
+                        ? "border-primary ring-2 ring-primary/30"
+                        : "border-border hover:border-primary/50"
+                    }`}
+                  >
+                    <div className="relative aspect-square bg-muted">
+                      {v.image_url ? (
+                        <Image
+                          src={v.image_url}
+                          alt={v.name}
+                          fill
+                          className="object-cover"
+                          unoptimized
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
+                          Brak zdjęcia
+                        </div>
+                      )}
+                      {selected && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-primary/20">
+                          <div className="rounded-full bg-primary p-1">
+                            <svg className="h-3 w-3 text-white" viewBox="0 0 12 12" fill="none">
+                              <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <p className="px-2 py-1.5 text-center text-xs font-medium">{v.name}</p>
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>

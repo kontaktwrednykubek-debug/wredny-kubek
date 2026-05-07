@@ -24,6 +24,8 @@ export async function generateMetadata({
 
 type Variants = {
   colors?: { name: string; hex: string }[];
+  cupColors?: { id: string; name: string; imageUrl: string }[];
+  capacities?: string[];
   sizes?: string[];
 };
 
@@ -36,7 +38,7 @@ export default async function ProductDetailsPage({
   const { data: product } = await supabase
     .from("shop_products")
     .select(
-      "slug, title, description, category, price_grosze, images, specs, variants, rating, reviews_count",
+      "slug, title, description, body, category, price_grosze, images, specs, variants, rating, reviews_count",
     )
     .eq("slug", params.slug)
     .eq("is_published", true)
@@ -48,13 +50,24 @@ export default async function ProductDetailsPage({
   const specs = (product.specs as Record<string, string>) ?? {};
   const variants = (product.variants as Variants) ?? {};
   const rating = Number(product.rating ?? 0);
+  const body = (product.body as string | null) ?? null;
 
   return (
     <section className="container mx-auto max-w-6xl px-4 py-8">
       <BackLink href="/sklep" label="Wróć do sklepu" />
 
       <div className="grid gap-8 lg:grid-cols-2">
-        <ProductGalleryClient images={images} title={product.title} />
+        <div className="flex flex-col gap-6">
+          <ProductGalleryClient images={images} title={product.title} />
+          {body && (
+            <div className="rounded-2xl border border-border bg-card p-5">
+              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                Opis produktu
+              </h2>
+              <p className="whitespace-pre-line text-sm leading-relaxed text-foreground/80">{body}</p>
+            </div>
+          )}
+        </div>
 
         <div className="space-y-5">
           <div>

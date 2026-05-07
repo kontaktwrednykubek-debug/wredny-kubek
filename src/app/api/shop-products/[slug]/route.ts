@@ -44,13 +44,11 @@ export async function DELETE(
 
 const variantsSchema = z
   .object({
-    colors: z
-      .array(z.object({ name: z.string(), hex: z.string() }))
-      .optional(),
+    colors: z.array(z.object({ name: z.string(), hex: z.string() })).optional(),
+    cupColors: z.array(z.object({ id: z.string(), name: z.string(), imageUrl: z.string() })).optional(),
+    capacities: z.array(z.string()).optional(),
     sizes: z.array(z.string()).optional(),
-    options: z
-      .array(z.object({ label: z.string(), values: z.array(z.string()) }))
-      .optional(),
+    options: z.array(z.object({ label: z.string(), values: z.array(z.string()) })).optional(),
   })
   .default({});
 
@@ -63,6 +61,7 @@ const updateSchema = z.object({
     .optional(),
   title: z.string().min(2).max(200).optional(),
   description: z.string().max(5000).optional(),
+  body: z.string().max(20000).optional(),
   category: z.string().max(50).optional(),
   priceGrosze: z.number().int().min(0).optional(),
   images: z.array(z.string().url()).max(10).optional(),
@@ -98,6 +97,7 @@ export async function PATCH(
   if (p.slug !== undefined) update.slug = p.slug;
   if (p.title !== undefined) update.title = p.title;
   if (p.description !== undefined) update.description = p.description;
+  if (p.body !== undefined) update.body = p.body;
   if (p.category !== undefined) update.category = p.category;
   if (p.priceGrosze !== undefined) update.price_grosze = p.priceGrosze;
   if (p.images !== undefined) update.images = p.images;
