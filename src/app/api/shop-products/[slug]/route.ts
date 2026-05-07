@@ -20,6 +20,39 @@ async function requireAdmin() {
 }
 
 /**
+ * GET /api/shop-products/[slug] — pobierz dane produktu (publiczne).
+ */
+export async function GET(
+  _req: Request,
+  { params }: { params: { slug: string } },
+) {
+  const supabase = createSupabaseServerClient();
+  
+  const { data: product, error } = await supabase
+    .from("shop_products")
+    .select("slug, title, variant_stock, show_variant_stock")
+    .eq("slug", params.slug)
+    .eq("is_published", true)
+    .maybeSingle();
+    
+  if (error) {
+    console.error("[shop-products GET] Error:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+  
+  if (!product) {
+    return NextResponse.json({ error: "Product not found" }, { status: 404 });
+  }
+  
+  return NextResponse.json({
+    slug: product.slug,
+    title: product.title,
+    variant_stock: product.variant_stock,
+    show_variant_stock: product.show_variant_stock,
+  });
+}
+
+/**
  * DELETE /api/shop-products/[slug] — usunięcie produktu (tylko ADMIN).
  */
 export async function DELETE(
