@@ -91,6 +91,7 @@ export function BuyNowSection({
     const variant = variants.find(v => v.id === color);
     if (!variant) return;
     
+    // Don't set maxQty - always fetch from database to prevent race conditions
     add({
       designId: null,
       productId: `shop:${slug}`,
@@ -98,7 +99,6 @@ export function BuyNowSection({
       previewUrl: cover ?? undefined,
       label: buildLabel(),
       quantity: qty,
-      maxQty: maxQty < 999 ? maxQty : undefined,
       variant: {
         color: variant.id,
       },

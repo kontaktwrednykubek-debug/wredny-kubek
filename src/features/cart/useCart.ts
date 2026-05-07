@@ -15,6 +15,7 @@ export type CartItem = {
   previewUrl?: string;
   label: string;
   variant?: { color?: string; size?: string };
+  // maxQty is NOT persisted - always fetched from database
   maxQty?: number;
 };
 
@@ -59,6 +60,7 @@ export const useCart = create<CartState>()(
       name: "kubkomania-cart",
       onRehydrateStorage: () => (state) => {
         // Auto-clear shop items without variant on rehydration
+        // Also remove maxQty to force fresh fetch from database
         if (state) {
           const itemsWithVariant = state.items.filter(
             item => !item.productId.startsWith("shop:") || item.variant?.color
@@ -67,6 +69,8 @@ export const useCart = create<CartState>()(
             console.log("[useCart] Auto-cleared shop items without variant:", state.items.length - itemsWithVariant.length);
             state.items = itemsWithVariant;
           }
+          // Remove maxQty to force fresh fetch from database
+          state.items = state.items.map(item => ({ ...item, maxQty: undefined }));
         }
       },
     },

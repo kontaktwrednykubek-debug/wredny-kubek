@@ -4,12 +4,47 @@ import Link from "next/link";
 import Image from "next/image";
 import { Trash2, Minus, Plus, ShoppingBag, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useCart, cartTotalGr, useAutoClearCart } from "@/features/cart/useCart";
+import { useCart, cartTotalGr, useAutoClearCart, type CartItem } from "@/features/cart/useCart";
 import { formatPrice } from "@/lib/utils";
+import * as React from "react";
 
 export function CartClient() {
   const { items, setQuantity, remove, clear } = useCart();
   useAutoClearCart(); // Auto-clear shop items without variant on mount
+  
+  // Fetch real-time stock from database
+  const [stockMap, setStockMap] = React.useState<Record<string, number>>({});
+  const [isLoadingStock, setIsLoadingStock] = React.useState(false);
+  
+  React.useEffect(() => {
+    async function fetchStock() {
+      const shopItems = items.filter(item => item.productId.startsWith("shop:") && item.variant?.color);
+      if (shopItems.length === 0) {
+        setStockMap({});
+        return;
+      }
+      
+      setIsLoadingStock(true);
+      try {
+        const variantIds = shopItems.map(item => item.variant?.color).filter(Boolean);
+        const res = await fetch('/api/shop-products/stock', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ variantIds })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setStockMap(data.stock || {});
+        }
+      } catch (err) {
+        console.error('[CartClient] Failed to fetch stock:', err);
+      } finally {
+        setIsLoadingStock(false);
+      }
+    }
+    
+    fetchStock();
+  }, [items]);
   
   // Check for shop items without variants
   const itemsWithoutVariant = items.filter(
@@ -32,6 +67,12 @@ export function CartClient() {
   }
 
   const total = cartTotalGr(items);
+  
+  // Get real-time maxQty for shop items
+  const getMaxQty = (item: CartItem) => {
+    if (!item.productId.startsWith("shop:") || !item.variant?.color) return 999;
+    return stockMap[item.variant.color] ?? 999;
+  };
 
   return (
     <section className="container mx-auto max-w-4xl px-4 py-10">
@@ -102,14 +143,14 @@ export function CartClient() {
                     variant="outline"
                     size="icon"
                     onClick={() => setQuantity(item.id, item.quantity + 1)}
-                    disabled={item.maxQty !== undefined && item.quantity >= item.maxQty}
+                    disabled={getMaxQty(item) !== undefined && item.quantity >= getMaxQty(item)}
                     aria-label="Więcej"
                   >
                     <Plus className="h-4 w-4" />
                   </Button>
-                  {item.maxQty !== undefined && (
+                  {item.productId.startsWith("shop:") && item.variant?.color && (
                     <span className="text-xs text-muted-foreground">
-                      max {item.maxQty} szt.
+                      max {getMaxQty(item)} szt.
                     </span>
                   )}
                 </div>
