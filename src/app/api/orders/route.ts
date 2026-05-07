@@ -74,6 +74,21 @@ export async function POST(req: Request) {
     label: i.label
   })));
 
+  // Server-side validation: shop products must have variantColor
+  for (const item of items) {
+    if (item.productId.startsWith("shop:") && !item.variantColor) {
+      console.error("[orders-api] Shop product without variantColor:", item);
+      return NextResponse.json(
+        {
+          error: `Produkt "${item.label}" wymaga wyboru wariantu koloru. Usuń go z koszyka i dodaj ponownie.`,
+          code: "MISSING_VARIANT",
+          productId: item.productId,
+        },
+        { status: 400 }
+      );
+    }
+  }
+
   // Atomowa walidacja i rezerwacja stanu magazynowego (zapobieganie race conditions)
   for (const item of items) {
     if (!item.productId.startsWith("shop:")) {
