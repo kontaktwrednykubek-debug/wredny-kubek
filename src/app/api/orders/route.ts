@@ -67,32 +67,47 @@ export async function POST(req: Request) {
 
   const { shipping, items, discountCode } = parsed.data;
 
-  // Walidacja stanu magazynowego dla każdego wariantu (tylko shop products)
-  // UWAGA: Zawsze pobieramy świeży stan z bazy - nie ufamy propsom z frontendu
+  // Atomowa walidacja i rezerwacja stanu magazynowego (zapobieganie race conditions)
   for (const item of items) {
     if (!item.productId.startsWith("shop:")) continue;
     const slug = item.productId.slice("shop:".length);
     if (!item.variantColor) continue;
     
-    // Pobierz aktualny stan magazynowy (świeży z bazy)
-    const { data: product, error: productError } = await supabase
-      .from("shop_products")
-      .select("variant_stock")
-      .eq("slug", slug)
-      .maybeSingle();
+    // Użyj atomowej operacji UPDATE z warunkiem, aby zarezerwować sztuki
+    const { data: product, error: updateError } = await supabase.rpc(
+      "reserve_variant_stock",
+      {
+        p_slug: slug,
+        p_variant_color: item.variantColor,
+        p_quantity: item.quantity,
+      }
+    );
     
-    if (productError || !product) {
-      console.error(`[orders-api] Failed to fetch product ${slug}:`, productError);
+    if (updateError) {
+      console.error(`[orders-api] Stock reservation failed for ${slug}:`, updateError);
       return NextResponse.json(
-        { error: "Produkt nie jest dostępny" },
+        { 
+          error: `Produktu w wariancie "${item.variantColor}" nie ma wystarczającej ilości.`,
+          code: "OUT_OF_STOCK",
+          details: updateError.message,
+        },
         { status: 400 }
       );
     }
     
-    const stock = (product.variant_stock as Record<string, number>) ?? {};
-    const available = stock[item.variantColor] ?? 0;
-    
-    if (item.quantity > available) {
+    // RPC zwraca nowy stan lub null jeśli nie udało się zarezerwować
+    const newStock = product as number | null;
+    if (newStock === null) {
+      // Pobierz aktualny stan dla komunikatu błędu
+      const { data: currentProduct } = await supabase
+        .from("shop_products")
+        .select("variant_stock")
+        .eq("slug", slug)
+        .maybeSingle();
+      
+      const stock = (currentProduct?.variant_stock as Record<string, number>) ?? {};
+      const available = stock[item.variantColor] ?? 0;
+      
       return NextResponse.json(
         { 
           error: `Produktu w wariancie "${item.variantColor}" pozostało tylko ${available} szt.`,

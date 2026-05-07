@@ -78,25 +78,8 @@ export async function POST(req: Request) {
 
   // Oznacz jako PAID
   await supabase.from("orders").update({ status: "PAID" }).eq("id", orderId);
-
-  // Dekrementacja stanu magazynowego dla wariantu (tylko shop products)
-  if (orderRow.product_id?.startsWith("shop:") && orderRow.variant_color) {
-    const slug = orderRow.product_id.slice("shop:".length);
-    const { data: product } = await supabase
-      .from("shop_products")
-      .select("variant_stock")
-      .eq("slug", slug)
-      .maybeSingle();
-    if (product && product.variant_stock) {
-      const stock = product.variant_stock as Record<string, number>;
-      const current = stock[orderRow.variant_color] ?? 0;
-      const newQty = Math.max(0, current - (orderRow.quantity ?? 1));
-      await supabase
-        .from("shop_products")
-        .update({ variant_stock: { ...stock, [orderRow.variant_color]: newQty } })
-        .eq("slug", slug);
-    }
-  }
+  
+  // Stan magazynowy został już zdekrementowany atomowo w /api/orders przy tworzeniu zamówienia
 
   // Jeśli użyto kodu rabatowego — zapisz użycie i zainkrementuj licznik.
   if (orderRow.discount_code_id) {
