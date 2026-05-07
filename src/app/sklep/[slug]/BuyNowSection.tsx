@@ -20,12 +20,16 @@ export function BuyNowSection({
   priceGrosze,
   cover,
   variants,
+  showVariantStock = false,
+  variantStockMap = {},
 }: {
   slug: string;
   title: string;
   priceGrosze: number;
   cover: string | null;
   variants: Variants;
+  showVariantStock?: boolean;
+  variantStockMap?: Record<string, number>;
 }) {
   const router = useRouter();
   const add = useCart((s) => s.add);
@@ -83,28 +87,46 @@ export function BuyNowSection({
             <span className="text-muted-foreground">
               {cupColors.find((c) => c.id === color)?.name ?? ""}
             </span>
+            {showVariantStock && color && (() => {
+              const s = variantStockMap[color];
+              if (s === undefined) return null;
+              return (
+                <span className={`ml-2 text-xs font-normal ${
+                  s === 0 ? "text-destructive" : "text-muted-foreground"
+                }`}>
+                  {s === 0 ? "— brak na stanie" : `— ${s} szt. dostępnych`}
+                </span>
+              );
+            })()}
           </p>
           <div className="flex flex-wrap gap-3">
-            {cupColors.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => setColor(c.id)}
-                aria-label={c.name}
-                title={c.name}
-                className={`relative h-16 w-16 overflow-hidden rounded-xl border-2 transition ${
-                  color === c.id
-                    ? "border-primary ring-2 ring-primary/40"
-                    : "border-border hover:border-primary/50"
-                }`}
-              >
-                {c.imageUrl ? (
-                  <Image src={c.imageUrl} alt={c.name} fill className="object-cover" unoptimized />
-                ) : (
-                  <span className="flex h-full items-center justify-center text-[10px] text-muted-foreground">{c.name}</span>
-                )}
-              </button>
-            ))}
+            {cupColors.map((c) => {
+              const stock = variantStockMap[c.id];
+              const outOfStock = showVariantStock && stock === 0;
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => setColor(c.id)}
+                  aria-label={c.name}
+                  title={outOfStock ? `${c.name} — brak na stanie` : c.name}
+                  disabled={outOfStock}
+                  className={`relative h-16 w-16 overflow-hidden rounded-xl border-2 transition ${
+                    outOfStock
+                      ? "cursor-not-allowed border-border opacity-40"
+                      : color === c.id
+                        ? "border-primary ring-2 ring-primary/40"
+                        : "border-border hover:border-primary/50"
+                  }`}
+                >
+                  {c.imageUrl ? (
+                    <Image src={c.imageUrl} alt={c.name} fill className="object-cover" unoptimized />
+                  ) : (
+                    <span className="flex h-full items-center justify-center text-[10px] text-muted-foreground">{c.name}</span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
       )}

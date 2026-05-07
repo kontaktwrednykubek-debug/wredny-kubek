@@ -11,6 +11,7 @@ export type CupColorVariant = {
   name: string;
   image_url: string | null;
   sort_order: number;
+  stock_count: number;
 };
 
 const inputCls =
@@ -94,6 +95,9 @@ function VariantCard({
   const [editing, setEditing] = React.useState(false);
   const [name, setName] = React.useState(variant.name);
   const [saving, setSaving] = React.useState(false);
+  const [editingStock, setEditingStock] = React.useState(false);
+  const [stockVal, setStockVal] = React.useState(String(variant.stock_count));
+  const [savingStock, setSavingStock] = React.useState(false);
   const [uploading, setUploading] = React.useState(false);
   const fileRef = React.useRef<HTMLInputElement>(null);
 
@@ -110,6 +114,23 @@ function VariantCard({
     } finally {
       setSaving(false);
       setEditing(false);
+    }
+  }
+
+  async function saveStock() {
+    const n = parseInt(stockVal, 10);
+    if (isNaN(n) || n < 0) { setEditingStock(false); setStockVal(String(variant.stock_count)); return; }
+    setSavingStock(true);
+    try {
+      await fetch(`/api/cup-variants/${variant.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stockCount: n }),
+      });
+      onSaved();
+    } finally {
+      setSavingStock(false);
+      setEditingStock(false);
     }
   }
 
@@ -166,6 +187,40 @@ function VariantCard({
             onChange={(e) => uploadImage(e.target.files)}
           />
         </label>
+      </div>
+
+      {/* Stan magazynowy */}
+      <div className="flex items-center justify-between border-t border-border/50 px-3 py-2 text-xs">
+        <span className="text-muted-foreground">Na stanie:</span>
+        {editingStock ? (
+          <div className="flex items-center gap-1">
+            <input
+              autoFocus
+              type="number"
+              min={0}
+              value={stockVal}
+              onChange={(e) => setStockVal(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") void saveStock();
+                if (e.key === "Escape") { setStockVal(String(variant.stock_count)); setEditingStock(false); }
+              }}
+              className="w-16 rounded border border-input bg-background px-1.5 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+            />
+            <button onClick={() => void saveStock()} disabled={savingStock} className="rounded p-0.5 text-primary hover:bg-primary/10">
+              {savingStock ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => { setStockVal(String(variant.stock_count)); setEditingStock(true); }}
+            className="flex items-center gap-1 rounded px-1 hover:bg-muted"
+          >
+            <span className={`font-semibold ${
+              variant.stock_count === 0 ? "text-destructive" : "text-foreground"
+            }`}>{variant.stock_count} szt.</span>
+            <Pencil className="h-2.5 w-2.5 text-muted-foreground" />
+          </button>
+        )}
       </div>
 
       {/* Nazwa + akcje */}

@@ -36,6 +36,7 @@ export type ProductInitial = {
   variants: Variants;
   rating: number;
   reviews_count: number;
+  show_variant_stock: boolean;
 };
 
 const CONDITIONS = ["Nowy", "Używany"] as const;
@@ -70,6 +71,9 @@ export function ProductForm({
     initial?.description ?? "",
   );
   const [body, setBody] = React.useState(initial?.body ?? "");
+  const [showVariantStock, setShowVariantStock] = React.useState(
+    initial?.show_variant_stock ?? false,
+  );
   const [category, setCategory] = React.useState(initial?.category ?? "merch");
   const [priceZl, setPriceZl] = React.useState(
     initial ? (initial.price_grosze / 100).toFixed(2) : "",
@@ -247,6 +251,7 @@ export function ProductForm({
       title,
       description,
       body,
+      showVariantStock,
       category,
       priceGrosze: priceGr,
       images,
@@ -572,6 +577,23 @@ export function ProductForm({
             </div>
           )}
         </div>
+
+        {/* Checkbox: pokaż stan na stronie klienta */}
+        <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border/60 p-4 hover:bg-muted/30">
+          <input
+            type="checkbox"
+            checked={showVariantStock}
+            onChange={(e) => setShowVariantStock(e.target.checked)}
+            className="mt-0.5 h-4 w-4 accent-primary"
+          />
+          <div>
+            <p className="text-sm font-medium">Pokaż dostępność kolorów klientom</p>
+            <p className="text-xs text-muted-foreground">
+              Jeśli włączone, klient zobaczy ile sztuk danego koloru pozostało na
+              stanie. Stan ustawiasz w zakładce <strong>Warianty</strong>.
+            </p>
+          </div>
+        </label>
       </fieldset>
 
       {/* Dane techniczne */}

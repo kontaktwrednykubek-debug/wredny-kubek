@@ -49,6 +49,7 @@ const createSchema = z.object({
   variants: variantsSchema,
   rating: z.number().min(0).max(5).default(0),
   reviewsCount: z.number().int().min(0).default(0),
+  showVariantStock: z.boolean().default(false),
 });
 
 async function requireAdmin() {
@@ -98,6 +99,7 @@ export async function POST(req: Request) {
       variants: p.variants,
       rating: p.rating,
       reviews_count: p.reviewsCount,
+      show_variant_stock: p.showVariantStock,
     })
     .select("id, slug")
     .single();

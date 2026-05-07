@@ -70,6 +70,7 @@ const updateSchema = z.object({
   rating: z.number().min(0).max(5).optional(),
   reviewsCount: z.number().int().min(0).optional(),
   isPublished: z.boolean().optional(),
+  showVariantStock: z.boolean().optional(),
 });
 
 /**
@@ -106,6 +107,7 @@ export async function PATCH(
   if (p.rating !== undefined) update.rating = p.rating;
   if (p.reviewsCount !== undefined) update.reviews_count = p.reviewsCount;
   if (p.isPublished !== undefined) update.is_published = p.isPublished;
+  if (p.showVariantStock !== undefined) update.show_variant_stock = p.showVariantStock;
 
   const { data, error } = await auth.supabase
     .from("shop_products")

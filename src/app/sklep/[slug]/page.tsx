@@ -38,7 +38,7 @@ export default async function ProductDetailsPage({
   const { data: product } = await supabase
     .from("shop_products")
     .select(
-      "slug, title, description, body, category, price_grosze, images, specs, variants, rating, reviews_count",
+      "slug, title, description, body, category, price_grosze, images, specs, variants, rating, reviews_count, show_variant_stock",
     )
     .eq("slug", params.slug)
     .eq("is_published", true)
@@ -51,6 +51,21 @@ export default async function ProductDetailsPage({
   const variants = (product.variants as Variants) ?? {};
   const rating = Number(product.rating ?? 0);
   const body = (product.body as string | null) ?? null;
+  const showVariantStock = Boolean(product.show_variant_stock);
+
+  // Jeśli pokaż stan - pobieramy stock_count dla kolorów powiązanych z produktem
+  const cupColorIds = (variants.cupColors ?? []).map((c) => c.id);
+  let variantStockMap: Record<string, number> = {};
+  if (showVariantStock && cupColorIds.length > 0) {
+    const supabase2 = createSupabaseServerClient();
+    const { data: stockRows } = await supabase2
+      .from("cup_color_variants")
+      .select("id, stock_count")
+      .in("id", cupColorIds);
+    for (const row of stockRows ?? []) {
+      variantStockMap[row.id as string] = (row.stock_count as number) ?? 0;
+    }
+  }
 
   return (
     <section className="container mx-auto max-w-6xl px-4 py-8">
@@ -149,6 +164,8 @@ export default async function ProductDetailsPage({
               priceGrosze={product.price_grosze}
               cover={images[0] ?? null}
               variants={variants}
+              showVariantStock={showVariantStock}
+              variantStockMap={variantStockMap}
             />
           )}
         </div>
