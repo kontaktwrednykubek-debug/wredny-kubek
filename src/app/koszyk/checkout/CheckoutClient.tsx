@@ -216,6 +216,13 @@ export function CheckoutClient({
             previewUrl: i.previewUrl ?? null,
           };
           console.log("[CheckoutClient] Item payload:", item);
+          
+          // Validation: shop products must have variantColor
+          if (i.productId.startsWith("shop:") && !item.variantColor) {
+            console.error("[CheckoutClient] Shop product without variantColor:", i);
+            throw new Error(`Produkt "${i.label}" wymaga wyboru wariantu koloru. Usuń go z koszyka i dodaj ponownie.`);
+          }
+          
           return item;
         }),
           discountCode: discount?.code ?? null,
