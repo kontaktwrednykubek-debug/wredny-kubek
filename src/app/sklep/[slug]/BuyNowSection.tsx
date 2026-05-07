@@ -46,6 +46,18 @@ export function BuyNowSection({
   const [qty, setQty] = React.useState(1);
   const [added, setAdded] = React.useState(false);
 
+  // Maksymalna dostępna ilość dla wybranego koloru (tylko gdy showVariantStock)
+  const maxQty = React.useMemo(() => {
+    if (!showVariantStock || !color) return 999;
+    const s = variantStockMap[color];
+    return typeof s === "number" ? Math.max(0, s) : 999;
+  }, [showVariantStock, color, variantStockMap]);
+
+  // Gdy zmieniony kolor → przytnij qty do nowego limitu
+  React.useEffect(() => {
+    setQty((q) => Math.min(q, Math.max(1, maxQty)));
+  }, [maxQty]);
+
   function buildLabel(): string {
     const parts: string[] = [title];
     if (color) {
@@ -203,7 +215,14 @@ export function BuyNowSection({
       )}
 
       <div>
-        <p className="mb-2 text-sm font-medium">Ilość</p>
+        <p className="mb-2 text-sm font-medium">
+          Ilość
+          {showVariantStock && maxQty < 999 && (
+            <span className="ml-2 text-xs font-normal text-muted-foreground">
+              (max {maxQty} szt.)
+            </span>
+          )}
+        </p>
         <div className="inline-flex items-center rounded-lg border border-border">
           <button
             type="button"
@@ -218,8 +237,9 @@ export function BuyNowSection({
           </span>
           <button
             type="button"
-            onClick={() => setQty((q) => Math.min(999, q + 1))}
-            className="px-3 py-2 text-lg hover:bg-muted"
+            onClick={() => setQty((q) => Math.min(maxQty, q + 1))}
+            disabled={qty >= maxQty}
+            className="px-3 py-2 text-lg hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
             aria-label="Więcej"
           >
             +
