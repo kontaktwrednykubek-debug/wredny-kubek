@@ -205,7 +205,8 @@ export function CheckoutClient({
             parcelCode: form.parcelCode || undefined,
             note: form.note || undefined,
           },
-          items: items.map((i) => ({
+          items: items.map((i) => {
+          const item = {
             designId: i.designId,
             productId: i.productId,
             label: i.label,
@@ -213,7 +214,10 @@ export function CheckoutClient({
             quantity: i.quantity,
             unitPriceGr: i.unitPriceGr,
             previewUrl: i.previewUrl ?? null,
-          })),
+          };
+          console.log("[CheckoutClient] Item payload:", item);
+          return item;
+        }),
           discountCode: discount?.code ?? null,
         }),
       });
