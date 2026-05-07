@@ -173,49 +173,23 @@ export function ShopFilters({
         <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
           Cena
         </h3>
-        <div className="space-y-3">
-          <div className="flex items-center justify-between text-sm">
-            <span className="font-semibold">{formatPrice(minGr)}</span>
-            <span className="text-muted-foreground">—</span>
-            <span className="font-semibold">{formatPrice(maxGr)}</span>
+        <div className="space-y-4">
+          {/* Etykiety min/max po bokach */}
+          <div className="flex items-center justify-between text-sm font-semibold">
+            <span className="text-primary">{formatPrice(minGr)}</span>
+            <span className="text-primary">{formatPrice(maxGr)}</span>
           </div>
 
-          <div className="space-y-2">
-            <label className="block">
-              <span className="mb-1 block text-xs text-muted-foreground">
-                Od (zł)
-              </span>
-              <input
-                type="range"
-                min={globalMinGr}
-                max={globalMaxGr}
-                step={100}
-                value={minGr}
-                onChange={(e) => {
-                  const v = parseInt(e.target.value, 10);
-                  setMinGr(Math.min(v, maxGr - 100));
-                }}
-                className="w-full accent-primary"
-              />
-            </label>
-            <label className="block">
-              <span className="mb-1 block text-xs text-muted-foreground">
-                Do (zł)
-              </span>
-              <input
-                type="range"
-                min={globalMinGr}
-                max={globalMaxGr}
-                step={100}
-                value={maxGr}
-                onChange={(e) => {
-                  const v = parseInt(e.target.value, 10);
-                  setMaxGr(Math.max(v, minGr + 100));
-                }}
-                className="w-full accent-primary"
-              />
-            </label>
-          </div>
+          {/* Dual-range: dwa inputy nałożone na siebie */}
+          <DualRange
+            min={globalMinGr}
+            max={globalMaxGr}
+            step={100}
+            valueMin={minGr}
+            valueMax={maxGr}
+            onChangeMin={(v: number) => setMinGr(v)}
+            onChangeMax={(v: number) => setMaxGr(v)}
+          />
 
           <button
             onClick={applyPrice}
@@ -270,5 +244,75 @@ export function ShopFilters({
         </div>
       )}
     </>
+  );
+}
+
+function DualRange({
+  min,
+  max,
+  step,
+  valueMin,
+  valueMax,
+  onChangeMin,
+  onChangeMax,
+}: {
+  min: number;
+  max: number;
+  step: number;
+  valueMin: number;
+  valueMax: number;
+  onChangeMin: (v: number) => void;
+  onChangeMax: (v: number) => void;
+}) {
+  const range = max - min || 1;
+  const leftPct = ((valueMin - min) / range) * 100;
+  const rightPct = ((valueMax - min) / range) * 100;
+
+  const thumbCls =
+    "pointer-events-none absolute inset-0 h-full w-full cursor-pointer appearance-none bg-transparent " +
+    "[&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 " +
+    "[&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full " +
+    "[&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-primary " +
+    "[&::-webkit-slider-thumb]:bg-background [&::-webkit-slider-thumb]:shadow-md " +
+    "[&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:w-5 " +
+    "[&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-2 " +
+    "[&::-moz-range-thumb]:border-primary [&::-moz-range-thumb]:bg-background [&::-moz-range-thumb]:appearance-none";
+
+  return (
+    <div className="relative h-6 w-full">
+      {/* Szara szyna */}
+      <div className="absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-muted" />
+      {/* Kolorowy zakres między uchwytami */}
+      <div
+        className="absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-primary"
+        style={{ left: `${leftPct}%`, right: `${100 - rightPct}%` }}
+      />
+      {/* Lewy uchwyt (min) */}
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={valueMin}
+        onChange={(e) => {
+          const v = parseInt(e.target.value, 10);
+          onChangeMin(Math.min(v, valueMax - step));
+        }}
+        className={thumbCls}
+      />
+      {/* Prawy uchwyt (max) */}
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={valueMax}
+        onChange={(e) => {
+          const v = parseInt(e.target.value, 10);
+          onChangeMax(Math.max(v, valueMin + step));
+        }}
+        className={thumbCls}
+      />
+    </div>
   );
 }
