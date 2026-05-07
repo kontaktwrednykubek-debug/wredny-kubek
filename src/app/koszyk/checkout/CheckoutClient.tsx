@@ -221,9 +221,19 @@ export function CheckoutClient({
         router.push("/login?next=/koszyk/checkout");
         return;
       }
+      const body = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        setError(err.error ?? "Nie udało się złożyć zamówienia");
+        // Specjalne traktowanie błędów stanu magazynowego
+        if (body.code === "OUT_OF_STOCK") {
+          setError(
+            `${body.error}\n\nDostępne: ${body.available} szt.\nPróbowałeś kupić: ${body.requested} szt.`
+          );
+        } else {
+          setError(
+            body.error ??
+              "Nie udało się rozpocząć płatności. Spróbuj ponownie.",
+          );
+        }
         return;
       }
       const { orderId } = await res.json();

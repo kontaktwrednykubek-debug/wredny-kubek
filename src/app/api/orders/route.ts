@@ -68,21 +68,38 @@ export async function POST(req: Request) {
   const { shipping, items, discountCode } = parsed.data;
 
   // Walidacja stanu magazynowego dla każdego wariantu (tylko shop products)
+  // UWAGA: Zawsze pobieramy świeży stan z bazy - nie ufamy propsom z frontendu
   for (const item of items) {
     if (!item.productId.startsWith("shop:")) continue;
     const slug = item.productId.slice("shop:".length);
     if (!item.variantColor) continue;
-    const { data: product } = await supabase
+    
+    // Pobierz aktualny stan magazynowy (świeży z bazy)
+    const { data: product, error: productError } = await supabase
       .from("shop_products")
       .select("variant_stock")
       .eq("slug", slug)
       .maybeSingle();
-    if (!product) continue;
+    
+    if (productError || !product) {
+      console.error(`[orders-api] Failed to fetch product ${slug}:`, productError);
+      return NextResponse.json(
+        { error: "Produkt nie jest dostępny" },
+        { status: 400 }
+      );
+    }
+    
     const stock = (product.variant_stock as Record<string, number>) ?? {};
     const available = stock[item.variantColor] ?? 0;
+    
     if (item.quantity > available) {
       return NextResponse.json(
-        { error: `Produktu w wariancie "${item.variantColor}" pozostało tylko ${available} szt.` },
+        { 
+          error: `Produktu w wariancie "${item.variantColor}" pozostało tylko ${available} szt.`,
+          code: "OUT_OF_STOCK",
+          available,
+          requested: item.quantity,
+        },
         { status: 400 }
       );
     }
