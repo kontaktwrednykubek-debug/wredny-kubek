@@ -63,6 +63,7 @@ export function CartClient() {
                     variant="outline"
                     size="icon"
                     onClick={() => setQuantity(item.id, item.quantity - 1)}
+                    disabled={item.quantity <= 1}
                     aria-label="Mniej"
                   >
                     <Minus className="h-4 w-4" />
@@ -74,10 +75,16 @@ export function CartClient() {
                     variant="outline"
                     size="icon"
                     onClick={() => setQuantity(item.id, item.quantity + 1)}
+                    disabled={item.maxQty !== undefined && item.quantity >= item.maxQty}
                     aria-label="Więcej"
                   >
                     <Plus className="h-4 w-4" />
                   </Button>
+                  {item.maxQty !== undefined && (
+                    <span className="text-xs text-muted-foreground">
+                      max {item.maxQty} szt.
+                    </span>
+                  )}
                 </div>
               </div>
               <div className="text-right">

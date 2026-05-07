@@ -77,6 +77,7 @@ export function BuyNowSection({
       previewUrl: cover ?? undefined,
       label: buildLabel(),
       quantity: qty,
+      maxQty: maxQty < 999 ? maxQty : undefined,
       variant: {
         color: color ?? undefined,
         size: size ?? undefined,

@@ -14,6 +14,7 @@ export type CartItem = {
   previewUrl?: string;
   label: string;
   variant?: { color?: string; size?: string };
+  maxQty?: number;
 };
 
 type CartState = {
@@ -43,9 +44,11 @@ export const useCart = create<CartState>()(
         }),
       setQuantity: (id, quantity) =>
         set((state) => ({
-          items: state.items.map((i) =>
-            i.id === id ? { ...i, quantity: Math.max(1, quantity) } : i,
-          ),
+          items: state.items.map((i) => {
+            if (i.id !== id) return i;
+            const max = i.maxQty ?? 999;
+            return { ...i, quantity: Math.min(max, Math.max(1, quantity)) };
+          }),
         })),
       remove: (id) =>
         set((state) => ({ items: state.items.filter((i) => i.id !== id) })),
