@@ -585,23 +585,39 @@ export function ProductForm({
 
         {/* Ilość na stanie per kolor */}
         {selectedCupColorIds.length > 0 && (
-          <div>
-            <p className="mb-2 text-sm font-medium">
-              Ilość na stanie dla każdego koloru
-            </p>
+          <div className="rounded-2xl border-2 border-primary/40 bg-primary/5 p-4">
+            <div className="mb-3">
+              <p className="text-sm font-semibold text-primary">
+                📦 Stan magazynowy dla każdego koloru
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Wpisz ile sztuk masz dostępnych w każdym kolorze. Klient nie
+                będzie mógł zamówić więcej niż wpisana liczba.
+              </p>
+            </div>
             <div className="space-y-2">
               {cupColorVariants
                 .filter((v) => selectedCupColorIds.includes(v.id))
                 .map((v) => (
-                  <div key={v.id} className="flex items-center gap-3 rounded-xl border border-border/60 bg-muted/20 px-3 py-2">
-                    {v.image_url && (
-                      <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-lg">
-                        <Image src={v.image_url} alt={v.name} fill className="object-cover" unoptimized />
+                  <div
+                    key={v.id}
+                    className="flex items-center gap-3 rounded-xl border border-border bg-card px-3 py-2"
+                  >
+                    {v.image_url ? (
+                      <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg">
+                        <Image
+                          src={v.image_url}
+                          alt={v.name}
+                          fill
+                          className="object-cover"
+                          unoptimized
+                        />
                       </div>
+                    ) : (
+                      <div className="h-10 w-10 shrink-0 rounded-lg bg-muted" />
                     )}
                     <span className="flex-1 text-sm font-medium">{v.name}</span>
-                    <div className="flex items-center gap-1.5">
-                      <label className="text-xs text-muted-foreground">szt.:</label>
+                    <div className="flex items-center gap-2">
                       <input
                         type="number"
                         min={0}
@@ -614,8 +630,9 @@ export function ProductForm({
                             [v.id]: isNaN(n) ? 0 : Math.max(0, n),
                           }));
                         }}
-                        className="w-20 rounded-lg border border-input bg-background px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                        className="w-24 rounded-lg border-2 border-input bg-background px-3 py-1.5 text-sm font-semibold focus:border-primary focus:outline-none"
                       />
+                      <span className="text-xs text-muted-foreground">szt.</span>
                     </div>
                   </div>
                 ))}
