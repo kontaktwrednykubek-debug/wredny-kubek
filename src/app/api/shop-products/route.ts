@@ -50,6 +50,7 @@ const createSchema = z.object({
   rating: z.number().min(0).max(5).default(0),
   reviewsCount: z.number().int().min(0).default(0),
   showVariantStock: z.boolean().default(false),
+  variantStock: z.record(z.number().int().min(0)).default({}),
 });
 
 async function requireAdmin() {
@@ -100,6 +101,7 @@ export async function POST(req: Request) {
       rating: p.rating,
       reviews_count: p.reviewsCount,
       show_variant_stock: p.showVariantStock,
+      variant_stock: p.variantStock,
     })
     .select("id, slug")
     .single();

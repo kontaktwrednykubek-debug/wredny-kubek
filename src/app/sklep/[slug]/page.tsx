@@ -38,7 +38,7 @@ export default async function ProductDetailsPage({
   const { data: product } = await supabase
     .from("shop_products")
     .select(
-      "slug, title, description, body, category, price_grosze, images, specs, variants, rating, reviews_count, show_variant_stock",
+      "slug, title, description, body, category, price_grosze, images, specs, variants, rating, reviews_count, show_variant_stock, variant_stock",
     )
     .eq("slug", params.slug)
     .eq("is_published", true)
@@ -52,20 +52,9 @@ export default async function ProductDetailsPage({
   const rating = Number(product.rating ?? 0);
   const body = (product.body as string | null) ?? null;
   const showVariantStock = Boolean(product.show_variant_stock);
-
-  // Jeśli pokaż stan - pobieramy stock_count dla kolorów powiązanych z produktem
-  const cupColorIds = (variants.cupColors ?? []).map((c) => c.id);
-  let variantStockMap: Record<string, number> = {};
-  if (showVariantStock && cupColorIds.length > 0) {
-    const supabase2 = createSupabaseServerClient();
-    const { data: stockRows } = await supabase2
-      .from("cup_color_variants")
-      .select("id, stock_count")
-      .in("id", cupColorIds);
-    for (const row of stockRows ?? []) {
-      variantStockMap[row.id as string] = (row.stock_count as number) ?? 0;
-    }
-  }
+  // Per-product stock map (zapisany w variant_stock JSONB)
+  const variantStockMap: Record<string, number> =
+    (product.variant_stock as Record<string, number>) ?? {};
 
   return (
     <section className="container mx-auto max-w-6xl px-4 py-8">

@@ -37,6 +37,7 @@ export type ProductInitial = {
   rating: number;
   reviews_count: number;
   show_variant_stock: boolean;
+  variant_stock: Record<string, number>;
 };
 
 const CONDITIONS = ["Nowy", "Używany"] as const;
@@ -73,6 +74,9 @@ export function ProductForm({
   const [body, setBody] = React.useState(initial?.body ?? "");
   const [showVariantStock, setShowVariantStock] = React.useState(
     initial?.show_variant_stock ?? false,
+  );
+  const [variantStock, setVariantStock] = React.useState<Record<string, number>>(
+    initial?.variant_stock ?? {},
   );
   const [category, setCategory] = React.useState(initial?.category ?? "merch");
   const [priceZl, setPriceZl] = React.useState(
@@ -252,6 +256,7 @@ export function ProductForm({
       description,
       body,
       showVariantStock,
+      variantStock,
       category,
       priceGrosze: priceGr,
       images,
@@ -577,6 +582,46 @@ export function ProductForm({
             </div>
           )}
         </div>
+
+        {/* Ilość na stanie per kolor */}
+        {selectedCupColorIds.length > 0 && (
+          <div>
+            <p className="mb-2 text-sm font-medium">
+              Ilość na stanie dla każdego koloru
+            </p>
+            <div className="space-y-2">
+              {cupColorVariants
+                .filter((v) => selectedCupColorIds.includes(v.id))
+                .map((v) => (
+                  <div key={v.id} className="flex items-center gap-3 rounded-xl border border-border/60 bg-muted/20 px-3 py-2">
+                    {v.image_url && (
+                      <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-lg">
+                        <Image src={v.image_url} alt={v.name} fill className="object-cover" unoptimized />
+                      </div>
+                    )}
+                    <span className="flex-1 text-sm font-medium">{v.name}</span>
+                    <div className="flex items-center gap-1.5">
+                      <label className="text-xs text-muted-foreground">szt.:</label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={variantStock[v.id] ?? ""}
+                        placeholder="0"
+                        onChange={(e) => {
+                          const n = parseInt(e.target.value, 10);
+                          setVariantStock((prev) => ({
+                            ...prev,
+                            [v.id]: isNaN(n) ? 0 : Math.max(0, n),
+                          }));
+                        }}
+                        className="w-20 rounded-lg border border-input bg-background px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                      />
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
 
         {/* Checkbox: pokaż stan na stronie klienta */}
         <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border/60 p-4 hover:bg-muted/30">
