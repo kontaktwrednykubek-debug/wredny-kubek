@@ -267,6 +267,7 @@ function VariantCard({
 function AddVariantForm({ onSaved, onCancel }: { onSaved: () => void; onCancel: () => void }) {
   const [name, setName] = React.useState("");
   const [imageUrl, setImageUrl] = React.useState<string | null>(null);
+  const [stockCount, setStockCount] = React.useState(0);
   const [uploading, setUploading] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -290,13 +291,14 @@ function AddVariantForm({ onSaved, onCancel }: { onSaved: () => void; onCancel: 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim()) { setError("Nazwa jest wymagana."); return; }
+    if (stockCount < 0) { setError("Ilość nie może być ujemna."); return; }
     setError(null);
     setSaving(true);
     try {
       const res = await fetch("/api/cup-variants", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), imageUrl }),
+        body: JSON.stringify({ name: name.trim(), imageUrl, stockCount }),
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
@@ -330,13 +332,23 @@ function AddVariantForm({ onSaved, onCancel }: { onSaved: () => void; onCancel: 
             {uploading ? "Wysyłanie..." : "Dodaj zdjęcie kubka"}
             <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => uploadImage(e.target.files)} />
           </label>
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Nazwa koloru (np. Biały, Czarny, Różowy)"
-            required
-            className={inputCls}
-          />
+          <div className="space-y-2">
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Nazwa koloru (np. Biały, Czarny, Różowy)"
+              required
+              className={inputCls}
+            />
+            <input
+              type="number"
+              min={0}
+              value={stockCount}
+              onChange={(e) => setStockCount(parseInt(e.target.value) || 0)}
+              placeholder="Ilość na stanie"
+              className={inputCls}
+            />
+          </div>
         </div>
       </div>
 

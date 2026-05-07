@@ -19,20 +19,11 @@ export async function GET(
     return NextResponse.json({ error: "Product not found" }, { status: 404 });
   }
   
-  // Get variants with stock counts for this specific product
+  // Get all cup variants with their global stock counts
   const { data, error } = await supabase
-    .from("product_variants")
-    .select(`
-      stock_count,
-      cup_color_variants!inner(
-        id,
-        name,
-        image_url,
-        sort_order
-      )
-    `)
-    .eq("product_id", product.id)
-    .order("cup_color_variants(sort_order)", { ascending: true });
+    .from("cup_color_variants")
+    .select("id, name, image_url, sort_order, stock_count")
+    .order("sort_order", { ascending: true });
     
   if (error) {
     console.error("[product-variants] Error:", error);
@@ -41,10 +32,10 @@ export async function GET(
   
   // Transform data to match expected format
   const variants = data?.map((item: any) => ({
-    id: item.cup_color_variants.id,
-    name: item.cup_color_variants.name,
-    imageUrl: item.cup_color_variants.image_url,
-    sortOrder: item.cup_color_variants.sort_order,
+    id: item.id,
+    name: item.name,
+    imageUrl: item.image_url,
+    sortOrder: item.sort_order,
     stockCount: item.stock_count,
   })) ?? [];
   
