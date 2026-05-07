@@ -2,13 +2,18 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Trash2, Minus, Plus, ShoppingBag } from "lucide-react";
+import { Trash2, Minus, Plus, ShoppingBag, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCart, cartTotalGr } from "@/features/cart/useCart";
 import { formatPrice } from "@/lib/utils";
 
 export function CartClient() {
   const { items, setQuantity, remove, clear } = useCart();
+  
+  // Check for shop items without variants
+  const itemsWithoutVariant = items.filter(
+    item => item.productId.startsWith("shop:") && !item.variant?.color
+  );
 
   if (items.length === 0) {
     return (
@@ -30,6 +35,27 @@ export function CartClient() {
   return (
     <section className="container mx-auto max-w-4xl px-4 py-10">
       <h1 className="mb-6 text-3xl font-bold">Twój koszyk</h1>
+      
+      {/* Warning for items without variants */}
+      {itemsWithoutVariant.length > 0 && (
+        <div className="mb-6 rounded-2xl border border-destructive/50 bg-destructive/10 p-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 shrink-0 text-destructive" />
+            <div className="flex-1">
+              <p className="font-semibold text-destructive">Niektóre produkty wymagają wyboru wariantu koloru</p>
+              <p className="mt-1 text-sm text-destructive/80">
+                {itemsWithoutVariant.length} {itemsWithoutVariant.length === 1 ? 'produkt' : 'produkty'} w koszyku nie ma wybranego koloru. Usuń je i dodaj ponownie z wybranym wariantem.
+              </p>
+              <button
+                onClick={() => itemsWithoutVariant.forEach(item => remove(item.id))}
+                className="mt-2 text-sm font-semibold text-destructive hover:underline"
+              >
+                Usuń te produkty ({itemsWithoutVariant.length})
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
         <div className="space-y-3">
@@ -128,8 +154,15 @@ export function CartClient() {
             <span className="text-primary">{formatPrice(total)}</span>
           </div>
           <Link href="/koszyk/checkout" className="mt-5 block">
-            <Button className="w-full" size="lg">
-              Przejdź do zamówienia
+            <Button 
+              className="w-full" 
+              size="lg"
+              disabled={itemsWithoutVariant.length > 0}
+            >
+              {itemsWithoutVariant.length > 0 
+                ? "Usuń produkty bez wariantu" 
+                : "Przejdź do zamówienia"
+              }
             </Button>
           </Link>
           <Link

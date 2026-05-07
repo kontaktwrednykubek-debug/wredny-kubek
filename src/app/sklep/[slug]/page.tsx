@@ -57,7 +57,7 @@ export default async function ProductDetailsPage({
     (product.variant_stock as Record<string, number>) ?? {};
 
   return (
-    <section className="container mx-auto max-w-6xl px-4 py-6 sm:py-8">
+    <section className="container mx-auto max-w-6xl px-4 py-6 sm:py-8 mx-4 sm:mx-0">
       <BackLink href="/sklep" label="Wróć do sklepu" />
 
       <div className="grid gap-6 lg:gap-8 lg:grid-cols-2">
