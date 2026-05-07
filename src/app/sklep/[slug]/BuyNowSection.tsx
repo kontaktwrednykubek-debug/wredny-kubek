@@ -3,7 +3,7 @@
 import * as React from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ShoppingCart, Check } from "lucide-react";
+import { ShoppingCart, Check, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/features/cart/useCart";
 
@@ -33,6 +33,7 @@ export function BuyNowSection({
 }) {
   const router = useRouter();
   const add = useCart((s) => s.add);
+  const { items, setQuantity } = useCart();
   const colors = variants.colors ?? [];
   const cupColors = variants.cupColors ?? [];
   const capacities = variants.capacities ?? [];
@@ -57,6 +58,32 @@ export function BuyNowSection({
   React.useEffect(() => {
     setQty((q) => Math.min(q, Math.max(1, maxQty)));
   }, [maxQty]);
+
+  // Aktualizuj maxQty w istniejących itemach w koszyku gdy zmieni się wariant
+  React.useEffect(() => {
+    if (!color) return;
+    items.forEach((item) => {
+      if (item.productId === `shop:${slug}` && item.variant?.color !== color) {
+        setQuantity(item.id, item.quantity); // wyzwalaczy clamp z nowym maxQty
+      }
+    });
+  }, [color, slug, items, setQuantity]);
+
+  // Synchronizacja stanu magazynowego między kartami
+  React.useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === `stock-update-${slug}` && e.newValue) {
+        const data = JSON.parse(e.newValue);
+        if (data.variantStockMap) {
+          // Trigger re-render by forcing variantStockMap update via parent
+          // Since we can't mutate props, we'll just log for now; real sync needs parent state
+          console.log(`Stock updated for ${slug}:`, data.variantStockMap);
+        }
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [slug]);
 
   function buildLabel(): string {
     const parts: string[] = [title];
@@ -218,13 +245,18 @@ export function BuyNowSection({
       <div>
         <p className="mb-2 text-sm font-medium">
           Ilość
-          {showVariantStock && maxQty < 999 && (
-            <span className="ml-2 text-xs font-normal text-muted-foreground">
-              (max {maxQty} szt.)
-            </span>
-          )}
         </p>
-        <div className="inline-flex items-center rounded-lg border border-border">
+        {showVariantStock && maxQty < 999 && (
+          <div className="mb-3 flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-3 py-2">
+            <Package className="h-4 w-4 text-primary" />
+            <span className="text-sm font-medium text-primary">
+              Dostępnych sztuk: <span className="font-bold">{maxQty}</span>
+            </span>
+          </div>
+        )}
+        <div className={`inline-flex items-center rounded-lg border ${
+          showVariantStock && maxQty < 999 ? "border-primary/40" : "border-border"
+        }`}>
           <button
             type="button"
             onClick={() => setQty((q) => Math.max(1, q - 1))}
@@ -240,7 +272,9 @@ export function BuyNowSection({
             type="button"
             onClick={() => setQty((q) => Math.min(maxQty, q + 1))}
             disabled={qty >= maxQty}
-            className="px-3 py-2 text-lg hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
+            className={`px-3 py-2 text-lg hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40 ${
+              qty >= maxQty ? "bg-muted text-muted-foreground" : ""
+            }`}
             aria-label="Więcej"
           >
             +
