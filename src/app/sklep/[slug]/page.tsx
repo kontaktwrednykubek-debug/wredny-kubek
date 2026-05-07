@@ -72,39 +72,14 @@ export default async function ProductDetailsPage({
       <BackLink href="/sklep" label="Wróć do sklepu" />
 
       <div className="grid gap-8 lg:grid-cols-2">
-        {/* Lewa kolumna: galeria → opis → dane techniczne */}
-        <div className="flex flex-col gap-6">
+        {/* Lewa kolumna: tylko galeria */}
+        <div>
           <ProductGalleryClient images={images} title={product.title} />
-          {body && (
-            <div className="rounded-2xl border border-border bg-card p-5">
-              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                Opis produktu
-              </h2>
-              <p className="whitespace-pre-line text-sm leading-relaxed text-foreground/80">{body}</p>
-            </div>
-          )}
-          {Object.keys(specs).length > 0 && (
-            <div className="rounded-2xl border border-border bg-card p-5">
-              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                Dane techniczne
-              </h2>
-              <dl className="grid gap-2 text-sm">
-                {Object.entries(specs).map(([k, v]) => (
-                  <div
-                    key={k}
-                    className="flex justify-between gap-3 border-b border-border/50 py-1.5 last:border-b-0"
-                  >
-                    <dt className="text-muted-foreground">{k}</dt>
-                    <dd className="text-right font-medium">{v}</dd>
-                  </div>
-                ))}
-              </dl>
-            </div>
-          )}
         </div>
 
-        {/* Prawa kolumna: tytuł, cena, warianty, przyciski */}
-        <div className="space-y-5">
+        {/* Prawa kolumna (mobile: pod galerią): tytuł → opinie → cena → warianty/kup → opis → dane techniczne */}
+        <div className="flex flex-col gap-5">
+          {/* Tytuł + opinie */}
           <div>
             <h1 className="text-3xl font-bold tracking-tight">
               {product.title}
@@ -128,16 +103,19 @@ export default async function ProductDetailsPage({
             </div>
           </div>
 
+          {/* Cena */}
           <p className="text-3xl font-bold text-primary">
             {formatPrice(product.price_grosze)}
           </p>
 
+          {/* Krótki opis */}
           {product.description && (
             <p className="whitespace-pre-line text-muted-foreground">
               {product.description}
             </p>
           )}
 
+          {/* Warianty + kup teraz */}
           {product.category === "merch" ? (
             <div className="space-y-3 rounded-2xl border border-primary/30 bg-primary/5 p-5">
               <div className="flex items-start gap-3">
@@ -167,6 +145,36 @@ export default async function ProductDetailsPage({
               showVariantStock={showVariantStock}
               variantStockMap={variantStockMap}
             />
+          )}
+
+          {/* Długi opis produktu */}
+          {body && (
+            <div className="rounded-2xl border border-border bg-card p-5">
+              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                Opis produktu
+              </h2>
+              <p className="whitespace-pre-line text-sm leading-relaxed text-foreground/80">{body}</p>
+            </div>
+          )}
+
+          {/* Dane techniczne */}
+          {Object.keys(specs).length > 0 && (
+            <div className="rounded-2xl border border-border bg-card p-5">
+              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                Dane techniczne
+              </h2>
+              <dl className="grid gap-2 text-sm">
+                {Object.entries(specs).map(([k, v]) => (
+                  <div
+                    key={k}
+                    className="flex justify-between gap-3 border-b border-border/50 py-1.5 last:border-b-0"
+                  >
+                    <dt className="text-muted-foreground">{k}</dt>
+                    <dd className="text-right font-medium">{v}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
           )}
         </div>
       </div>
