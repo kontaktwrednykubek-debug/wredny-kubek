@@ -154,5 +154,32 @@ export async function PATCH(
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  // Sync variant_stock JSONB -> product_variants table (single source of truth for RPC)
+  if (p.variantStock !== undefined && data?.id) {
+    const variantStock = p.variantStock as Record<string, number>;
+    const variantIds = Object.keys(variantStock);
+    
+    if (variantIds.length > 0) {
+      // Upsert per-product stock for each variant
+      const rows = variantIds.map(variantId => ({
+        product_id: data.id,
+        variant_id: variantId,
+        stock_count: variantStock[variantId] ?? 0,
+        updated_at: new Date().toISOString(),
+      }));
+      
+      const { error: upsertErr } = await auth.supabase
+        .from("product_variants")
+        .upsert(rows, { onConflict: "product_id,variant_id" });
+      
+      if (upsertErr) {
+        console.error("[shop-products PATCH] Failed to sync product_variants:", upsertErr);
+      } else {
+        console.log("[shop-products PATCH] Synced", rows.length, "variants to product_variants table");
+      }
+    }
+  }
+
   return NextResponse.json({ product: data });
 }
