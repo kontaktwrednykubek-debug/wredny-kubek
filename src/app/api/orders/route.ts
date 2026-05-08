@@ -138,15 +138,26 @@ export async function POST(req: Request) {
     console.log(`[orders-api] New stock after reservation: ${newStock}`);
     
     if (newStock === null) {
-      // Pobierz aktualny stan dla komunikatu błędu
-      const { data: currentProduct } = await supabase
+      // Pobierz aktualny stan z TABEL (nie JSONB) - źródło prawdy
+      const { data: productRow } = await supabase
         .from("shop_products")
-        .select("variant_stock")
+        .select("id")
         .eq("slug", slug)
         .maybeSingle();
       
-      const stock = (currentProduct?.variant_stock as Record<string, number>) ?? {};
-      const available = stock[item.variantColor] ?? 0;
+      let available = 0;
+      if (productRow?.id) {
+        const [{ data: globalRow }, { data: perProductRow }] = await Promise.all([
+          supabase.from("cup_color_variants").select("stock_count").eq("id", item.variantColor).maybeSingle(),
+          supabase.from("product_variants").select("stock_count")
+            .eq("product_id", productRow.id)
+            .eq("variant_id", item.variantColor)
+            .maybeSingle(),
+        ]);
+        const global = globalRow?.stock_count ?? 0;
+        const perProduct = perProductRow?.stock_count ?? 999999;
+        available = Math.min(global, perProduct);
+      }
       
       console.log(`[orders-api] Out of stock - available: ${available}, requested: ${item.quantity}`);
       
