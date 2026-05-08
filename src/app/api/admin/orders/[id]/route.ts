@@ -56,3 +56,39 @@ export async function PATCH(
 
   return NextResponse.json({ ok: true });
 }
+
+/**
+ * DELETE /api/admin/orders/[id] — usunięcie zamówienia przez admina.
+ */
+export async function DELETE(
+  _req: Request,
+  { params }: { params: { id: string } },
+) {
+  const supabase = createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (profile?.role !== "ADMIN") {
+    return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
+
+  const { error } = await supabase
+    .from("orders")
+    .delete()
+    .eq("id", params.id);
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ ok: true });
+}

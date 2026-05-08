@@ -9,6 +9,7 @@ import {
   OrderThumbnail,
 } from "./OrderShippingActions";
 import { OrdersExport } from "./OrdersExport";
+import { DeleteOrderButton } from "./DeleteOrderButton";
 
 export const metadata = { title: "Zamówienia" };
 
@@ -135,11 +136,15 @@ export default async function AdminOrdersPage() {
                   </div>
                 </div>
 
-                <div className="mt-3 border-t border-border/50 pt-3">
+                <div className="mt-3 flex items-center justify-between border-t border-border/50 pt-3">
                   <OrderShippingActions
                     orderId={o.id}
                     shipping={(o.shipping_info ?? null) as never}
                     status={o.status}
+                  />
+                  <DeleteOrderButton
+                    orderId={o.id}
+                    orderLabel={(o.label as string | null) ?? o.product_id ?? "Zamówienie"}
                   />
                 </div>
               </article>
