@@ -106,7 +106,7 @@ export async function POST(req: Request) {
     // Użyj atomowej operacji UPDATE z warunkiem, aby zarezerwować sztuki
     console.log(`[orders-api] Calling RPC reserve_variant_stock with params:`, {
       p_slug: slug,
-      p_variant_color: item.variantColor,
+      p_variant_id: item.variantColor,
       p_quantity: item.quantity,
     });
     
@@ -114,7 +114,7 @@ export async function POST(req: Request) {
       "reserve_variant_stock",
       {
         p_slug: slug,
-        p_variant_color: item.variantColor,
+        p_variant_id: item.variantColor,
         p_quantity: item.quantity,
       }
     );
