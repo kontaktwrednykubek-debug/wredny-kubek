@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Button, Section, Text } from "@react-email/components";
+import { Link, Section, Text } from "@react-email/components";
 import { EmailShell, EMAIL_COLORS } from "./_shared";
 
 export type OrderEmailItem = {
@@ -58,7 +58,7 @@ export function OrderConfirmationEmail({
 
   return (
     <EmailShell
-      preview={`${firstName}, mamy to! Zamówienie #${orderShort} klepnięte. ☕🔥`}
+      preview={`Potwierdzenie zamówienia #${orderShort} — ${firstName}, zamówienie zostało przyjęte do realizacji.`}
       logoUrl={logoUrl}
     >
       <Section
@@ -449,22 +449,26 @@ export function OrderConfirmationEmail({
         </Text>
 
         {/* CTA */}
-        <div style={{ textAlign: "center", margin: "24px 0 8px" }}>
-          <Button
-            href={trackingUrl}
+        <div style={{ margin: "24px 0 8px" }}>
+          <Text
             style={{
-              backgroundColor: EMAIL_COLORS.primary,
-              color: "#0f0f0f",
-              padding: "14px 28px",
-              borderRadius: "8px",
-              fontWeight: "bold",
-              fontSize: "15px",
-              textDecoration: "none",
-              display: "inline-block",
+              fontSize: "14px",
+              color: EMAIL_COLORS.muted,
+              margin: "0 0 8px 0",
             }}
           >
-            Sprawdź status zamówienia →
-          </Button>
+            Śledź status zamówienia:
+          </Text>
+          <Link
+            href={trackingUrl}
+            style={{
+              color: EMAIL_COLORS.primary,
+              fontSize: "14px",
+              wordBreak: "break-all",
+            }}
+          >
+            {trackingUrl}
+          </Link>
         </div>
 
         <Text

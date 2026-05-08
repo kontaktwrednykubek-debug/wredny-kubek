@@ -127,8 +127,11 @@ export async function sendOrderConfirmationEmail(params: {
     from,
     to: resolveResendTo(params.to),
     bcc: adminEmail ? [adminEmail] : undefined,
-    subject: `Dziękujemy za zamówienie #${params.orderId.slice(0, 8).toUpperCase()} — Wredny Kubek`,
+    subject: `Zamówienie #${params.orderId.slice(0, 8).toUpperCase()} przyjęte — Wredny Kubek`,
     html,
+    headers: {
+      "X-Entity-Ref-ID": params.orderId,
+    },
   });
 
   if (result.error) {
