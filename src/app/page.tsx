@@ -121,35 +121,6 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* KARUZELA KATEGORII */}
-      {categoryCards.length > 0 && (
-        <section className="bg-muted/40">
-          <div className="container mx-auto px-5 py-14 sm:px-6 md:py-16 lg:px-10 xl:px-12">
-            <div className="mb-8 flex flex-col items-start gap-3 md:mb-10 md:flex-row md:items-end md:justify-between">
-              <div>
-                <span className="inline-block rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary">
-                  Kategorie
-                </span>
-                <h2 className="mt-3 text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl md:text-5xl">
-                  Wybierz swoją tematykę
-                </h2>
-                <p className="mt-3 max-w-2xl text-muted-foreground">
-                  Od popkultury po zodiak — znajdź kubek idealny dla siebie lub
-                  na prezent.
-                </p>
-              </div>
-              <Link
-                href="/sklep"
-                className="text-sm font-semibold text-primary underline-offset-4 hover:underline"
-              >
-                Zobacz sklep →
-              </Link>
-            </div>
-            <CategoryCarousel categories={categoryCards} />
-          </div>
-        </section>
-      )}
-
       {/* WREDNE HITY — polecane przez admina */}
       {featuredProducts.length > 0 && (
         <section className="bg-background">
@@ -178,33 +149,6 @@ export default async function HomePage() {
           </div>
         </section>
       )}
-
-      {/* KARUZELA PRODUKTÓW */}
-      <section className="bg-background">
-        <div className="container mx-auto px-5 py-14 sm:px-6 md:py-20 lg:px-10 xl:px-12">
-          <div className="mb-8 flex flex-col items-start gap-3 md:mb-10 md:flex-row md:items-end md:justify-between">
-            <div>
-              <span className="inline-block rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary">
-                Hit zamówień
-              </span>
-              <h2 className="mt-3 text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl md:text-5xl">
-                Kubki, które rozkochują od pierwszego łyka
-              </h2>
-              <p className="mt-3 max-w-2xl text-muted-foreground">
-                Sprawdź nasze najpopularniejsze projekty — gotowe pomysły na
-                prezent, idealne na urodziny, rocznicę albo „bez okazji".
-              </p>
-            </div>
-            <Link
-              href="/sklep"
-              className="text-sm font-semibold text-primary underline-offset-4 hover:underline"
-            >
-              Zobacz wszystkie →
-            </Link>
-          </div>
-          <ProductCarousel products={products} />
-        </div>
-      </section>
 
       {/* BANER ALLEGRO */}
       <section className="bg-background">
@@ -243,6 +187,62 @@ export default async function HomePage() {
               </span>
             </div>
           </a>
+        </div>
+      </section>
+
+      {/* KARUZELA KATEGORII */}
+      {categoryCards.length > 0 && (
+        <section className="bg-muted/40">
+          <div className="container mx-auto px-5 py-14 sm:px-6 md:py-16 lg:px-10 xl:px-12">
+            <div className="mb-8 flex flex-col items-start gap-3 md:mb-10 md:flex-row md:items-end md:justify-between">
+              <div>
+                <span className="inline-block rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary">
+                  Kategorie
+                </span>
+                <h2 className="mt-3 text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl md:text-5xl">
+                  Wybierz swoją tematykę
+                </h2>
+                <p className="mt-3 max-w-2xl text-muted-foreground">
+                  Od popkultury po zodiak — znajdź kubek idealny dla siebie lub
+                  na prezent.
+                </p>
+              </div>
+              <Link
+                href="/sklep"
+                className="text-sm font-semibold text-primary underline-offset-4 hover:underline"
+              >
+                Zobacz sklep →
+              </Link>
+            </div>
+            <CategoryCarousel categories={categoryCards} />
+          </div>
+        </section>
+      )}
+
+      {/* KARUZELA PRODUKTÓW */}
+      <section className="bg-background">
+        <div className="container mx-auto px-5 py-14 sm:px-6 md:py-20 lg:px-10 xl:px-12">
+          <div className="mb-8 flex flex-col items-start gap-3 md:mb-10 md:flex-row md:items-end md:justify-between">
+            <div>
+              <span className="inline-block rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary">
+                Hit zamówień
+              </span>
+              <h2 className="mt-3 text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl md:text-5xl">
+                Kubki, które rozkochują od pierwszego łyka
+              </h2>
+              <p className="mt-3 max-w-2xl text-muted-foreground">
+                Sprawdź nasze najpopularniejsze projekty — gotowe pomysły na
+                prezent, idealne na urodziny, rocznicę albo „bez okazji".
+              </p>
+            </div>
+            <Link
+              href="/sklep"
+              className="text-sm font-semibold text-primary underline-offset-4 hover:underline"
+            >
+              Zobacz wszystkie →
+            </Link>
+          </div>
+          <ProductCarousel products={products} />
         </div>
       </section>
 
