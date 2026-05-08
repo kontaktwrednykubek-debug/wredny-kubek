@@ -26,11 +26,15 @@ export function CartClient() {
       
       setIsLoadingStock(true);
       try {
-        const variantIds = shopItems.map(item => item.variant?.color).filter(Boolean);
+        // New format: items with slug+variantId returns min(global, per-product)
+        const stockItems = shopItems.map(item => ({
+          slug: item.productId.slice("shop:".length),
+          variantId: item.variant!.color!,
+        }));
         const res = await fetch('/api/shop-products/stock', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ variantIds })
+          body: JSON.stringify({ items: stockItems })
         });
         if (res.ok) {
           const data = await res.json();
@@ -68,10 +72,12 @@ export function CartClient() {
 
   const total = cartTotalGr(items);
   
-  // Get real-time maxQty for shop items
+  // Get real-time maxQty for shop items - min(global, per-product)
   const getMaxQty = (item: CartItem) => {
     if (!item.productId.startsWith("shop:") || !item.variant?.color) return 999;
-    return stockMap[item.variant.color] ?? 999;
+    const slug = item.productId.slice("shop:".length);
+    const key = `${slug}:${item.variant.color}`;
+    return stockMap[key] ?? 999;
   };
 
   return (
