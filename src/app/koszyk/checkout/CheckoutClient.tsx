@@ -75,33 +75,30 @@ export function CheckoutClient({
     methods[0]?.code ?? "",
   );
 
-  React.useEffect(() => {
-    if (items.length === 0) {
-      router.replace("/koszyk");
-    }
-  }, [items.length, router]);
-
-  if (items.length === 0) return null;
-
   const itemsTotal = cartTotalGr(items);
   const totalQty = items.reduce((s, i) => s + i.quantity, 0);
   const method = methods.find((m) => m.code === shippingMethod);
   const shippingPrice = calcShippingPrice(method, totalQty);
   const isFreeShipping = discount?.type === "free_shipping";
   const effectiveShipping = isFreeShipping ? 0 : shippingPrice;
-  // Rabat odejmujemy od produktow tylko dla percent/fixed.
-  // free_shipping NIE obniza ceny produktow — jedynym efektem jest wyzerowana dostawa.
   const discountGrosze = isFreeShipping ? 0 : (discount?.grosze ?? 0);
   const total = Math.max(0, itemsTotal - discountGrosze) + effectiveShipping;
   const requiresParcelCode = method?.requiresParcelCode ?? false;
 
+  React.useEffect(() => {
+    if (items.length === 0) {
+      router.replace("/koszyk");
+    }
+  }, [items.length, router]);
+
   // Ponowna walidacja rabatu gdy zmienia się koszyk/dostawa
   React.useEffect(() => {
     if (!discount) return;
-    // Re-validate w tle (bez blokowania UI) — aby uaktualnić kwotę dla free_shipping/percent
     void revalidateDiscount(discount.code, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [itemsTotal, shippingPrice]);
+
+  if (items.length === 0) return null;
 
   async function revalidateDiscount(code: string, showError: boolean) {
     setDiscountChecking(true);
