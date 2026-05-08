@@ -110,7 +110,7 @@ export async function POST(req: Request) {
       p_quantity: item.quantity,
     });
     
-    const { data: product, error: updateError } = await supabase.rpc(
+    const { data: rpcResult, error: updateError } = await supabase.rpc(
       "reserve_variant_stock",
       {
         p_slug: slug,
@@ -119,7 +119,7 @@ export async function POST(req: Request) {
       }
     );
     
-    console.log(`[orders-api] RPC response:`, { data: product, error: updateError });
+    console.log(`[orders-api] RPC response:`, { data: rpcResult, error: updateError });
     
     if (updateError) {
       console.error(`[orders-api] Stock reservation failed for ${slug}:`, updateError);
@@ -133,34 +133,14 @@ export async function POST(req: Request) {
       );
     }
     
-    // RPC zwraca nowy stan lub null jeśli nie udało się zarezerwować
-    const newStock = product as number | null;
-    console.log(`[orders-api] New stock after reservation: ${newStock}`);
+    // RPC zwraca tablicę z {success, new_stock, available}
+    const result = Array.isArray(rpcResult) ? rpcResult[0] : rpcResult;
+    const success = result?.success === true;
+    const available = result?.available ?? 0;
     
-    if (newStock === null) {
-      // Pobierz aktualny stan z TABEL (nie JSONB) - źródło prawdy
-      const { data: productRow } = await supabase
-        .from("shop_products")
-        .select("id")
-        .eq("slug", slug)
-        .maybeSingle();
-      
-      let available = 0;
-      if (productRow?.id) {
-        const [{ data: globalRow }, { data: perProductRow }] = await Promise.all([
-          supabase.from("cup_color_variants").select("stock_count").eq("id", item.variantColor).maybeSingle(),
-          supabase.from("product_variants").select("stock_count")
-            .eq("product_id", productRow.id)
-            .eq("variant_id", item.variantColor)
-            .maybeSingle(),
-        ]);
-        const global = globalRow?.stock_count ?? 0;
-        const perProduct = perProductRow?.stock_count ?? 999999;
-        available = Math.min(global, perProduct);
-      }
-      
-      console.log(`[orders-api] Out of stock - available: ${available}, requested: ${item.quantity}`);
-      
+    console.log(`[orders-api] Reservation result:`, { success, available, requested: item.quantity });
+    
+    if (!success) {
       return NextResponse.json(
         { 
           error: `Produktu w wariancie "${item.variantColor}" pozostało tylko ${available} szt.`,
