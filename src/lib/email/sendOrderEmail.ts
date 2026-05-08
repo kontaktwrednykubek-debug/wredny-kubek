@@ -121,9 +121,12 @@ export async function sendOrderConfirmationEmail(params: {
     }),
   );
 
+  const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL?.trim();
+
   const result = await resend.emails.send({
     from,
     to: resolveResendTo(params.to),
+    bcc: adminEmail ? [adminEmail] : undefined,
     subject: `Dziękujemy za zamówienie #${params.orderId.slice(0, 8).toUpperCase()} — Wredny Kubek`,
     html,
   });
