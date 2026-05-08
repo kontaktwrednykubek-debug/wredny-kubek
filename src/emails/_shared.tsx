@@ -95,11 +95,11 @@ export function EmailFooter() {
             margin: "12px 0 0 0",
           }}
         >
-          Wredny Kubek — Milena
+          Wredny Kubek — Milena Bujniak
           <br />
-          ul. Nieznana 13, 00-000 Niewidoczna
+          Świdnik 25, 58-410 Marciszów
           <br />
-          tel. +48 00 000 00 00
+          tel. +48 789 111 041
         </Text>
         <Text
           style={{

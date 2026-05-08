@@ -15,7 +15,7 @@ import {
 
 export default async function HomePage() {
   const supabase = createSupabaseServerClient();
-  const [carouselRes, categoriesRes, productsForCoverRes] = await Promise.all([
+  const [carouselRes, categoriesRes, productsForCoverRes, featuredRes] = await Promise.all([
     supabase
       .from("shop_products")
       .select("slug, title, price_grosze, images, rating, reviews_count")
@@ -33,8 +33,16 @@ export default async function HomePage() {
       .select("category, images")
       .eq("is_published", true)
       .order("created_at", { ascending: false }),
+    supabase
+      .from("shop_products")
+      .select("slug, title, price_grosze, images, rating, reviews_count")
+      .eq("is_published", true)
+      .eq("is_featured", true)
+      .order("created_at", { ascending: false })
+      .limit(15),
   ]);
   const products = (carouselRes.data ?? []) as CarouselProduct[];
+  const featuredProducts = (featuredRes.data ?? []) as CarouselProduct[];
 
   // Mapowanie kategorii → pierwsze zdjęcie produktu z tej kategorii (lub child).
   const allCats = categoriesRes.data ?? [];
@@ -138,6 +146,35 @@ export default async function HomePage() {
               </Link>
             </div>
             <CategoryCarousel categories={categoryCards} />
+          </div>
+        </section>
+      )}
+
+      {/* WREDNE HITY — polecane przez admina */}
+      {featuredProducts.length > 0 && (
+        <section className="bg-background">
+          <div className="container mx-auto px-5 py-14 sm:px-6 md:py-20 lg:px-10 xl:px-12">
+            <div className="mb-8 flex flex-col items-start gap-3 md:mb-10 md:flex-row md:items-end md:justify-between">
+              <div>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-amber-500">
+                  ⭐ Wredne Hity
+                </span>
+                <h2 className="mt-3 text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl md:text-5xl">
+                  Ulubieńcy naszych klientów
+                </h2>
+                <p className="mt-3 max-w-2xl text-muted-foreground">
+                  Ręcznie wybrane przez nas — kubki, które zamawiają najczęściej
+                  i wracają po więcej.
+                </p>
+              </div>
+              <Link
+                href="/sklep"
+                className="text-sm font-semibold text-primary underline-offset-4 hover:underline"
+              >
+                Zobacz wszystkie →
+              </Link>
+            </div>
+            <ProductCarousel products={featuredProducts} />
           </div>
         </section>
       )}

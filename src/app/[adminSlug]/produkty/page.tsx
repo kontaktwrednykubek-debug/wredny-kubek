@@ -16,7 +16,7 @@ export default async function AdminProductsPage({
   const { data: products } = await supabase
     .from("shop_products")
     .select(
-      "id, slug, title, description, price_grosze, images, rating, reviews_count, is_published",
+      "id, slug, title, description, price_grosze, images, rating, reviews_count, is_published, is_featured",
     )
     .order("created_at", { ascending: false });
 
@@ -90,6 +90,7 @@ export default async function AdminProductsPage({
                   <ProductsAdminActions
                     slug={p.slug}
                     adminSlug={params.adminSlug}
+                    isFeatured={p.is_featured ?? false}
                   />
                 </div>
               </article>
