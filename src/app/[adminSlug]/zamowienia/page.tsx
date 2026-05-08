@@ -8,6 +8,7 @@ import {
   OrderShippingActions,
   OrderThumbnail,
 } from "./OrderShippingActions";
+import { OrdersExport } from "./OrdersExport";
 
 export const metadata = { title: "Zamówienia" };
 
@@ -32,7 +33,16 @@ export default async function AdminOrdersPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Zamówienia</h1>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-2xl font-bold">Zamówienia</h1>
+        <OrdersExport
+          orders={list.map((o) => ({
+            ...o,
+            shipping_info: (o.shipping_info ?? null) as Record<string, string | undefined> | null,
+          }))}
+          adminSlug=""
+        />
+      </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
