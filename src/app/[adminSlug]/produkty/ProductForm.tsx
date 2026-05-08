@@ -15,6 +15,7 @@ type CupColorVariant = {
   name: string;
   image_url: string | null;
   sort_order: number;
+  stock_count: number;
 };
 
 type Variants = {
@@ -132,6 +133,11 @@ export function ProductForm({
   }, []);
 
   function toggleCupColor(id: string) {
+    // Nie pozwalaj zaznaczyć wariantu, który ma 0 sztuk globalnie
+    const variant = cupColorVariants.find((v) => v.id === id);
+    if (variant && variant.stock_count === 0 && !selectedCupColorIds.includes(id)) {
+      return;
+    }
     setSelectedCupColorIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
@@ -540,14 +546,20 @@ export function ProductForm({
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
               {cupColorVariants.map((v) => {
                 const selected = selectedCupColorIds.includes(v.id);
+                const outOfStock = v.stock_count === 0;
+                const disabled = outOfStock && !selected;
                 return (
                   <button
                     key={v.id}
                     type="button"
+                    disabled={disabled}
                     onClick={() => toggleCupColor(v.id)}
+                    title={outOfStock ? "Brak na stanie globalnym — dodaj sztuki w zakładce Warianty" : undefined}
                     className={`relative overflow-hidden rounded-xl border-2 transition ${
                       selected
                         ? "border-primary ring-2 ring-primary/30"
+                        : disabled
+                        ? "border-border opacity-50 cursor-not-allowed"
                         : "border-border hover:border-primary/50"
                     }`}
                   >
@@ -575,7 +587,15 @@ export function ProductForm({
                         </div>
                       )}
                     </div>
-                    <p className="px-2 py-1.5 text-center text-xs font-medium">{v.name}</p>
+                    <p className="px-2 py-1.5 text-center text-xs font-medium">
+                      {v.name}
+                      {outOfStock && (
+                        <span className="ml-1 text-[10px] text-destructive font-semibold">— brak ({v.stock_count})</span>
+                      )}
+                      {!outOfStock && (
+                        <span className="ml-1 text-[10px] text-muted-foreground">({v.stock_count})</span>
+                      )}
+                    </p>
                   </button>
                 );
               })}
@@ -621,18 +641,22 @@ export function ProductForm({
                       <input
                         type="number"
                         min={0}
+                        max={v.stock_count}
                         value={variantStock[v.id] ?? ""}
                         placeholder="0"
                         onChange={(e) => {
                           const n = parseInt(e.target.value, 10);
+                          const safe = isNaN(n) ? 0 : Math.max(0, Math.min(v.stock_count, n));
                           setVariantStock((prev) => ({
                             ...prev,
-                            [v.id]: isNaN(n) ? 0 : Math.max(0, n),
+                            [v.id]: safe,
                           }));
                         }}
                         className="w-24 rounded-lg border-2 border-input bg-background px-3 py-1.5 text-sm font-semibold focus:border-primary focus:outline-none"
                       />
-                      <span className="text-xs text-muted-foreground">szt.</span>
+                      <span className="text-xs text-muted-foreground">
+                        / {v.stock_count} szt.
+                      </span>
                     </div>
                   </div>
                 ))}
