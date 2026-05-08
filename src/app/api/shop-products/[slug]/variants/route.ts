@@ -7,10 +7,10 @@ export async function GET(
 ) {
   const supabase = createSupabaseServerClient();
   
-  // Get product ID from slug
+  // Get product ID and selected variants (cupColors) from slug
   const { data: product, error: productFetchError } = await supabase
     .from("shop_products")
-    .select("id")
+    .select("id, variants")
     .eq("slug", params.slug)
     .eq("is_published", true)
     .maybeSingle();
@@ -19,10 +19,20 @@ export async function GET(
     return NextResponse.json({ error: "Product not found" }, { status: 404 });
   }
   
-  // Get all cup variants with global stock and per-product limits
+  // Extract selected cup color IDs from product.variants JSONB
+  const selectedCupColors = (product.variants as any)?.cupColors as Array<{ id: string }> | undefined;
+  const selectedIds = selectedCupColors?.map((c) => c.id) ?? [];
+  
+  // If admin didn't select any colors, return empty list
+  if (selectedIds.length === 0) {
+    return NextResponse.json({ variants: [] });
+  }
+  
+  // Get only the selected cup variants with global stock
   const { data: globalVariants, error: globalError } = await supabase
     .from("cup_color_variants")
     .select("id, name, image_url, sort_order, stock_count")
+    .in("id", selectedIds)
     .order("sort_order", { ascending: true });
     
   // Get per-product variant limits
