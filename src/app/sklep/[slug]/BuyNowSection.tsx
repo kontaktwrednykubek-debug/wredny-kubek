@@ -77,7 +77,8 @@ export function BuyNowSection({
     };
   }, [slug, fetchVariants]);
   
-  const maxQty = showVariantStock && color ? 
+  // maxQty ZAWSZE limituje zakup do dostępnego stanu (showVariantStock kontroluje tylko wyświetlanie liczby)
+  const maxQty = color ? 
     (variants.find(v => v.id === color)?.stockCount ?? 999) : 999;
 
   const buildLabel = () => {
@@ -146,7 +147,8 @@ export function BuyNowSection({
           <div className="flex flex-wrap gap-3">
             {variants.map((c) => {
               const stock = c.stockCount;
-              const isDisabled = showVariantStock && stock === 0;
+              // ZAWSZE wyłącz przycisk gdy brak na stanie (niezależnie od showVariantStock)
+              const isDisabled = stock === 0;
               return (
                 <button
                   key={c.id}
