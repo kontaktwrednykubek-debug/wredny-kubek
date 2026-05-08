@@ -7,9 +7,10 @@ import {
 
 /**
  * Zwraca poprawny adres nadawcy dla Resend.
- * Jeśli RESEND_FROM_EMAIL używa niezweryfikowanej darmowej domeny
- * (gmail, outlook, yahoo itp.), automatycznie przełącza się na
- * sandboxowy `onboarding@resend.dev` — inaczej Resend zwraca 403.
+ * Domena wrednykubek.pl jest zweryfikowana — RESEND_FROM_EMAIL powinno być
+ * w formacie "Wredny Kubek <zamowienia@wrednykubek.pl>".
+ * Fallback na onboarding@resend.dev tylko gdy brak zmiennej lub domena jest
+ * publiczną (gmail, outlook itp.) — Resend nie pozwala ich używać jako nadawcy.
  */
 export function resolveResendFrom(): string {
   const raw = process.env.RESEND_FROM_EMAIL?.trim();
@@ -45,9 +46,9 @@ export function resolveResendFrom(): string {
 }
 
 /**
- * W trybie sandbox Resend (bez zweryfikowanej domeny) pozwala wysyłać
- * tylko na adres właściciela konta. Ustawiając RESEND_SANDBOX_OVERRIDE_TO
- * możesz wymusić wszystkie maile na ten adres (do testów).
+ * Opcjonalny override adresata — do testów lokalnych.
+ * Jeśli RESEND_SANDBOX_OVERRIDE_TO jest ustawiony, wszystkie maile
+ * trafiają na ten adres zamiast do prawdziwego klienta.
  */
 export function resolveResendTo(intendedTo: string): string {
   const override = process.env.RESEND_SANDBOX_OVERRIDE_TO?.trim();
@@ -62,8 +63,7 @@ export function resolveResendTo(intendedTo: string): string {
 
 /**
  * Wysyła email potwierdzający zamówienie.
- * W trybie sandbox używa onboarding@resend.dev jako nadawcy
- * (dojdzie tylko na adres email konta Resend).
+ * BCC do ADMIN_NOTIFICATION_EMAIL (jeśli ustawiony).
  */
 export async function sendOrderConfirmationEmail(params: {
   to: string;
