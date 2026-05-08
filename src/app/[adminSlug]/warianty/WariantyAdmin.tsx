@@ -35,7 +35,7 @@ export function WariantyAdmin({ variants }: { variants: CupColorVariant[] }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold">Warianty kubków</h1>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -44,7 +44,7 @@ export function WariantyAdmin({ variants }: { variants: CupColorVariant[] }) {
           </p>
         </div>
         {!showAdd && (
-          <Button onClick={() => setShowAdd(true)}>
+          <Button onClick={() => setShowAdd(true)} className="w-full sm:w-auto">
             <Plus className="h-4 w-4" />
             Dodaj kolor
           </Button>

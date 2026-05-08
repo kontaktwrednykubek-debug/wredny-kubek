@@ -297,7 +297,7 @@ export function ProductForm({
   return (
     <form onSubmit={onSubmit} className="space-y-6">
       {/* Podstawowe */}
-      <fieldset className="space-y-4 rounded-2xl border border-border bg-card p-5">
+      <fieldset className="space-y-4 rounded-2xl border border-border bg-card p-4 sm:p-5">
         <legend className="px-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
           Podstawowe
         </legend>
@@ -425,7 +425,7 @@ export function ProductForm({
       </fieldset>
 
       {/* Zdjęcia */}
-      <fieldset className="space-y-4 rounded-2xl border border-border bg-card p-5">
+      <fieldset className="space-y-4 rounded-2xl border border-border bg-card p-4 sm:p-5">
         <legend className="px-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
           Zdjęcia ({images.length}/{MAX_IMAGES})
         </legend>
@@ -484,7 +484,7 @@ export function ProductForm({
       </fieldset>
 
       {/* Warianty */}
-      <fieldset className="space-y-5 rounded-2xl border border-border bg-card p-5">
+      <fieldset className="space-y-5 rounded-2xl border border-border bg-card p-4 sm:p-5">
         <legend className="px-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
           Warianty (opcjonalne)
         </legend>
@@ -683,7 +683,7 @@ export function ProductForm({
       </fieldset>
 
       {/* Dane techniczne */}
-      <fieldset className="space-y-4 rounded-2xl border border-border bg-card p-5">
+      <fieldset className="space-y-4 rounded-2xl border border-border bg-card p-4 sm:p-5">
         <legend className="px-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
           Dane techniczne
         </legend>
@@ -761,8 +761,13 @@ export function ProductForm({
         </p>
       )}
 
-      <div className="flex justify-end gap-2">
-        <Button type="submit" disabled={submitting || uploading} size="lg">
+      <div className="sticky bottom-0 -mx-4 flex justify-end gap-2 border-t border-border bg-background/95 px-4 py-3 backdrop-blur sm:relative sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0">
+        <Button
+          type="submit"
+          disabled={submitting || uploading}
+          size="lg"
+          className="w-full sm:w-auto"
+        >
           {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
           {isEdit ? "Zapisz zmiany" : "Dodaj produkt"}
         </Button>

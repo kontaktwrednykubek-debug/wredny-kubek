@@ -17,40 +17,71 @@ export default async function AdminUsersPage() {
       {!profiles?.length ? (
         <p className="text-muted-foreground">Brak użytkowników.</p>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-border">
-          <table className="w-full text-sm">
-            <thead className="bg-muted text-left">
-              <tr>
-                <th className="p-3">Email</th>
-                <th className="p-3">Nazwa</th>
-                <th className="p-3">Rola</th>
-                <th className="p-3">Zarejestrowany</th>
-              </tr>
-            </thead>
-            <tbody>
-              {profiles.map((p) => (
-                <tr key={p.id} className="border-t border-border">
-                  <td className="p-3">{p.email ?? "—"}</td>
-                  <td className="p-3">{p.full_name ?? "—"}</td>
-                  <td className="p-3">
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                        p.role === "ADMIN"
-                          ? "bg-primary/15 text-primary"
-                          : "bg-muted text-muted-foreground"
-                      }`}
-                    >
-                      {p.role}
-                    </span>
-                  </td>
-                  <td className="p-3 text-muted-foreground">
-                    {new Date(p.created_at).toLocaleDateString("pl-PL")}
-                  </td>
+        <>
+          {/* Desktop: tabela */}
+          <div className="hidden overflow-x-auto rounded-2xl border border-border md:block">
+            <table className="w-full text-sm">
+              <thead className="bg-muted text-left">
+                <tr>
+                  <th className="p-3">Email</th>
+                  <th className="p-3">Nazwa</th>
+                  <th className="p-3">Rola</th>
+                  <th className="p-3">Zarejestrowany</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {profiles.map((p) => (
+                  <tr key={p.id} className="border-t border-border">
+                    <td className="p-3">{p.email ?? "—"}</td>
+                    <td className="p-3">{p.full_name ?? "—"}</td>
+                    <td className="p-3">
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                          p.role === "ADMIN"
+                            ? "bg-primary/15 text-primary"
+                            : "bg-muted text-muted-foreground"
+                        }`}
+                      >
+                        {p.role}
+                      </span>
+                    </td>
+                    <td className="p-3 text-muted-foreground">
+                      {new Date(p.created_at).toLocaleDateString("pl-PL")}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {/* Mobile: karty */}
+          <div className="space-y-3 md:hidden">
+            {profiles.map((p) => (
+              <div
+                key={p.id}
+                className="rounded-2xl border border-border bg-card p-4"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <p className="break-all text-sm font-medium">
+                    {p.email ?? "—"}
+                  </p>
+                  <span
+                    className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
+                      p.role === "ADMIN"
+                        ? "bg-primary/15 text-primary"
+                        : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    {p.role}
+                  </span>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {p.full_name ?? "—"} ·{" "}
+                  {new Date(p.created_at).toLocaleDateString("pl-PL")}
+                </p>
+              </div>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );

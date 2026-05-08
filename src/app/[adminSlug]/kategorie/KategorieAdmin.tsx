@@ -52,7 +52,7 @@ export function KategorieAdmin({ categories }: { categories: CategoryRow[] }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold">Kategorie</h1>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -60,7 +60,7 @@ export function KategorieAdmin({ categories }: { categories: CategoryRow[] }) {
           </p>
         </div>
         {!showAddForm && (
-          <Button onClick={() => setShowAddForm(true)}>
+          <Button onClick={() => setShowAddForm(true)} className="w-full sm:w-auto">
             <Plus className="h-4 w-4" />
             Nowa kategoria
           </Button>

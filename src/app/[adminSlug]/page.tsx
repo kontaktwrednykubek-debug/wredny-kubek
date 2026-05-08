@@ -145,8 +145,8 @@ export default async function AdminDashboard({
 
       {/* Najnowsze zamówienia */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Najnowsze zamówienia</CardTitle>
+        <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <CardTitle className="text-base sm:text-lg">Najnowsze zamówienia</CardTitle>
           <Link
             href={`${base}/zamowienia`}
             className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
@@ -216,7 +216,7 @@ function KpiCard({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="text-2xl font-bold text-primary sm:text-3xl">{value}</p>
+        <p className="text-xl font-bold text-primary sm:text-2xl lg:text-3xl break-words">{value}</p>
       </CardContent>
     </Card>
   );

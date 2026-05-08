@@ -164,7 +164,7 @@ function StatCard({
         {icon}
         <span>{label}</span>
       </div>
-      <p className="mt-2 text-2xl font-bold">{value}</p>
+      <p className="mt-2 text-xl font-bold sm:text-2xl break-words">{value}</p>
     </div>
   );
 }
