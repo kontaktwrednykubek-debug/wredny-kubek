@@ -306,18 +306,6 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="container mx-auto px-5 py-16 text-center sm:px-6 lg:px-10 xl:px-12">
-        <h2 className="text-2xl font-bold md:text-3xl">
-          Gotowe wzory do inspiracji
-        </h2>
-        <p className="mt-2 text-muted-foreground">
-          Skopiuj nasz pomysł albo stwórz coś od zera w {brand.name}.
-        </p>
-        <Link href="/edytor" className="mt-6 inline-block">
-          <Button size="lg">Otwórz edytor</Button>
-        </Link>
-      </section>
     </>
   );
 }

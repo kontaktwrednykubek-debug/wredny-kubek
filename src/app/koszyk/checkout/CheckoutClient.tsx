@@ -279,10 +279,10 @@ export function CheckoutClient({
     "w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring";
 
   return (
-    <section className="container mx-auto max-w-4xl px-4 py-10">
+    <section className="container mx-auto max-w-4xl overflow-x-hidden px-4 py-10">
       <h1 className="mb-6 text-3xl font-bold">Zamówienie</h1>
-      <form onSubmit={onSubmit} className="grid gap-6 lg:grid-cols-[1fr_320px]">
-        <div className="space-y-6">
+      <form onSubmit={onSubmit} className="grid gap-6 lg:grid-cols-[1fr_320px]" style={{ minWidth: 0 }}>
+        <div className="min-w-0 space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>Dane do wysyłki</CardTitle>
@@ -514,7 +514,7 @@ export function CheckoutClient({
           )}
         </div>
 
-        <aside className="h-fit space-y-3 rounded-2xl border border-border bg-card p-5">
+        <aside className="h-fit min-w-0 space-y-3 rounded-2xl border border-border bg-card p-4 sm:p-5">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
             Podsumowanie
           </h2>
@@ -562,7 +562,7 @@ export function CheckoutClient({
                 <label className="mb-1 block text-xs font-medium text-muted-foreground">
                   <Tag className="mr-1 inline h-3 w-3" /> Kod rabatowy
                 </label>
-                <div className="flex gap-2">
+                <div className="flex min-w-0 gap-2">
                   <input
                     type="text"
                     value={discountInput}
@@ -577,7 +577,7 @@ export function CheckoutClient({
                       }
                     }}
                     placeholder="WPISZ KOD"
-                    className={`${inputCls} font-mono text-xs uppercase`}
+                    className={`${inputCls} min-w-0 font-mono text-xs uppercase`}
                     disabled={discountChecking}
                   />
                   <Button
