@@ -1,6 +1,7 @@
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import { ReviewsAdminClient } from "./ReviewsAdminClient";
 
+export const dynamic = "force-dynamic";
 export const metadata = { title: "Opinie" };
 
 export default async function AdminReviewsPage() {
