@@ -64,7 +64,7 @@ export function EmailHeader({ logoUrl }: { logoUrl: string }) {
           letterSpacing: "0.5px",
         }}
       >
-        ☕🔥 Stwórz swój własny merch
+        Potwierdzenie zamówienia
       </Text>
     </Section>
   );

@@ -107,30 +107,35 @@ export async function sendOrderConfirmationEmail(params: {
     orderId: params.orderId,
   });
 
-  const html = await render(
-    OrderConfirmationEmail({
-      orderId: params.orderId,
-      customerName: params.customerName,
-      items: params.items,
-      shipping: params.shipping,
-      totalGr: params.totalGr,
-      shippingPriceGr: params.shippingPriceGr,
-      discountCode: params.discountCode,
-      discountGrosze: params.discountGrosze,
-      freeShipping: params.freeShipping,
-      trackingUrl,
-      logoUrl,
-    }),
-  );
+  const emailComponent = OrderConfirmationEmail({
+    orderId: params.orderId,
+    customerName: params.customerName,
+    items: params.items,
+    shipping: params.shipping,
+    totalGr: params.totalGr,
+    shippingPriceGr: params.shippingPriceGr,
+    discountCode: params.discountCode,
+    discountGrosze: params.discountGrosze,
+    freeShipping: params.freeShipping,
+    trackingUrl,
+    logoUrl,
+  });
+
+  const [html, text] = await Promise.all([
+    render(emailComponent),
+    render(emailComponent, { plainText: true }),
+  ]);
 
   const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL?.trim();
 
   const result = await resend.emails.send({
     from,
+    replyTo: from,
     to: resolveResendTo(params.to),
     bcc: adminEmail ? [adminEmail] : undefined,
     subject: `Zamówienie #${params.orderId.slice(0, 8).toUpperCase()} przyjęte — Wredny Kubek`,
     html,
+    text,
     headers: {
       "X-Entity-Ref-ID": params.orderId,
     },

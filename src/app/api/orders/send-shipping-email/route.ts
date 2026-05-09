@@ -103,21 +103,26 @@ export async function POST(req: Request) {
   });
 
   try {
-    const html = await render(
-      ShippingNotificationEmail({
-        customerName,
-        orderId: order.id,
-        trackingNumber: cleanTrackingNumber,
-        logoUrl,
-        orderUrl,
-      })
-    );
+    const emailComponent = ShippingNotificationEmail({
+      customerName,
+      orderId: order.id,
+      trackingNumber: cleanTrackingNumber,
+      logoUrl,
+      orderUrl,
+    });
+
+    const [html, text] = await Promise.all([
+      render(emailComponent),
+      render(emailComponent, { plainText: true }),
+    ]);
 
     const result = await resend.emails.send({
       from,
+      replyTo: from,
       to: resolveResendTo(userEmail),
       subject: `${firstName}, Twój Wredny Kubek właśnie zwiał z magazynu! 🏃💨`,
       html,
+      text,
     });
 
     if (result.error) {
