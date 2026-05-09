@@ -8,7 +8,7 @@ import { validateDiscountCode } from "@/lib/discount/service";
 const bodySchema = z.object({
   shipping: z.object({
     fullName: z.string().min(2).max(120),
-    email: z.string().email().optional(),
+    email: z.string().email(),
     phone: z
       .string()
       .min(6)
@@ -52,9 +52,7 @@ export async function POST(req: Request) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
+  // user może być null — dozwolony guest checkout
 
   const json = await req.json().catch(() => null);
   const parsed = bodySchema.safeParse(json);
@@ -203,7 +201,7 @@ export async function POST(req: Request) {
     const v = await validateDiscountCode({
       supabase: service,
       code: discountCode,
-      userId: user.id,
+      userId: user?.id ?? null,
       itemsTotalGrosze,
       shippingGrosze: methodRow.price_grosze ?? 0,
     });
@@ -218,7 +216,7 @@ export async function POST(req: Request) {
   }
 
   const rows = items.map((it, idx) => ({
-    user_id: user.id,
+    user_id: user?.id ?? null,
     design_id: it.designId,
     product_id: it.productId,
     label: it.label ?? null,
@@ -235,7 +233,9 @@ export async function POST(req: Request) {
     discount_grosze: idx === 0 ? discountGrosze : 0,
   }));
 
-  const { data, error } = await supabase
+  // Goście nie mają sesji — musimy użyć service clienta, by ominąć RLS
+  const dbClient = user ? supabase : createSupabaseServiceClient();
+  const { data, error } = await dbClient
     .from("orders")
     .insert(rows)
     .select("id");

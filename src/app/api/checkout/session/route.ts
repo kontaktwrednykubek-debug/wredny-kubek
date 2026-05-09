@@ -30,9 +30,7 @@ export async function POST(req: Request) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
+  // user może być null — dozwolony guest checkout
 
   const json = await req.json().catch(() => null);
   const parsed = bodySchema.safeParse(json);
@@ -44,8 +42,9 @@ export async function POST(req: Request) {
   }
   const { orderId } = parsed.data;
 
-  // Pobierz zamówienie — tylko właściciel może tworzyć sesję
-  const { data: order, error: orderErr } = await supabase
+  // Pobierz zamówienie. Dla gości używamy service clienta (RLS zablokuje anon).
+  const orderClient = user ? supabase : createSupabaseServiceClient();
+  const { data: order, error: orderErr } = await orderClient
     .from("orders")
     .select(
       "id, user_id, product_id, label, quantity, amount_grosze, preview_url, shipping_info, status, discount_code_id, discount_grosze",
@@ -56,7 +55,12 @@ export async function POST(req: Request) {
   if (orderErr || !order) {
     return NextResponse.json({ error: "Order not found" }, { status: 404 });
   }
-  if (order.user_id !== user.id) {
+  // Walidacja własności: zalogowany user musi być właścicielem,
+  // gość może tworzyć sesję tylko dla zamówienia bez user_id.
+  if (user && order.user_id && order.user_id !== user.id) {
+    return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
+  if (!user && order.user_id) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
   if (order.status !== "PENDING") {
@@ -153,10 +157,10 @@ export async function POST(req: Request) {
       // Przelewy24, Link itd.).
       // UWAGA: Stripe wymaga allow_promotion_codes: false gdy przekazujemy discounts[]
       ...(discounts.length > 0 ? { discounts } : { allow_promotion_codes: true }),
-      customer_email: user.email ?? undefined,
+      customer_email: user?.email ?? shipping.email ?? undefined,
       metadata: {
         orderId: order.id,
-        userId: user.id,
+        userId: user?.id ?? "",
         discountCodeId: order.discount_code_id ?? "",
       },
       success_url: `${env.NEXT_PUBLIC_APP_URL}/sklep/${order.product_id.replace('shop:', '')}?payment=success`,

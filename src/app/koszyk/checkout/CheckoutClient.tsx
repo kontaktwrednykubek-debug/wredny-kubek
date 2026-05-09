@@ -117,10 +117,6 @@ export function CheckoutClient({
         }),
       });
       const j = await res.json();
-      if (res.status === 401) {
-        router.push("/login?next=/koszyk/checkout");
-        return;
-      }
       if (!j.valid) {
         if (showError) setDiscountError(j.error ?? "Nieprawid\u0142owy kod.");
         setDiscount(null);
@@ -177,6 +173,8 @@ export function CheckoutClient({
     // Walidacja wszystkich pól
     const errs: Record<string, string> = {};
     if (!form.fullName.trim()) errs.fullName = "Imię i nazwisko jest wymagane";
+    if (!form.email.trim()) errs.email = "Adres e-mail jest wymagany";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errs.email = "Nieprawidłowy adres e-mail";
     if (!form.phone.trim()) errs.phone = "Numer telefonu jest wymagany";
     else if (!isValidPhone(form.phone)) errs.phone = "Nieprawidłowy numer. Przykład: 600 100 200 lub +48 600 100 200";
     if (!form.address.trim()) errs.address = "Adres jest wymagany";
@@ -234,10 +232,6 @@ export function CheckoutClient({
           discountCode: discount?.code ?? null,
         }),
       });
-      if (res.status === 401) {
-        router.push("/login?next=/koszyk/checkout");
-        return;
-      }
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
         if (body.code === "OUT_OF_STOCK") {
@@ -355,11 +349,18 @@ export function CheckoutClient({
                   autoComplete="email"
                   placeholder="twoj@email.pl"
                   value={form.email}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, email: e.target.value }))
-                  }
-                  className={inputCls}
+                  onChange={(e) => {
+                    setForm((f) => ({ ...f, email: e.target.value }));
+                    if (fieldErrors.email) setFieldErrors((fe) => ({ ...fe, email: "" }));
+                  }}
+                  className={fieldCls("email")}
                 />
+                <FieldError name="email" />
+                {!userEmail && (
+                  <span className="mt-1 block text-xs text-muted-foreground">
+                    Wyślemy na ten adres potwierdzenie zamówienia.
+                  </span>
+                )}
               </label>
 
               <label className="block">

@@ -12,7 +12,7 @@ import type { DiscountCode, DiscountValidationResult, DiscountType } from "./typ
 export async function validateDiscountCode(params: {
   supabase: SupabaseClient;
   code: string;
-  userId: string;
+  userId: string | null;
   itemsTotalGrosze: number;
   shippingGrosze: number;
 }): Promise<DiscountValidationResult> {
@@ -55,7 +55,8 @@ export async function validateDiscountCode(params: {
     };
   }
 
-  if (dc.one_per_user) {
+  if (dc.one_per_user && params.userId) {
+    // Sprawdzenie tylko dla zalogowanych — dla gości nie mamy stabilnego identyfikatora.
     const { count } = await params.supabase
       .from("discount_code_uses")
       .select("*", { count: "exact", head: true })

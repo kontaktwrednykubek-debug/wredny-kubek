@@ -107,14 +107,19 @@ export async function POST(req: Request) {
     }
   }
 
-  // Pobierz email klienta z profilu (fallback do session)
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("email, full_name")
-    .eq("id", orderRow.user_id)
-    .maybeSingle();
+  // Pobierz email klienta z profilu (tylko gdy zalogowany), inaczej z shipping_info / Stripe.
+  const shippingInfoEarly = (orderRow.shipping_info ?? {}) as Record<string, string>;
+  const profile = orderRow.user_id
+    ? (
+        await supabase
+          .from("profiles")
+          .select("email, full_name")
+          .eq("id", orderRow.user_id)
+          .maybeSingle()
+      ).data
+    : null;
 
-  const to = profile?.email ?? customerEmail;
+  const to = profile?.email ?? shippingInfoEarly.email ?? customerEmail;
   if (!to) {
     console.warn("[stripe-webhook] No email to send to for order", orderId);
     return NextResponse.json({ received: true });

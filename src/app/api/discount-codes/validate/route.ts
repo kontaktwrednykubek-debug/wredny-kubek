@@ -21,9 +21,7 @@ const bodySchema = z.object({
 export async function POST(req: Request) {
   const supabase = createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
+  // Gość też może walidować kod rabatowy.
 
   const json = await req.json().catch(() => null);
   const parsed = bodySchema.safeParse(json);
@@ -38,7 +36,7 @@ export async function POST(req: Request) {
   const result = await validateDiscountCode({
     supabase: serviceSupabase,
     code: parsed.data.code,
-    userId: user.id,
+    userId: user?.id ?? null,
     itemsTotalGrosze: parsed.data.itemsTotalGrosze,
     shippingGrosze: parsed.data.shippingGrosze ?? 0,
   });
