@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Truck, Tag, X, Check } from "lucide-react";
+import { AlertTriangle, Check, Loader2, Tag, Truck, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCart, cartTotalGr } from "@/features/cart/useCart";
@@ -46,9 +46,12 @@ export function CheckoutClient({
   const { items, clear } = useCart();
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [stockError, setStockError] = React.useState<{ label: string; available: number; requested: number } | null>(null);
   const [phoneError, setPhoneError] = React.useState<string | null>(null);
   const [zipError, setZipError] = React.useState<string | null>(null);
   const [parcelCodeError, setParcelCodeError] = React.useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = React.useState<Record<string, string>>({});
+  const firstErrorRef = React.useRef<HTMLDivElement>(null);
 
   // Kod rabatowy
   const [discountInput, setDiscountInput] = React.useState("");
@@ -168,22 +171,28 @@ export function CheckoutClient({
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setStockError(null);
     setParcelCodeError(null);
 
-    if (!isValidPhone(form.phone)) {
-      setPhoneError("Nieprawidłowy numer telefonu.");
+    // Walidacja wszystkich pól
+    const errs: Record<string, string> = {};
+    if (!form.fullName.trim()) errs.fullName = "Imię i nazwisko jest wymagane";
+    if (!form.phone.trim()) errs.phone = "Numer telefonu jest wymagany";
+    else if (!isValidPhone(form.phone)) errs.phone = "Nieprawidłowy numer. Przykład: 600 100 200 lub +48 600 100 200";
+    if (!form.address.trim()) errs.address = "Adres jest wymagany";
+    if (!form.city.trim()) errs.city = "Miasto jest wymagane";
+    if (!form.zip.trim()) errs.zip = "Kod pocztowy jest wymagany";
+    else if (!/^\d{2}-\d{3}$/.test(form.zip) && !/^\d{3,6}$/.test(form.zip))
+      errs.zip = "Format: 00-000 (PL) lub 1234 (międzynarodowy)";
+    if (requiresParcelCode && !form.parcelCode.trim())
+      errs.parcelCode = "Wpisz kod paczkomatu (np. WAW123M)";
+
+    if (Object.keys(errs).length > 0) {
+      setFieldErrors(errs);
+      setTimeout(() => firstErrorRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
       return;
     }
-    // Akceptuj polski format (00-000) lub międzynarodowy (3-6 cyfr)
-    const isValidZip = /^\d{2}-\d{3}$/.test(form.zip) || /^\d{3,6}$/.test(form.zip);
-    if (!isValidZip) {
-      setZipError("Format: 00-000 (PL) lub 1234 (międzynarodowy).");
-      return;
-    }
-    if (requiresParcelCode && !form.parcelCode.trim()) {
-      setParcelCodeError("Musisz wpisać kod paczkomatu (np. WAW123M). Kliknij przycisk poniżej, aby znaleźć najbliższy paczkomat.");
-      return;
-    }
+    setFieldErrors({});
 
     setLoading(true);
     try {
@@ -231,16 +240,15 @@ export function CheckoutClient({
       }
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
-        // Specjalne traktowanie błędów stanu magazynowego
         if (body.code === "OUT_OF_STOCK") {
-          setError(
-            `${body.error}\n\nDostępne: ${body.available} szt.\nPróbowałeś kupić: ${body.requested} szt.`
-          );
+          setStockError({
+            label: body.label ?? body.error ?? "Produkt",
+            available: body.available ?? 0,
+            requested: body.requested ?? 0,
+          });
+          setTimeout(() => firstErrorRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
         } else {
-          setError(
-            body.error ??
-              "Nie udało się rozpocząć płatności. Spróbuj ponownie.",
-          );
+          setError(body.error ?? "Nie udało się rozpocząć płatności. Spróbuj ponownie.");
         }
         return;
       }
@@ -278,9 +286,42 @@ export function CheckoutClient({
   const inputCls =
     "w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring";
 
+  function fieldCls(name: string) {
+    return fieldErrors[name]
+      ? `${inputCls} border-destructive ring-2 ring-destructive/20`
+      : inputCls;
+  }
+
+  function FieldError({ name }: { name: string }) {
+    if (!fieldErrors[name]) return null;
+    return (
+      <span className="mt-1 flex items-center gap-1 text-xs font-medium text-destructive">
+        <AlertTriangle className="h-3 w-3 shrink-0" />
+        {fieldErrors[name]}
+      </span>
+    );
+  }
+
   return (
     <section className="container mx-auto max-w-4xl overflow-x-hidden px-4 py-10">
       <h1 className="mb-6 text-3xl font-bold">Zamówienie</h1>
+
+      {/* OUT OF STOCK alert */}
+      {stockError && (
+        <div ref={firstErrorRef} className="mb-6 flex items-start gap-3 rounded-2xl border-2 border-destructive bg-destructive/10 p-4">
+          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
+          <div>
+            <p className="font-semibold text-destructive">Produkt niedostępny w tej ilości</p>
+            <p className="mt-1 text-sm text-destructive/80">
+              <strong>{stockError.label}</strong> — chcesz kupić{" "}
+              <strong>{stockError.requested} szt.</strong>, a dostępne jest tylko{" "}
+              <strong>{stockError.available} szt.</strong>
+            </p>
+            <p className="mt-1 text-sm text-destructive/80">Zmień ilość w koszyku i spróbuj ponownie.</p>
+          </div>
+        </div>
+      )}
+
       <form onSubmit={onSubmit} className="grid gap-6 lg:grid-cols-[1fr_320px]" style={{ minWidth: 0 }}>
         <div className="min-w-0 space-y-6">
           <Card>
@@ -295,11 +336,13 @@ export function CheckoutClient({
                 <input
                   required
                   value={form.fullName}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, fullName: e.target.value }))
-                  }
-                  className={inputCls}
+                  onChange={(e) => {
+                    setForm((f) => ({ ...f, fullName: e.target.value }));
+                    if (fieldErrors.fullName) setFieldErrors((fe) => ({ ...fe, fullName: "" }));
+                  }}
+                  className={fieldCls("fullName")}
                 />
+                <FieldError name="fullName" />
               </label>
 
               <label className="block">
@@ -331,16 +374,16 @@ export function CheckoutClient({
                   onChange={(e) => {
                     setForm((f) => ({ ...f, phone: e.target.value }));
                     validatePhone(e.target.value);
+                    if (fieldErrors.phone) setFieldErrors((fe) => ({ ...fe, phone: "" }));
                   }}
                   onBlur={(e) => validatePhone(e.target.value)}
-                  className={`${inputCls} ${
-                    phoneError ? "border-destructive ring-2 ring-destructive/20" : ""
-                  }`}
-                  aria-invalid={Boolean(phoneError)}
+                  className={phoneError || fieldErrors.phone ? `${inputCls} border-destructive ring-2 ring-destructive/20` : inputCls}
+                  aria-invalid={Boolean(phoneError || fieldErrors.phone)}
                 />
-                {phoneError && (
-                  <span className="mt-1 block text-sm font-medium text-destructive">
-                    ⚠️ {phoneError}
+                {(phoneError || fieldErrors.phone) && (
+                  <span className="mt-1 flex items-center gap-1 text-xs font-medium text-destructive">
+                    <AlertTriangle className="h-3 w-3 shrink-0" />
+                    {phoneError || fieldErrors.phone}
                   </span>
                 )}
               </label>
@@ -352,11 +395,13 @@ export function CheckoutClient({
                 <input
                   required
                   value={form.address}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, address: e.target.value }))
-                  }
-                  className={inputCls}
+                  onChange={(e) => {
+                    setForm((f) => ({ ...f, address: e.target.value }));
+                    if (fieldErrors.address) setFieldErrors((fe) => ({ ...fe, address: "" }));
+                  }}
+                  className={fieldCls("address")}
                 />
+                <FieldError name="address" />
               </label>
 
               <div className="grid grid-cols-[1fr_140px] gap-3">
@@ -365,11 +410,13 @@ export function CheckoutClient({
                   <input
                     required
                     value={form.city}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, city: e.target.value }))
-                    }
-                    className={inputCls}
+                    onChange={(e) => {
+                      setForm((f) => ({ ...f, city: e.target.value }));
+                      if (fieldErrors.city) setFieldErrors((fe) => ({ ...fe, city: "" }));
+                    }}
+                    className={fieldCls("city")}
                   />
+                  <FieldError name="city" />
                 </label>
                 <label className="block">
                   <span className="mb-1 block text-sm font-medium">
@@ -382,16 +429,16 @@ export function CheckoutClient({
                     onChange={(e) => {
                       setForm((f) => ({ ...f, zip: e.target.value }));
                       validateZip(e.target.value);
+                      if (fieldErrors.zip) setFieldErrors((fe) => ({ ...fe, zip: "" }));
                     }}
                     onBlur={(e) => validateZip(e.target.value)}
-                    className={`${inputCls} ${
-                      zipError ? "border-destructive ring-2 ring-destructive/20" : ""
-                    }`}
-                    aria-invalid={Boolean(zipError)}
+                    className={zipError || fieldErrors.zip ? `${inputCls} border-destructive ring-2 ring-destructive/20` : inputCls}
+                    aria-invalid={Boolean(zipError || fieldErrors.zip)}
                   />
-                  {zipError && (
-                    <span className="mt-1 block text-sm font-medium text-destructive">
-                      ⚠️ {zipError}
+                  {(zipError || fieldErrors.zip) && (
+                    <span className="mt-1 flex items-center gap-1 text-xs font-medium text-destructive">
+                      <AlertTriangle className="h-3 w-3 shrink-0" />
+                      {zipError || fieldErrors.zip}
                     </span>
                   )}
                 </label>
@@ -475,15 +522,15 @@ export function CheckoutClient({
                       onChange={(e) => {
                         setForm((f) => ({ ...f, parcelCode: e.target.value }));
                         setParcelCodeError(null);
+                        if (fieldErrors.parcelCode) setFieldErrors((fe) => ({ ...fe, parcelCode: "" }));
                       }}
-                      className={`${inputCls} ${
-                        parcelCodeError ? "border-destructive ring-2 ring-destructive/20" : ""
-                      }`}
-                      aria-invalid={Boolean(parcelCodeError)}
+                      className={(parcelCodeError || fieldErrors.parcelCode) ? `${inputCls} border-destructive ring-2 ring-destructive/20` : inputCls}
+                      aria-invalid={Boolean(parcelCodeError || fieldErrors.parcelCode)}
                     />
-                    {parcelCodeError && (
-                      <span className="mt-1 block text-sm font-medium text-destructive">
-                        ⚠️ {parcelCodeError}
+                    {(parcelCodeError || fieldErrors.parcelCode) && (
+                      <span className="mt-1 flex items-center gap-1 text-xs font-medium text-destructive">
+                        <AlertTriangle className="h-3 w-3 shrink-0" />
+                        {parcelCodeError || fieldErrors.parcelCode}
                       </span>
                     )}
                   </label>
@@ -508,9 +555,17 @@ export function CheckoutClient({
           </Card>
 
           {error && (
-            <p className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {error}
-            </p>
+            <div className="flex items-start gap-3 rounded-2xl border-2 border-destructive bg-destructive/10 p-4">
+              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
+              <p className="text-sm text-destructive">{error}</p>
+            </div>
+          )}
+
+          {Object.keys(fieldErrors).some((k) => fieldErrors[k]) && (
+            <div ref={stockError || error ? undefined : firstErrorRef} className="flex items-start gap-3 rounded-2xl border-2 border-destructive bg-destructive/10 p-4">
+              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
+              <p className="text-sm text-destructive font-medium">Uzupełnij wymagane pola zaznaczone na czerwono.</p>
+            </div>
           )}
         </div>
 
@@ -619,7 +674,7 @@ export function CheckoutClient({
             type="submit"
             className="w-full"
             size="lg"
-            disabled={loading || Boolean(phoneError) || Boolean(zipError) || Boolean(parcelCodeError)}
+            disabled={loading || Boolean(phoneError) || Boolean(zipError) || Boolean(parcelCodeError) || Object.values(fieldErrors).some(Boolean)}
           >
             {loading && <Loader2 className="h-4 w-4 animate-spin" />}
             Złóż zamówienie
