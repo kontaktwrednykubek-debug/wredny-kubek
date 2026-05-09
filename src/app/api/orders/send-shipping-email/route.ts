@@ -52,15 +52,26 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Order not found" }, { status: 404 });
   }
 
-  // Pobierz email użytkownika z profilu
-  const { data: userProfile } = await supabase
-    .from("profiles")
-    .select("email")
-    .eq("id", order.user_id)
-    .single();
-  
-  if (!userProfile?.email) {
-    return NextResponse.json({ error: "User email not found" }, { status: 404 });
+  // Pobierz email — najpierw z profilu (zalogowani), potem z shipping_info (goście)
+  let userEmail: string | null = null;
+  if (order.user_id) {
+    const { data: userProfile } = await supabase
+      .from("profiles")
+      .select("email")
+      .eq("id", order.user_id)
+      .maybeSingle();
+    userEmail = userProfile?.email ?? null;
+  }
+  if (!userEmail) {
+    const shippingEarly = (order.shipping_info ?? {}) as Record<string, string>;
+    userEmail = shippingEarly.email ?? null;
+  }
+
+  if (!userEmail) {
+    return NextResponse.json(
+      { error: "Brak adresu e-mail klienta — ani w profilu, ani w danych dostawy zamówienia." },
+      { status: 404 },
+    );
   }
 
   const apiKey = process.env.RESEND_API_KEY;
@@ -87,7 +98,7 @@ export async function POST(req: Request) {
 
   console.log("[shipping-email] Wysyłka:", {
     from,
-    to: userProfile.email,
+    to: userEmail,
     orderId: order.id,
   });
 
@@ -104,7 +115,7 @@ export async function POST(req: Request) {
 
     const result = await resend.emails.send({
       from,
-      to: resolveResendTo(userProfile.email),
+      to: resolveResendTo(userEmail),
       subject: `${firstName}, Twój Wredny Kubek właśnie zwiał z magazynu! 🏃💨`,
       html,
     });
