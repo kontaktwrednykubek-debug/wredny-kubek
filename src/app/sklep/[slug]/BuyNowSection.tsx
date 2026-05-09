@@ -21,17 +21,20 @@ export function BuyNowSection({
   priceGrosze,
   cover,
   showVariantStock,
+  capacities = [],
 }: {
   slug: string;
   title: string;
   priceGrosze: number;
   cover: string | null;
   showVariantStock: boolean;
+  capacities?: string[];
 }) {
   const router = useRouter();
   const add = useCart((state) => state.add);
   const [variants, setVariants] = React.useState<Variant[]>([]);
   const [color, setColor] = React.useState<string | null>(null);
+  const [capacity, setCapacity] = React.useState<string | null>(capacities[0] ?? null);
   const [qty, setQty] = React.useState(1);
   const [added, setAdded] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(true);
@@ -83,8 +86,10 @@ export function BuyNowSection({
 
   const buildLabel = () => {
     const variant = variants.find(v => v.id === color);
-    if (!variant) return title;
-    return `${title} - ${variant.name}`;
+    const parts: string[] = [title];
+    if (variant) parts.push(variant.name);
+    if (capacity) parts.push(capacity);
+    return parts.join(" - ");
   };
 
   const handleAdd = (redirect = false) => {
@@ -124,6 +129,32 @@ export function BuyNowSection({
 
   return (
     <div className="space-y-4">
+      {/* Pojemność */}
+      {capacities.length > 0 && (
+        <div>
+          <p className="mb-2 text-sm font-medium">
+            Pojemność:{" "}
+            <span className="text-muted-foreground">{capacity ?? ""}</span>
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {capacities.map((cap) => (
+              <button
+                key={cap}
+                type="button"
+                onClick={() => setCapacity(cap)}
+                className={`rounded-lg border-2 px-3.5 py-2 text-sm font-medium transition-all ${
+                  capacity === cap
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border hover:border-primary/50"
+                }`}
+              >
+                {cap}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Kolory kubka z obrazkami */}
       {variants.length > 0 && (
         <div>

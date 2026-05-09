@@ -95,6 +95,7 @@ export function ProductPageClient({
       priceGrosze={priceGrosze}
       cover={cover}
       showVariantStock={showVariantStock}
+      capacities={variants.capacities ?? []}
     />
   );
 }

@@ -14,6 +14,7 @@ export async function GET(request: NextRequest) {
     .from("product_reviews")
     .select("id, author_name, rating, body, image_url, created_at")
     .eq("product_slug", slug)
+    .eq("is_approved", true)
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -54,8 +55,8 @@ export async function POST(request: NextRequest) {
     .eq("id", user.id)
     .maybeSingle();
 
-  const rawName: string = profile?.full_name || user.email || "Anonimowy";
-  const author_name = rawName.split(" ")[0]; // only first name
+  const rawName: string = profile?.full_name?.trim() || "Klient";
+  const author_name = rawName.split(" ")[0];
 
   const { data: review, error } = await service
     .from("product_reviews")

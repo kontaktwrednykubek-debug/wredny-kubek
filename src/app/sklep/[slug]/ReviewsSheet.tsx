@@ -198,27 +198,32 @@ function AddReviewForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-3 rounded-xl border border-primary/30 bg-primary/5 p-4">
-      <h3 className="font-semibold text-sm">Twoja opinia</h3>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4 rounded-xl border border-border bg-white dark:bg-zinc-800 p-4 shadow-sm">
+      <h3 className="font-semibold text-sm text-foreground">Twoja opinia</h3>
 
-      <div className="flex flex-col gap-1">
-        <span className="text-xs text-muted-foreground">Ocena *</span>
-        <StarRow value={rating} interactive size={24} onChange={setRating} />
+      {/* Star rating */}
+      <div className="flex flex-col gap-1.5">
+        <span className="text-xs font-medium text-foreground">Ocena *</span>
+        <div className="rounded-lg border border-border bg-white dark:bg-zinc-900 px-3 py-2.5">
+          <StarRow value={rating} interactive size={26} onChange={setRating} />
+        </div>
       </div>
 
-      <div className="flex flex-col gap-1">
-        <span className="text-xs text-muted-foreground">Opinia *</span>
+      {/* Review text */}
+      <div className="flex flex-col gap-1.5">
+        <span className="text-xs font-medium text-foreground">Opinia *</span>
         <Textarea
           value={body}
           onChange={(e) => setBody(e.target.value)}
           placeholder="Napisz co sądzisz o tym produkcie... (min. 10 znaków)"
-          rows={3}
-          className="resize-none text-sm"
+          rows={4}
+          className="resize-none text-sm bg-white dark:bg-zinc-900 border border-border rounded-lg focus:ring-2 focus:ring-primary/30"
         />
       </div>
 
       {/* Image upload */}
-      <div>
+      <div className="flex flex-col gap-1.5">
+        <span className="text-xs font-medium text-foreground">Zdjęcie produktu (opcjonalne)</span>
         <input
           ref={fileRef}
           type="file"
@@ -241,18 +246,18 @@ function AddReviewForm({
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors border border-dashed border-border rounded-lg px-3 py-2 w-full justify-center"
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors border border-dashed border-border rounded-lg px-3 py-3 w-full justify-center bg-white dark:bg-zinc-900 hover:bg-gray-50 dark:hover:bg-zinc-800"
           >
-            <ImagePlus size={14} />
-            Dodaj zdjęcie produktu (opcjonalnie)
+            <ImagePlus size={15} />
+            Kliknij aby dodać zdjęcie
           </button>
         )}
       </div>
 
-      {error && <p className="text-xs text-red-500">{error}</p>}
+      {error && <p className="text-xs text-red-500 font-medium">{error}</p>}
 
-      <Button type="submit" disabled={loading} size="sm">
-        {loading ? <Loader2 size={14} className="animate-spin mr-1" /> : null}
+      <Button type="submit" disabled={loading} className="w-full">
+        {loading ? <Loader2 size={14} className="animate-spin" /> : null}
         Opublikuj opinię
       </Button>
     </form>
@@ -299,14 +304,9 @@ export function ReviewsSheet({
       .catch(() => setLoadingReviews(false));
   }, [open, productSlug]);
 
-  function handleReviewAdded(review: Review) {
-    setReviews((prev) => [review, ...prev]);
+  function handleReviewAdded(_review: Review) {
     setAlreadyReviewed(true);
     setShowForm(false);
-    const newCount = count + 1;
-    const newAvg = (avg * count + review.rating) / newCount;
-    setCount(newCount);
-    setAvg(newAvg);
   }
 
   const avgDisplay = reviews.length > 0
@@ -315,7 +315,7 @@ export function ReviewsSheet({
 
   return (
     <Dialog open={open} onOpenChange={(v: boolean) => { if (!v) onClose(); }}>
-      <DialogContent className="w-full max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden sm:rounded-2xl">
+      <DialogContent className="w-full max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden sm:rounded-2xl bg-white dark:bg-zinc-900 shadow-2xl">
         {/* Header */}
         <DialogHeader className="px-5 pt-5 pb-4 border-b border-border shrink-0">
           <div className="flex items-start gap-3">
@@ -364,9 +364,10 @@ export function ReviewsSheet({
           )}
 
           {alreadyReviewed && (
-            <p className="text-center text-sm text-primary font-medium">
-              Dziękujemy za opinię! ☕
-            </p>
+            <div className="rounded-xl border border-green-200 bg-green-50 dark:bg-green-950/30 dark:border-green-900 px-4 py-3 text-center">
+              <p className="text-sm font-medium text-green-800 dark:text-green-400">✅ Dziękujemy za opinię!</p>
+              <p className="text-xs text-green-700 dark:text-green-500 mt-1">Twoja opinia oczekuje na zatwierdzenie przez administratora. Pojawi się wkrótce.</p>
+            </div>
           )}
 
           {showForm && (
