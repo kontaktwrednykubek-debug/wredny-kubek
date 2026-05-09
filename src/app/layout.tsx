@@ -5,8 +5,9 @@ import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { brand } from "@/config/theme";
+import { cn } from "@/lib/utils";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
+const inter = Inter({subsets:['latin'],variable:'--font-sans'});
 
 const description =
   "WrednyKubek — personalizowane kubki, koszulki i gadżety. Zaprojektuj swój wymarzony kubek online w kilka minut.";
@@ -78,7 +79,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="pl" suppressHydrationWarning className={inter.variable}>
+    <html lang="pl" suppressHydrationWarning className={cn("font-sans", inter.variable)}>
       <body className="min-h-screen flex flex-col font-sans overflow-x-hidden" suppressHydrationWarning>
         <ThemeProvider>
           <Navbar />

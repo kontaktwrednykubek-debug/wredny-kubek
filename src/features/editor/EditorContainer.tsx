@@ -257,7 +257,7 @@ export function EditorContainer() {
           <TextControls />
           <AssetUploader />
           <Button
-            variant={mirror ? "primary" : "outline"}
+            variant={mirror ? "default" : "outline"}
             size="sm"
             onClick={toggleMirror}
             className="w-full justify-start"

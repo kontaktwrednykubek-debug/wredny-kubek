@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Star, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { BackLink } from "@/components/BackLink";
 import { formatPrice } from "@/lib/utils";
 import { ProductGalleryClient } from "./ProductGalleryClient";
 import { ProductPageClient } from "./ProductPageClient";
+import { ProductRatingTrigger } from "./ProductRatingTrigger";
 
 export async function generateMetadata({
   params,
@@ -73,23 +74,12 @@ export default async function ProductDetailsPage({
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
               {product.title}
             </h1>
-            <div className="mt-2 flex items-center gap-2">
-              <div className="flex">
-                {[1, 2, 3, 4, 5].map((n) => (
-                  <Star
-                    key={n}
-                    className={`h-4 w-4 ${
-                      n <= Math.round(rating)
-                        ? "fill-amber-400 text-amber-400"
-                        : "text-muted-foreground"
-                    }`}
-                  />
-                ))}
-              </div>
-              <span className="text-sm text-muted-foreground">
-                {rating.toFixed(1)} · {product.reviews_count} opinii
-              </span>
-            </div>
+            <ProductRatingTrigger
+              productSlug={product.slug}
+              productTitle={product.title}
+              rating={rating}
+              reviewsCount={product.reviews_count ?? 0}
+            />
           </div>
 
           {/* Cena */}
