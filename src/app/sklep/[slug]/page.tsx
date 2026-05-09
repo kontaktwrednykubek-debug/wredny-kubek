@@ -136,7 +136,12 @@ export default async function ProductDetailsPage({
             />
           )}
 
-          {/* Długi opis produktu */}
+        </div>
+      </div>
+
+      {/* Długi opis produktu + dane techniczne — pełna szerokość pod galerią i sekcją zakupu */}
+      {(body || Object.keys(specs).length > 0) && (
+        <div className="mt-6 lg:mt-8 flex flex-col gap-4 sm:gap-5">
           {body && (
             <div className="rounded-2xl border border-border bg-card p-5">
               <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
@@ -146,7 +151,6 @@ export default async function ProductDetailsPage({
             </div>
           )}
 
-          {/* Dane techniczne */}
           {Object.keys(specs).length > 0 && (
             <div className="rounded-2xl border border-border bg-card p-5">
               <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
@@ -166,7 +170,7 @@ export default async function ProductDetailsPage({
             </div>
           )}
         </div>
-      </div>
+      )}
     </section>
   );
 }
