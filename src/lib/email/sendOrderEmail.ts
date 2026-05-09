@@ -93,7 +93,9 @@ export async function sendOrderConfirmationEmail(params: {
 
   const resend = new Resend(apiKey);
   const appUrl =
-    process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? "";
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    process.env.NEXT_PUBLIC_APP_URL ??
+    "https://wrednykubek.pl";
   const trackingUrl = `${appUrl}/account/zamowienia?ok=${params.orderId}`;
   const logoUrl = `${appUrl}/wk.svg`;
 

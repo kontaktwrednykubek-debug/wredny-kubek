@@ -77,8 +77,11 @@ export async function POST(req: Request) {
   const firstName = customerName.split(" ")[0];
   
   const appUrl =
-    process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? "";
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    process.env.NEXT_PUBLIC_APP_URL ??
+    "https://wrednykubek.pl";
   const logoUrl = `${appUrl}/wk.svg`;
+  const orderUrl = `${appUrl}/account/zamowienia/${orderId}`;
 
   const from = resolveResendFrom();
 
@@ -95,6 +98,7 @@ export async function POST(req: Request) {
         orderId: order.id,
         trackingNumber: cleanTrackingNumber,
         logoUrl,
+        orderUrl,
       })
     );
 

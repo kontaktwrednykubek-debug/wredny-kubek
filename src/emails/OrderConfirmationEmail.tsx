@@ -89,9 +89,9 @@ export function OrderConfirmationEmail({
             margin: "0 0 20px 0",
           }}
         >
-          Wdech, wydech... Stało się. Twoje pieniądze bezpiecznie do nas dotarły,
-          a my oficjalnie przyjęliśmy wyzwanie przygotowania Twojego{" "}
-          <strong style={{ color: EMAIL_COLORS.primary }}>Wrednego Kubka</strong>.
+          No i cyk — hajs doleciał bezpiecznie, więc odwrotu już nie ma.
+          Twój Wredny Kubek właśnie wskoczył na produkcję, a nasze drukarki już
+          szykują się do popełnienia czegoś totalnie bezczelnego. ☕😈
         </Text>
 
         {/* Numer zamówienia */}

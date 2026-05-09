@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Button, Section, Text } from "@react-email/components";
+import { Button, Link, Section, Text } from "@react-email/components";
 import { EmailShell, EMAIL_COLORS } from "./_shared";
 
 export type ShippingEmailProps = {
@@ -7,6 +7,7 @@ export type ShippingEmailProps = {
   orderId: string;
   trackingNumber: string;
   logoUrl: string;
+  orderUrl: string;
 };
 
 export function ShippingNotificationEmail({
@@ -14,6 +15,7 @@ export function ShippingNotificationEmail({
   orderId,
   trackingNumber,
   logoUrl,
+  orderUrl,
 }: ShippingEmailProps) {
   const firstName = customerName.split(" ")[0];
   const orderShort = orderId.slice(0, 8).toUpperCase();
@@ -207,6 +209,26 @@ export function ShippingNotificationEmail({
           </Button>
         </div>
 
+        <Text
+          style={{
+            fontSize: "14px",
+            color: EMAIL_COLORS.muted,
+            lineHeight: "1.6",
+            margin: "16px 0 4px 0",
+          }}
+        >
+          Śledź status zamówienia:
+        </Text>
+        <Link
+          href={orderUrl}
+          style={{
+            color: EMAIL_COLORS.primary,
+            fontSize: "14px",
+            wordBreak: "break-all",
+          }}
+        >
+          {orderUrl}
+        </Link>
         <Text
           style={{
             fontSize: "15px",
