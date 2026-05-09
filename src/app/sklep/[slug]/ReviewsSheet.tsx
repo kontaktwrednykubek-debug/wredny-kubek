@@ -3,11 +3,11 @@
 import * as React from "react";
 import { Star, X, ImagePlus, Loader2, LogIn, MessageSquarePlus } from "lucide-react";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -314,16 +314,13 @@ export function ReviewsSheet({
     : avg;
 
   return (
-    <Sheet open={open} onOpenChange={(v: boolean) => { if (!v) onClose(); }}>
-      <SheetContent
-        side="right"
-        className="w-full sm:max-w-lg flex flex-col p-0 gap-0 overflow-hidden"
-      >
+    <Dialog open={open} onOpenChange={(v: boolean) => { if (!v) onClose(); }}>
+      <DialogContent className="w-full max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden sm:rounded-2xl">
         {/* Header */}
-        <SheetHeader className="px-5 pt-5 pb-4 border-b border-border shrink-0">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <SheetTitle className="text-base leading-tight">{productTitle}</SheetTitle>
+        <DialogHeader className="px-5 pt-5 pb-4 border-b border-border shrink-0">
+          <div className="flex items-start gap-3">
+            <div className="flex-1 min-w-0">
+              <DialogTitle className="text-base leading-tight truncate">{productTitle}</DialogTitle>
               <div className="mt-1.5 flex items-center gap-2">
                 <StarRow value={Math.round(avgDisplay)} size={15} />
                 <span className="text-sm text-muted-foreground">
@@ -332,7 +329,7 @@ export function ReviewsSheet({
               </div>
             </div>
           </div>
-        </SheetHeader>
+        </DialogHeader>
 
         {/* Scrollable body */}
         <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-4">
@@ -396,7 +393,7 @@ export function ReviewsSheet({
             </div>
           )}
         </div>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }
