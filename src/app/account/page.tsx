@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ShoppingBag, Palette, ChevronRight } from "lucide-react";
+import { ShoppingBag, Palette, Heart, ChevronRight } from "lucide-react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -14,13 +14,17 @@ export default async function AccountPage() {
   if (!user) redirect("/login?next=/account");
 
   // Liczby dla kafelków (RLS zwróci tylko własne rekordy).
-  const [{ count: designsCount }, { count: ordersCount }] = await Promise.all([
+  const [{ count: designsCount }, { count: ordersCount }, { count: wishlistCount }] = await Promise.all([
     supabase
       .from("designs")
       .select("id", { count: "exact", head: true })
       .eq("user_id", user.id),
     supabase
       .from("orders")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id),
+    supabase
+      .from("wishlists")
       .select("id", { count: "exact", head: true })
       .eq("user_id", user.id),
   ]);
@@ -68,6 +72,25 @@ export default async function AccountPage() {
               </p>
               <p className="text-xs text-muted-foreground">
                 {designsCount === 1 ? "projekt" : "projektów"}
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href="/account/ulubione" className="group">
+          <Card className="h-full transition group-hover:border-primary">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Heart className="h-5 w-5 text-rose-500" />
+                Ulubione
+              </CardTitle>
+              <ChevronRight className="h-4 w-4 text-muted-foreground transition group-hover:translate-x-1" />
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-bold text-primary">
+                {wishlistCount ?? 0}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {wishlistCount === 1 ? "produkt" : "produktów"}
               </p>
             </CardContent>
           </Card>

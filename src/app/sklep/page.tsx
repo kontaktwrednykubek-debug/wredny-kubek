@@ -4,6 +4,7 @@ import { Star } from "lucide-react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatPrice } from "@/lib/utils";
 import { ShopFilters, type Category } from "./ShopFilters";
+import { WishlistButton } from "@/components/WishlistButton";
 
 export const metadata = { title: "Sklep" };
 
@@ -15,7 +16,9 @@ export default async function ShopPage({
   const supabase = createSupabaseServerClient();
 
   // Pobierz kategorie i wszystkie opublikowane produkty równolegle.
-  const [categoriesRes, allRangeRes, productsRes] = await Promise.all([
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const [categoriesRes, allRangeRes, productsRes, wishlistRes] = await Promise.all([
     supabase
       .from("categories")
       .select("id, slug, name, parent_id, sort_order")
@@ -31,8 +34,12 @@ export default async function ShopPage({
       )
       .eq("is_published", true)
       .order("created_at", { ascending: false }),
+    user
+      ? supabase.from("wishlists").select("product_slug").eq("user_id", user.id)
+      : Promise.resolve({ data: [] }),
   ]);
 
+  const savedSlugs = new Set((wishlistRes.data ?? []).map((w: { product_slug: string }) => w.product_slug));
   const categories: Category[] = (categoriesRes.data ?? []) as Category[];
   const allProducts = productsRes.data ?? [];
   const prices = (allRangeRes.data ?? []).map(
@@ -123,7 +130,7 @@ export default async function ShopPage({
                         href={`/sklep/${p.slug}`}
                         className="group overflow-hidden rounded-2xl border border-border bg-card transition hover:border-primary hover:shadow-md"
                       >
-                        <div className="relative aspect-square bg-muted">
+                        <div className="relative aspect-square bg-muted group/card">
                           {cover ? (
                             <Image
                               src={cover}
@@ -138,6 +145,9 @@ export default async function ShopPage({
                               brak zdjęcia
                             </div>
                           )}
+                          <div className="absolute right-2 top-2 opacity-0 transition-opacity group-hover/card:opacity-100">
+                            <WishlistButton slug={p.slug as string} initialSaved={savedSlugs.has(p.slug as string)} />
+                          </div>
                         </div>
                         <div className="p-4">
                           <p className="line-clamp-2 font-semibold">
