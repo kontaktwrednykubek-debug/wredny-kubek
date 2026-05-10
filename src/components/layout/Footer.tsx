@@ -51,6 +51,12 @@ const cols = [
       { href: "/account/projekty", label: "Zapisane projekty" },
     ],
   },
+  {
+    title: "Informacje",
+    links: [
+      { href: "/polityka-prywatnosci", label: "Polityka Prywatności" },
+    ],
+  },
 ];
 
 export function Footer() {
