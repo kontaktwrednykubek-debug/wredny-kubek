@@ -92,11 +92,8 @@ export default async function HomePage() {
       <section className="bg-muted">
         <div className="container mx-auto grid items-center gap-8 px-5 py-12 sm:px-6 md:grid-cols-2 md:gap-12 md:py-16 lg:gap-16 lg:px-10 xl:px-12">
           <div className="min-w-0">
-            <h1 className="text-[2rem] font-extrabold leading-[1.1] tracking-tight sm:text-[2.6rem] md:text-[2.8rem] lg:text-[3.4rem] xl:text-[4.2rem]">
-              <span className="whitespace-nowrap">Wredny kubek –</span>
-              <br className="sm:hidden" />
-              {" "}
-              <span className="whitespace-nowrap">Prezent z charakterem</span>
+            <h1 className="text-[2rem] font-extrabold leading-[1.1] tracking-tight text-balance sm:text-[2.6rem] md:text-[2.8rem] lg:text-[3.4rem] xl:text-[4.2rem] [word-break:keep-all] [overflow-wrap:normal]">
+              Wredny kubek<br />Prezent z charakterem
             </h1>
             <p className="mt-5 max-w-lg text-base text-muted-foreground sm:text-lg">
               Twój własny styl bez owijania w bawełnę.
