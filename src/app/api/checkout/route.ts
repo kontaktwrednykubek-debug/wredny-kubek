@@ -36,6 +36,11 @@ export async function POST(req: Request) {
   const amount = calculatePrice(productId, designData ?? {});
   const stripe = new Stripe(env.STRIPE_SECRET_KEY);
 
+  const origin =
+    req.headers.get("origin") ||
+    (req.headers.get("host") ? `https://${req.headers.get("host")}` : null) ||
+    env.NEXT_PUBLIC_APP_URL;
+
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
     line_items: [
@@ -48,8 +53,8 @@ export async function POST(req: Request) {
         },
       },
     ],
-    success_url: `${env.NEXT_PUBLIC_APP_URL}/koszyk?status=success`,
-    cancel_url: `${env.NEXT_PUBLIC_APP_URL}/koszyk?status=cancel`,
+    success_url: `${origin}/koszyk?status=success`,
+    cancel_url: `${origin}/koszyk?status=cancel`,
   });
 
   return NextResponse.json({ url: session.url });

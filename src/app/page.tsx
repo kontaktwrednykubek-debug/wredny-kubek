@@ -4,6 +4,7 @@ import { ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { brand } from "@/config/theme";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { HeroSlideshow } from "@/components/HeroSlideshow";
 import {
   ProductCarousel,
   type CarouselProduct,
@@ -91,33 +92,23 @@ export default async function HomePage() {
         <div className="container mx-auto grid items-center gap-8 px-5 py-12 sm:px-6 md:grid-cols-2 md:gap-12 md:py-16 lg:gap-16 lg:px-10 xl:px-12">
           <div className="min-w-0">
             <h1 className="break-words text-[2rem] font-extrabold leading-[1.05] tracking-tight hyphens-auto sm:text-[2.6rem] md:text-[2.8rem] lg:text-[3.4rem] xl:text-[4.2rem]">
-              Spersonalizuj swój własny styl kubka
+              Wredny kubek – prezent z charakterem
             </h1>
             <p className="mt-5 max-w-lg text-base text-muted-foreground sm:text-lg">
-              Personalizuj kubki, koszulki i wiele więcej. Zamów online,
-              wydrukuj w domu lub u nas.
+              Twój własny styl bez owijania w bawełnę.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
-              <Link href="/edytor">
-                <Button size="lg">Rozpocznij projektowanie</Button>
-              </Link>
               <Link href="/sklep">
-                <Button size="lg" variant="outline">
+                <Button
+                  size="lg"
+                  className="h-12 px-6 text-base bg-teal-500 text-white hover:bg-teal-600 sm:h-11 sm:px-5 sm:text-sm"
+                >
                   Zobacz sklep
                 </Button>
               </Link>
             </div>
           </div>
-          <div className="relative aspect-square w-full">
-            <Image
-              src="/kubki.png"
-              alt="Personalizowane kubki"
-              fill
-              priority
-              sizes="(min-width: 768px) 50vw, 100vw"
-              className="scale-110 object-contain drop-shadow-[0_25px_25px_rgba(0,0,0,0.35)]"
-            />
-          </div>
+          <HeroSlideshow />
         </div>
       </section>
 

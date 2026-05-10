@@ -147,6 +147,12 @@ export async function POST(req: Request) {
     discounts.push({ promotion_code: discountCodeRow.stripe_promotion_code_id });
   }
 
+  // Origin z requestu — żeby redirect zawsze wracał na tę domenę co klient (np. wrednykubek.pl, nie vercel)
+  const origin =
+    req.headers.get("origin") ||
+    (req.headers.get("host") ? `https://${req.headers.get("host")}` : null) ||
+    env.NEXT_PUBLIC_APP_URL;
+
   let session: Stripe.Checkout.Session;
   try {
     session = await stripe.checkout.sessions.create({
@@ -163,8 +169,8 @@ export async function POST(req: Request) {
         userId: user?.id ?? "",
         discountCodeId: order.discount_code_id ?? "",
       },
-      success_url: `${env.NEXT_PUBLIC_APP_URL}/sklep/${order.product_id.replace('shop:', '')}?payment=success`,
-      cancel_url: `${env.NEXT_PUBLIC_APP_URL}/koszyk/checkout?status=cancel&orderId=${order.id}`,
+      success_url: `${origin}/sklep/${order.product_id.replace('shop:', '')}?payment=success`,
+      cancel_url: `${origin}/koszyk/checkout?status=cancel&orderId=${order.id}`,
     });
   } catch (err) {
     console.error("[checkout/session] Stripe.checkout.sessions.create failed:", {
