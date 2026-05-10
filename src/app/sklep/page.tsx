@@ -10,7 +10,7 @@ export const metadata = { title: "Sklep" };
 export default async function ShopPage({
   searchParams,
 }: {
-  searchParams?: { category?: string; minPrice?: string; maxPrice?: string };
+  searchParams?: { category?: string; minPrice?: string; maxPrice?: string; q?: string };
 }) {
   const supabase = createSupabaseServerClient();
 
@@ -42,6 +42,7 @@ export default async function ShopPage({
   const globalMaxGr = prices.length ? Math.max(...prices) : 50000;
 
   const selectedCategory = searchParams?.category ?? null;
+  const searchQuery = searchParams?.q?.trim().toLowerCase() ?? "";
   const selectedMinGr = searchParams?.minPrice
     ? parseInt(searchParams.minPrice, 10) || globalMinGr
     : globalMinGr;
@@ -68,6 +69,7 @@ export default async function ShopPage({
       const cat = (p.category as string | null) ?? "";
       if (!childSlugs.has(cat)) return false;
     }
+    if (searchQuery && !((p.title as string) ?? "").toLowerCase().includes(searchQuery)) return false;
     return true;
   });
 

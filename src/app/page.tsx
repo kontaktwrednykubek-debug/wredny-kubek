@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { brand } from "@/config/theme";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { HeroSlideshow } from "@/components/HeroSlideshow";
+import { HeroSearch } from "@/components/HeroSearch";
 import {
   ProductCarousel,
   type CarouselProduct,
@@ -111,6 +112,8 @@ export default async function HomePage() {
           <HeroSlideshow />
         </div>
       </section>
+
+      <HeroSearch />
 
       {/* WREDNE HITY — polecane przez admina */}
       {featuredProducts.length > 0 && (

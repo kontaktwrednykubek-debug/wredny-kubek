@@ -36,12 +36,6 @@ function TikTokIcon({ className }: { className?: string }) {
 
 const cols = [
   {
-    title: "Sklep",
-    links: [
-      { href: "/sklep", label: "Wszystkie produkty" },
-    ],
-  },
-  {
     title: "Konto",
     links: [
       { href: "/login", label: "Zaloguj" },
