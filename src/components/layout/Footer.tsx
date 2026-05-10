@@ -39,7 +39,6 @@ const cols = [
     title: "Sklep",
     links: [
       { href: "/sklep", label: "Wszystkie produkty" },
-      { href: "/sklep/kubki", label: "Kubki" },
     ],
   },
   {

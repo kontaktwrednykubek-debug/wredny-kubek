@@ -1,4 +1,6 @@
 import { Metadata } from "next";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { FullPrivacyPolicy } from "./FullPrivacyPolicy";
 
 export const metadata: Metadata = {
@@ -10,6 +12,13 @@ export const metadata: Metadata = {
 export default function PolitykaPrywatnosci() {
   return (
     <main className="container mx-auto max-w-3xl px-4 py-12 sm:py-16">
+      <Link
+        href="/"
+        className="mb-8 inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Wróć na stronę główną
+      </Link>
       <h1 className="mb-2 text-3xl font-extrabold tracking-tight sm:text-4xl">
         Polityka Prywatności
       </h1>
