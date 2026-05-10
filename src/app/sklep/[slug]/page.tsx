@@ -1,4 +1,5 @@
 import Link from "next/link";
+import * as React from "react";
 import { notFound } from "next/navigation";
 import { Sparkles } from "lucide-react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -115,15 +116,17 @@ export default async function ProductDetailsPage({
               </Link>
             </div>
           ) : (
-            <ProductPageClient
-              slug={product.slug}
-              title={product.title}
-              priceGrosze={product.price_grosze}
-              cover={images[0] ?? null}
-              variants={variants}
-              showVariantStock={showVariantStock}
-              variantStockMap={variantStockMap}
-            />
+            <React.Suspense fallback={null}>
+              <ProductPageClient
+                slug={product.slug}
+                title={product.title}
+                priceGrosze={product.price_grosze}
+                cover={images[0] ?? null}
+                variants={variants}
+                showVariantStock={showVariantStock}
+                variantStockMap={variantStockMap}
+              />
+            </React.Suspense>
           )}
 
         </div>
