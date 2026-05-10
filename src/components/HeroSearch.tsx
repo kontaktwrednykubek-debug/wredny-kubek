@@ -15,30 +15,26 @@ export function HeroSearch() {
   }
 
   return (
-    <section className="bg-muted/60 border-b border-border">
-      <div className="container mx-auto px-5 py-8 sm:px-6 lg:px-10 xl:px-12">
-        <p className="mb-4 text-center text-base font-medium text-muted-foreground sm:text-lg">
-          Wpisz coś, czego nie odważysz się powiedzieć głośno?
-        </p>
-        <form onSubmit={handleSubmit} className="mx-auto flex max-w-2xl items-center gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Wyszukaj kubek..."
-              className="h-12 w-full rounded-full border-2 border-teal-400/60 bg-background pl-11 pr-4 text-sm outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 dark:border-teal-500/50"
-            />
-          </div>
-          <button
-            type="submit"
-            className="h-12 rounded-full bg-teal-500 px-6 text-sm font-semibold text-white transition hover:bg-teal-600 active:scale-95"
-          >
-            Szukaj
-          </button>
-        </form>
-      </div>
+    <section className="w-full border-b border-border bg-background py-10 px-5 sm:px-8">
+      <p className="mb-5 text-center text-sm font-semibold uppercase tracking-widest text-muted-foreground sm:text-base">
+        Wpisz coś, czego nie odważysz się powiedzieć głośno?
+      </p>
+      <form onSubmit={handleSubmit} className="flex w-full items-center gap-0 rounded-full border-2 border-teal-400/70 bg-background shadow-sm focus-within:border-teal-500 focus-within:ring-2 focus-within:ring-teal-500/20 dark:border-teal-500/50">
+        <Search className="ml-5 h-5 w-5 shrink-0 text-muted-foreground" />
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Wyszukaj kubek..."
+          className="h-14 flex-1 bg-transparent pl-4 pr-4 text-sm outline-none sm:text-base"
+        />
+        <button
+          type="submit"
+          className="m-1.5 h-11 shrink-0 rounded-full bg-teal-500 px-7 text-sm font-semibold text-white transition hover:bg-teal-600 active:scale-95 sm:h-12 sm:px-8 sm:text-base"
+        >
+          Szukaj
+        </button>
+      </form>
     </section>
   );
 }
