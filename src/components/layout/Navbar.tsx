@@ -38,12 +38,20 @@ export function Navbar() {
           className="flex h-full items-center"
         >
           <Image
-            src="/logo_wredny_kubek.png"
+            src="/wk-logo-light.png"
             alt={brand.name}
             width={160}
             height={80}
             priority
-            className="h-14 w-auto object-contain sm:h-16"
+            className="block h-14 w-auto object-contain dark:hidden sm:h-16"
+          />
+          <Image
+            src="/wk-logo-dark.png"
+            alt={brand.name}
+            width={160}
+            height={80}
+            priority
+            className="hidden h-14 w-auto object-contain dark:block sm:h-16"
           />
         </Link>
 

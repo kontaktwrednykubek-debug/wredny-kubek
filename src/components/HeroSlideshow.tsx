@@ -4,7 +4,7 @@ import * as React from "react";
 import Image from "next/image";
 
 const SLIDES = ["/slajd-1.png", "/slajd-2.png", "/slajd-3.png"];
-const INTERVAL_MS = 1200;
+const INTERVAL_MS = 5000;
 
 export function HeroSlideshow() {
   const [index, setIndex] = React.useState(0);
