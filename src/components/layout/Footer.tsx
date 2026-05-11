@@ -48,6 +48,7 @@ const cols = [
     title: "Informacje",
     links: [
       { href: "/polityka-prywatnosci", label: "Polityka Prywatności" },
+      { href: "/regulamin", label: "Regulamin sklepu" },
     ],
   },
 ];
