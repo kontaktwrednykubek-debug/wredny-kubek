@@ -29,6 +29,15 @@ function LoginInner() {
   const [error, setError] = React.useState<string | null>(null);
   const [info, setInfo] = React.useState<string | null>(null);
 
+  // Obsługa błędów z URL (np. po kliknięciu wygasłego linka z emaila)
+  React.useEffect(() => {
+    const errCode = params.get("error_code");
+    const errDesc = params.get("error_description");
+    if (errCode || errDesc) {
+      setError(translate(errDesc ?? errCode ?? ""));
+    }
+  }, [params]);
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -171,6 +180,18 @@ function translate(msg: string): string {
     return "Użytkownik z tym emailem już istnieje.";
   if (m.includes("password should be at least"))
     return "Hasło musi mieć co najmniej 6 znaków.";
+  if (m.includes("email rate limit exceeded") || m.includes("over_email_send_rate_limit"))
+    return "Zbyt wiele wiadomości email w krótkim czasie. Odczekaj kilka minut i spróbuj ponownie.";
+  if (m.includes("rate limit") || m.includes("too many requests"))
+    return "Zbyt wiele prób. Odczekaj chwilę i spróbuj ponownie.";
+  if (m.includes("otp_expired") || m.includes("email link is invalid or has expired"))
+    return "Link weryfikacyjny wygasł lub jest nieprawidłowy. Zarejestruj się ponownie lub poproś o nowy link.";
+  if (m.includes("invalid email"))
+    return "Nieprawidłowy adres email.";
+  if (m.includes("signup is disabled") || m.includes("signups not allowed"))
+    return "Rejestracja jest wyłączona.";
+  if (m.includes("network") || m.includes("fetch"))
+    return "Problem z połączeniem. Sprawdź internet i spróbuj ponownie.";
   if (m.includes("could not find the table"))
     return "Baza danych nie jest jeszcze skonfigurowana — uruchom migrację SQL.";
   return msg;
