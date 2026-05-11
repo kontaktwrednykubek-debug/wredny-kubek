@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ShoppingBag, Palette, Heart, ChevronRight } from "lucide-react";
+import { ShoppingBag, Palette, Heart, Settings, ChevronRight } from "lucide-react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -14,6 +14,12 @@ export default async function AccountPage() {
   if (!user) redirect("/login?next=/account");
 
   // Liczby dla kafelków (RLS zwróci tylko własne rekordy).
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("full_name")
+    .eq("id", user.id)
+    .maybeSingle();
+
   const [{ count: designsCount }, { count: ordersCount }, { count: wishlistCount }] = await Promise.all([
     supabase
       .from("designs")
@@ -31,7 +37,7 @@ export default async function AccountPage() {
 
   return (
     <section className="container mx-auto max-w-3xl px-4 py-12">
-      <h1 className="mb-1 text-3xl font-bold">Witaj, {user.email}</h1>
+      <h1 className="mb-1 text-3xl font-bold">Witaj, {profile?.full_name || user.email}</h1>
       <p className="mb-6 text-sm text-muted-foreground">
         Zarządzaj zamówieniami i zapisanymi projektami.
       </p>
@@ -92,6 +98,24 @@ export default async function AccountPage() {
               <p className="text-xs text-muted-foreground">
                 {wishlistCount === 1 ? "produkt" : "produktów"}
               </p>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/account/ustawienia" className="group">
+          <Card className="h-full transition group-hover:border-primary">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="h-5 w-5 text-muted-foreground" />
+                Ustawienia
+              </CardTitle>
+              <ChevronRight className="h-4 w-4 text-muted-foreground transition group-hover:translate-x-1" />
+            </CardHeader>
+            <CardContent>
+              <p className="truncate text-sm font-medium text-foreground">
+                {profile?.full_name || <span className="text-muted-foreground italic">Brak imienia</span>}
+              </p>
+              <p className="text-xs text-muted-foreground">Zmień imię</p>
             </CardContent>
           </Card>
         </Link>
