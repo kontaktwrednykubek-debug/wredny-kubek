@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { ExportEmailsButton } from "./ExportEmailsButton";
 
 export const metadata = { title: "Użytkownicy" };
 
@@ -13,7 +14,17 @@ export default async function AdminUsersPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Użytkownicy</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold">Użytkownicy</h1>
+        {profiles?.length ? (
+          <ExportEmailsButton
+            rows={profiles.map((p) => ({
+              email: p.email,
+              full_name: p.full_name,
+            }))}
+          />
+        ) : null}
+      </div>
       {!profiles?.length ? (
         <p className="text-muted-foreground">Brak użytkowników.</p>
       ) : (

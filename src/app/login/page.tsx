@@ -1,8 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-import { Loader2, Mail, Lock } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { Loader2, Mail, Lock, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -18,11 +18,11 @@ export default function LoginPage() {
 }
 
 function LoginInner() {
-  const router = useRouter();
   const params = useSearchParams();
   const next = params.get("next") ?? "/account";
 
   const [mode, setMode] = React.useState<Mode>("signin");
+  const [firstName, setFirstName] = React.useState("");
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [loading, setLoading] = React.useState(false);
@@ -42,19 +42,27 @@ function LoginInner() {
         email,
         password,
       });
-      setLoading(false);
-      if (error) return setError(translate(error.message));
-      router.push(next);
-      router.refresh();
+      if (error) {
+        setLoading(false);
+        return setError(translate(error.message));
+      }
+      // Pełne przeładowanie, żeby ciasteczko sesji było widoczne dla SSR od razu
+      window.location.href = next;
       return;
     }
 
     // signup
+    const trimmedName = firstName.trim();
+    if (!trimmedName) {
+      setLoading(false);
+      return setError("Podaj swoje imię.");
+    }
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/login`,
+        data: { first_name: trimmedName },
       },
     });
     setLoading(false);
@@ -65,8 +73,7 @@ function LoginInner() {
       );
       setMode("signin");
     } else {
-      router.push(next);
-      router.refresh();
+      window.location.href = next;
     }
   }
 
@@ -80,6 +87,19 @@ function LoginInner() {
         </CardHeader>
         <CardContent>
           <form onSubmit={onSubmit} className="space-y-3">
+            {mode === "signup" && (
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  type="text"
+                  required
+                  placeholder="Imię"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className="w-full rounded-xl border border-input bg-background py-2 pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+            )}
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <input
