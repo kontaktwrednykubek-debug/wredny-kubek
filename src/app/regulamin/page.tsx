@@ -33,8 +33,7 @@ export default function RegulaminsPage() {
           <p>Właścicielem zamieszania i osobą, która dopilnuje Twojego zamówienia, jest:</p>
           <p>
             <strong>Wredny Kubek — Milena Bujniak</strong><br />
-            Świdnik 25, 58-410 Marciszów<br />
-            NIP: (tu wpisz swój NIP) | REGON: (tu wpisz swój REGON)
+            Świdnik 25, 58-410 Marciszów
           </p>
           <p>Kontakt (jeśli musisz):</p>
           <ul>
