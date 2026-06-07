@@ -107,7 +107,7 @@ export function Navbar() {
               aria-label={menuOpen ? "Zamknij menu" : "Otwórz menu"}
               onClick={() => setMenuOpen((v) => !v)}
             >
-              {menuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              {menuOpen ? <X className="h-7 w-7" /> : <Menu className="h-7 w-7" />}
             </Button>
           </div>
         </div>

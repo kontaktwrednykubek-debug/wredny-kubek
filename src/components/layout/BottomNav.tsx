@@ -104,21 +104,21 @@ export function BottomNav() {
             <div className="relative -translate-y-5">
               {/* Speech bubble — positioned relative to the cup circle */}
               {showBubble && (
-                <div className="absolute bottom-[calc(100%+10px)] left-1/2 -translate-x-1/2 w-44 animate-bubble-in rounded-2xl border border-[#40C4A4] bg-white px-3 py-2.5 shadow-lg">
+                <div className="absolute bottom-[calc(100%+12px)] left-1/2 -translate-x-1/2 w-56 animate-bubble-in rounded-2xl border border-[#40C4A4] bg-white px-4 py-3.5 shadow-lg">
                   <button
                     onClick={(e) => { e.preventDefault(); setShowBubble(false); }}
                     aria-label="Zamknij"
-                    className="absolute right-1.5 top-1.5 text-gray-400 text-xs hover:text-gray-600 leading-none"
+                    className="absolute right-2 top-2 text-gray-400 text-sm hover:text-gray-600 leading-none"
                   >
                     ×
                   </button>
-                  <p className="pr-3 text-xs font-bold leading-snug text-black">
+                  <p className="pr-4 text-sm font-bold leading-snug text-black">
                     Wredny z wyglądu, genialny w środku.
                   </p>
-                  <p className="mt-0.5 text-[10px] text-black/60">
+                  <p className="mt-1 text-xs text-black/60">
                     Kliknij i sprawdź!
                   </p>
-                  {/* Arrow pointing down at the cup */}
+                  {/* Arrow pointing down at the cup — centered on the cup circle */}
                   <div className="absolute -bottom-[7px] left-1/2 -translate-x-1/2 h-3 w-3 rotate-45 border-b border-r border-[#40C4A4] bg-white" />
                 </div>
               )}

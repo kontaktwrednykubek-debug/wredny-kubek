@@ -19,7 +19,7 @@ export function CartIcon() {
   return (
     <Link href="/koszyk" className="relative">
       <Button variant="ghost" size="icon" aria-label="Koszyk">
-        <ShoppingBag className="h-6 w-6" />
+        <ShoppingBag className="h-7 w-7" />
       </Button>
       {showBadge && (
         <span
