@@ -3,7 +3,7 @@ import { Plus, Star } from "lucide-react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/lib/utils";
-import { ProductsAdminActions } from "./ProductsAdminActions";
+import { ProductsAdminActions, ReindexButton } from "./ProductsAdminActions";
 
 export const metadata = { title: "Produkty" };
 
@@ -30,12 +30,15 @@ export default async function AdminProductsPage({
             osobnej konfiguracji.
           </p>
         </div>
-        <Link href={`/${params.adminSlug}/produkty/nowy`}>
-          <Button>
-            <Plus className="h-4 w-4" />
-            Dodaj produkt
-          </Button>
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <ReindexButton />
+          <Link href={`/${params.adminSlug}/produkty/nowy`}>
+            <Button>
+              <Plus className="h-4 w-4" />
+              Dodaj produkt
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {!products?.length ? (

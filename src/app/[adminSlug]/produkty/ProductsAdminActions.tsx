@@ -3,7 +3,49 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Pencil, Star, Trash2 } from "lucide-react";
+import { Pencil, Star, Trash2, Sparkles } from "lucide-react";
+
+export function ReindexButton() {
+  const [status, setStatus] = React.useState<"idle" | "loading" | "done" | "error">("idle");
+  const [msg, setMsg] = React.useState("");
+
+  async function run() {
+    setStatus("loading");
+    setMsg("");
+    try {
+      const res = await fetch("/api/admin/reindex-embeddings", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) {
+        setStatus("error");
+        setMsg(data.error ?? "Błąd");
+      } else {
+        setStatus("done");
+        setMsg(`Zaktualizowano: ${data.updated}/${data.total}${data.errors?.length ? ` | Błędy: ${data.errors.join(", ")}` : ""}`);
+      }
+    } catch (e) {
+      setStatus("error");
+      setMsg(String(e));
+    }
+  }
+
+  return (
+    <div className="flex flex-col items-end gap-1">
+      <button
+        onClick={run}
+        disabled={status === "loading"}
+        className="inline-flex items-center gap-1.5 rounded-lg border border-[#40C4A4]/60 bg-[#40C4A4]/10 px-3 py-1.5 text-xs font-semibold text-[#40C4A4] hover:bg-[#40C4A4]/20 disabled:opacity-50 transition-all"
+      >
+        <Sparkles className={`h-3.5 w-3.5 ${status === "loading" ? "animate-spin" : ""}`} />
+        {status === "loading" ? "Generuję embeddingi…" : "Reindeksuj AI (embeddingi)"}
+      </button>
+      {msg && (
+        <p className={`text-xs ${status === "error" ? "text-destructive" : "text-muted-foreground"}`}>
+          {msg}
+        </p>
+      )}
+    </div>
+  );
+}
 
 export function ProductsAdminActions({
   slug,

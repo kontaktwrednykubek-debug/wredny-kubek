@@ -1,9 +1,20 @@
 import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import { geminiEmbed } from "@/lib/gemini";
 
 export async function POST() {
-  const supabase = createSupabaseServerClient();
+  // 1. Verify Gemini key works before doing anything
+  if (!process.env.GEMINI_API_KEY) {
+    return NextResponse.json({ error: "GEMINI_API_KEY not set" }, { status: 500 });
+  }
+  try {
+    await geminiEmbed("test");
+  } catch (e) {
+    return NextResponse.json({ error: `Gemini API key invalid: ${String(e)}` }, { status: 500 });
+  }
+
+  // 2. Use service role client — bypasses RLS for UPDATE
+  const supabase = createSupabaseServiceClient();
 
   const { data: products, error } = await supabase
     .from("shop_products")
@@ -34,13 +45,12 @@ export async function POST() {
         .update({ embedding })
         .eq("id", p.id);
 
-      if (upErr) errors.push(`${p.id}: ${upErr.message}`);
+      if (upErr) errors.push(`${p.title}: ${upErr.message}`);
       else updated++;
 
-      // Small delay to avoid rate limiting
-      await new Promise((r) => setTimeout(r, 200));
+      await new Promise((r) => setTimeout(r, 250));
     } catch (e) {
-      errors.push(`${p.id}: ${String(e)}`);
+      errors.push(`${p.title}: ${String(e)}`);
     }
   }
 
