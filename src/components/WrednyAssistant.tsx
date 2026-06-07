@@ -34,6 +34,7 @@ export function WrednyAssistant() {
   // page-flip animation state
   const [exiting, setExiting] = React.useState(false);
   const [entering, setEntering] = React.useState(false);
+  const [selected, setSelected] = React.useState<string | null>(null);
 
   const currentPage = pages[pages.length - 1] ?? null;
   const step = pages.length; // 0 = not started
@@ -76,14 +77,13 @@ export function WrednyAssistant() {
   }
 
   function flipToPage(page: Page) {
+    setSelected(null);
     if (pages.length === 0) {
-      // First page — just appear
       setPages([page]);
       setEntering(true);
       setTimeout(() => setEntering(false), 350);
       return;
     }
-    // Animate out current page, then swap in new one
     setExiting(true);
     setTimeout(() => {
       setPages((prev) => [...prev, page]);
@@ -199,15 +199,41 @@ export function WrednyAssistant() {
                 </div>
               )}
 
-              {/* Options (quiz choices) */}
+              {/* Options — radio style */}
               {currentPage.options.length > 0 && currentPage.products.length === 0 && (
-                <div className="mt-auto grid grid-cols-1 gap-2">
-                  {currentPage.options.map((opt, i) => (
-                    <button key={i} onClick={() => sendAnswer(opt)} disabled={loading}
-                      className="w-full rounded-2xl border-2 border-[#40C4A4]/60 bg-[#40C4A4]/5 px-4 py-3 text-left text-sm font-medium transition-all hover:border-[#40C4A4] hover:bg-[#40C4A4]/10 active:scale-[0.98] disabled:opacity-50">
-                      {opt}
-                    </button>
-                  ))}
+                <div className="mt-auto flex flex-col gap-3">
+                  <div className="grid grid-cols-1 gap-2">
+                    {currentPage.options.map((opt, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setSelected(opt)}
+                        disabled={loading}
+                        className={`flex items-center gap-3 w-full rounded-2xl border-2 px-4 py-3 text-left text-sm font-medium transition-all active:scale-[0.98] disabled:opacity-50 ${
+                          selected === opt
+                            ? "border-[#40C4A4] bg-[#40C4A4]/15"
+                            : "border-border bg-muted/30 hover:border-[#40C4A4]/60 hover:bg-[#40C4A4]/5"
+                        }`}
+                      >
+                        {/* Radio circle */}
+                        <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
+                          selected === opt ? "border-[#40C4A4]" : "border-muted-foreground/40"
+                        }`}>
+                          {selected === opt && (
+                            <span className="h-2.5 w-2.5 rounded-full bg-[#40C4A4]" />
+                          )}
+                        </span>
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+                  {/* Confirm button */}
+                  <button
+                    onClick={() => selected && sendAnswer(selected)}
+                    disabled={!selected || loading}
+                    className="w-full rounded-2xl bg-[#40C4A4] py-3 text-sm font-bold text-white shadow transition-all hover:bg-[#40C4A4]/90 active:scale-[0.98] disabled:opacity-40"
+                  >
+                    Dalej →
+                  </button>
                 </div>
               )}
 
