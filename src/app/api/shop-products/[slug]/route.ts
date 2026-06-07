@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { geminiEmbed } from "@/lib/gemini";
 import { z } from "zod";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -149,6 +150,24 @@ export async function PATCH(
   if (p.isPublished !== undefined) update.is_published = p.isPublished;
   if (p.showVariantStock !== undefined) update.show_variant_stock = p.showVariantStock;
   if (p.variantStock !== undefined) update.variant_stock = p.variantStock;
+
+  // Re-generate embedding when searchable text fields change
+  if (p.title || p.description || p.body || p.categories) {
+    const { data: existing } = await auth.supabase
+      .from("shop_products")
+      .select("title, description, body, category")
+      .eq("slug", params.slug)
+      .single();
+    if (existing) {
+      const text = [
+        update.title ?? existing.title,
+        update.description ?? existing.description,
+        update.body ?? existing.body,
+        ...((update.categories as string[]) ?? [update.category ?? existing.category]),
+      ].filter(Boolean).join(" ");
+      update.embedding = await geminiEmbed(text).catch(() => null);
+    }
+  }
 
   const { data, error } = await auth.supabase
     .from("shop_products")

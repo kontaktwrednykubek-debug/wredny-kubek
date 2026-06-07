@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { geminiEmbed } from "@/lib/gemini";
 
 /**
  * GET /api/shop-products — lista opublikowanych produktów (publiczne).
@@ -96,6 +97,9 @@ export async function POST(req: Request) {
       body: p.body,
       category: p.categories?.[0] ?? p.category,
       categories: p.categories ?? [p.category],
+      embedding: await geminiEmbed(
+        [p.title, p.description, p.body, ...(p.categories ?? [p.category])].filter(Boolean).join(" ")
+      ).catch(() => null),
       price_grosze: p.priceGrosze,
       images: p.images,
       specs: p.specs,
