@@ -6,6 +6,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { brand } from "@/config/theme";
 import { cn } from "@/lib/utils";
+import { LottieWidget } from "@/components/LottieWidget";
 
 const inter = Inter({subsets:['latin'],variable:'--font-sans'});
 
@@ -80,11 +81,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pl" suppressHydrationWarning className={cn("font-sans", inter.variable)}>
-      <body className="min-h-screen flex flex-col font-sans overflow-x-hidden" suppressHydrationWarning>
+      <body className="min-h-screen flex flex-col font-sans" suppressHydrationWarning>
         <ThemeProvider>
-          <Navbar />
-          <main className="flex-1 w-full max-w-full overflow-x-hidden">{children}</main>
-          <Footer />
+          <div className="flex flex-col min-h-screen overflow-x-hidden">
+            <Navbar />
+            <main className="flex-1 w-full max-w-full">{children}</main>
+            <Footer />
+          </div>
+          <LottieWidget />
         </ThemeProvider>
       </body>
     </html>

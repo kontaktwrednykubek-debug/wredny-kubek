@@ -61,6 +61,17 @@ const config: Config = {
       fontFamily: {
         sans: ["var(--font-sans)", "system-ui", "sans-serif"],
       },
+      keyframes: {
+        wiggle: {
+          "0%, 100%": { transform: "rotate(-6deg) scale(1)" },
+          "25%": { transform: "rotate(6deg) scale(1.08)" },
+          "50%": { transform: "rotate(-4deg) scale(1)" },
+          "75%": { transform: "rotate(4deg) scale(1.05)" },
+        },
+      },
+      animation: {
+        wiggle: "wiggle 2s ease-in-out infinite",
+      },
     },
   },
   plugins: [],

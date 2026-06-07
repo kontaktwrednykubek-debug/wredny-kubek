@@ -13,6 +13,7 @@ import { CartIcon } from "@/components/layout/CartIcon";
 const navItems = [
   { href: "/", label: "Główna" },
   { href: "/sklep", label: "Sklep" },
+  { href: "/nowosci", label: "Nowości" },
   { href: "/edytor", label: "Twój Projekt" },
   { href: "/koszyk", label: "Koszyk" },
 ];

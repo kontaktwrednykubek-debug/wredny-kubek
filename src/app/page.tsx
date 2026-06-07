@@ -115,6 +115,68 @@ export default async function HomePage() {
 
       <HeroSearch />
 
+      {/* CECHY — DARMOWA DOSTAWA, CZAS REALIZACJI, JAKOŚĆ PREMIUM, BEZPIECZNE PŁATNOŚCI */}
+      <section className="bg-background border-b border-border">
+        <div className="container mx-auto px-5 py-12 sm:px-6 lg:px-10 xl:px-12">
+          <div className="grid grid-cols-2 gap-8 md:grid-cols-4 md:gap-6">
+            {/* Darmowa dostawa */}
+            <div className="flex flex-col items-center gap-3 text-center">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" className="h-14 w-14" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="22" width="40" height="22" rx="2" />
+                <path d="M42 30h10l8 8v8H42V30z" />
+                <circle cx="16" cy="48" r="5" />
+                <circle cx="50" cy="48" r="5" />
+                <path d="M2 22l6-10h28l6 10" />
+                <path d="M8 18H2M32 18h10" />
+              </svg>
+              <div>
+                <p className="text-sm font-extrabold uppercase tracking-wider">Darmowa dostawa</p>
+                <p className="mt-1 text-xs text-muted-foreground">Dla zamówień powyżej 200 zł</p>
+              </div>
+            </div>
+
+            {/* Czas realizacji */}
+            <div className="flex flex-col items-center gap-3 text-center">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" className="h-14 w-14" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="36" cy="34" r="22" />
+                <path d="M36 18v16l10 6" />
+                <path d="M14 10l8 6M58 10l-8 6" />
+                <path d="M36 12V6" />
+              </svg>
+              <div>
+                <p className="text-sm font-extrabold uppercase tracking-wider">Czas realizacji</p>
+                <p className="mt-1 text-xs text-muted-foreground">2–4 dni robocze od momentu otrzymania płatności</p>
+              </div>
+            </div>
+
+            {/* Jakość premium */}
+            <div className="flex flex-col items-center gap-3 text-center">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" className="h-14 w-14" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M32 6l8 14 16 2-12 11 3 16-15-8-15 8 3-16L8 22l16-2z" />
+              </svg>
+              <div>
+                <p className="text-sm font-extrabold uppercase tracking-wider">Jakość Premium</p>
+                <p className="mt-1 text-xs text-muted-foreground">Wyłącznie kubki JS Coating oraz SuperGlaze Premium</p>
+              </div>
+            </div>
+
+            {/* Bezpieczne płatności */}
+            <div className="flex flex-col items-center gap-3 text-center">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" className="h-14 w-14" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="4" y="14" width="56" height="36" rx="4" />
+                <path d="M4 26h56" />
+                <circle cx="44" cy="38" r="6" />
+                <path d="M44 35v3l2 2" />
+              </svg>
+              <div>
+                <p className="text-sm font-extrabold uppercase tracking-wider">Bezpieczne płatności</p>
+                <p className="mt-1 text-xs text-muted-foreground">System płatności elektronicznych Tpay</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* WREDNE HITY — polecane przez admina */}
       {featuredProducts.length > 0 && (
         <section className="bg-background">
