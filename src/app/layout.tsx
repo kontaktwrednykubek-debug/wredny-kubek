@@ -6,7 +6,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { brand } from "@/config/theme";
 import { cn } from "@/lib/utils";
-import { LottieWidget } from "@/components/LottieWidget";
+import { BottomNav } from "@/components/layout/BottomNav";
 
 const inter = Inter({subsets:['latin'],variable:'--font-sans'});
 
@@ -85,10 +85,10 @@ export default function RootLayout({
         <ThemeProvider>
           <div className="flex flex-col min-h-screen overflow-x-hidden">
             <Navbar />
-            <main className="flex-1 w-full max-w-full">{children}</main>
-            <Footer />
+            <main className="flex-1 w-full max-w-full pb-16 md:pb-0">{children}</main>
+            <div className="hidden md:block"><Footer /></div>
           </div>
-          <LottieWidget />
+          <BottomNav />
         </ThemeProvider>
       </body>
     </html>

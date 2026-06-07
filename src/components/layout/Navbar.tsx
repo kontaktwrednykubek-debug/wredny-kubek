@@ -23,7 +23,27 @@ const navItems = [
 export function Navbar() {
   const [menuOpen, setMenuOpen] = React.useState(false);
   const [showLoginPopup, setShowLoginPopup] = React.useState(false);
+  const [userEmail, setUserEmail] = React.useState<string | null>(null);
   const router = useRouter();
+
+  React.useEffect(() => {
+    const supabase = createSupabaseBrowserClient();
+    supabase.auth.getUser().then(({ data }) => {
+      setUserEmail(data.user?.email ?? null);
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_, session) => {
+      setUserEmail(session?.user?.email ?? null);
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  async function handleLogout() {
+    const supabase = createSupabaseBrowserClient();
+    await supabase.auth.signOut();
+    setMenuOpen(false);
+    router.push("/");
+    router.refresh();
+  }
 
   React.useEffect(() => {
     const onResize = () => {
@@ -106,44 +126,39 @@ export function Navbar() {
             </Button>
           </div>
 
-          {/* Nav links */}
-          <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-4 py-6">
+          {/* Nav links — centered */}
+          <nav className="flex flex-1 flex-col items-center gap-1 overflow-y-auto px-4 py-6">
             {navItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
                 onClick={() => setMenuOpen(false)}
-                className="rounded-xl px-4 py-4 text-xl font-semibold transition-colors hover:bg-muted"
+                className="w-full rounded-xl px-4 py-4 text-center text-xl font-semibold transition-colors hover:bg-muted"
               >
                 {item.label}
               </Link>
             ))}
           </nav>
 
-          {/* Icons row at bottom */}
-          <div className="shrink-0 border-t border-border px-4 py-5">
-            <div className="flex items-center justify-around">
+          {/* Bottom: login/logout + theme toggle */}
+          <div className="shrink-0 flex items-center justify-between border-t border-border px-6 py-4">
+            {userEmail ? (
               <button
-                onClick={() => { setMenuOpen(false); handleHeartClick(); }}
-                className="flex flex-col items-center gap-1.5 rounded-xl p-3 transition-colors hover:bg-muted"
-                aria-label="Ulubione"
+                onClick={handleLogout}
+                className="text-sm font-semibold text-destructive hover:underline"
               >
-                <Heart className="h-6 w-6" />
-                <span className="text-[10px] font-semibold text-muted-foreground">Ulubione</span>
+                Wyloguj się
               </button>
-              <div className="flex flex-col items-center gap-1.5">
-                <CartIcon />
-                <span className="text-[10px] font-semibold text-muted-foreground">Koszyk</span>
-              </div>
-              <div className="flex flex-col items-center gap-1.5">
-                <UserMenu />
-                <span className="text-[10px] font-semibold text-muted-foreground">Konto</span>
-              </div>
-              <div className="flex flex-col items-center gap-1.5">
-                <ThemeToggle />
-                <span className="text-[10px] font-semibold text-muted-foreground">Motyw</span>
-              </div>
-            </div>
+            ) : (
+              <Link
+                href="/login"
+                onClick={() => setMenuOpen(false)}
+                className="text-sm font-semibold hover:underline"
+              >
+                Zaloguj się
+              </Link>
+            )}
+            <ThemeToggle />
           </div>
         </div>
       )}
