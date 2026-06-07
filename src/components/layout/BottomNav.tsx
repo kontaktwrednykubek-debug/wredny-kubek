@@ -77,6 +77,27 @@ export function BottomNav() {
 
   return (
     <>
+      {/* Speech bubble — fixed viewport-centered, always above the cup */}
+      {showBubble && (
+        <div className="fixed bottom-[104px] left-1/2 z-50 w-64 -translate-x-1/2 animate-bubble-in rounded-2xl border border-[#40C4A4] bg-white px-5 py-4 shadow-xl md:hidden">
+          <button
+            onClick={() => setShowBubble(false)}
+            aria-label="Zamknij"
+            className="absolute right-2.5 top-2.5 text-gray-400 text-base hover:text-gray-600 leading-none"
+          >
+            ×
+          </button>
+          <p className="pr-5 text-sm font-bold leading-snug text-black">
+            Wredny z wyglądu, genialny w środku.
+          </p>
+          <p className="mt-1 text-xs text-black/60">
+            Kliknij i sprawdź!
+          </p>
+          {/* Arrow pointing straight down, centered = aligns with cup center */}
+          <div className="absolute -bottom-[7px] left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 border-b border-r border-[#40C4A4] bg-white" />
+        </div>
+      )}
+
       <nav
         className="fixed bottom-0 inset-x-0 z-40 border-t border-border bg-background/95 backdrop-blur-md md:hidden"
         style={{ overflow: "visible", paddingBottom: "env(safe-area-inset-bottom)" }}
@@ -100,44 +121,21 @@ export function BottomNav() {
 
           {/* Center — FAB-style elevated button */}
           <div className="flex flex-col items-center">
-            {/* Cup + bubble share the same -translate-y-5 so bubble aligns with cup */}
-            <div className="relative -translate-y-5">
-              {/* Speech bubble — positioned relative to the cup circle */}
-              {showBubble && (
-                <div className="absolute bottom-[calc(100%+12px)] left-1/2 -translate-x-1/2 w-56 animate-bubble-in rounded-2xl border border-[#40C4A4] bg-white px-4 py-3.5 shadow-lg">
-                  <button
-                    onClick={(e) => { e.preventDefault(); setShowBubble(false); }}
-                    aria-label="Zamknij"
-                    className="absolute right-2 top-2 text-gray-400 text-sm hover:text-gray-600 leading-none"
-                  >
-                    ×
-                  </button>
-                  <p className="pr-4 text-sm font-bold leading-snug text-black">
-                    Wredny z wyglądu, genialny w środku.
-                  </p>
-                  <p className="mt-1 text-xs text-black/60">
-                    Kliknij i sprawdź!
-                  </p>
-                  {/* Arrow pointing down at the cup — centered on the cup circle */}
-                  <div className="absolute -bottom-[7px] left-1/2 -translate-x-1/2 h-3 w-3 rotate-45 border-b border-r border-[#40C4A4] bg-white" />
-                </div>
-              )}
-              <Link
-                href="/sklep"
-                aria-label="Wredny Kubek — Sklep"
-                onClick={() => setShowBubble(false)}
-                className="flex h-16 w-16 items-center justify-center rounded-full bg-card shadow-[0_4px_20px_rgba(0,0,0,0.18)] ring-1 ring-border transition-transform hover:scale-105 active:scale-95"
-              >
-                <Image
-                  src="/wredny.svg"
-                  alt="Wredny Kubek"
-                  width={48}
-                  height={48}
-                  className="h-12 w-12 object-contain"
-                  unoptimized
-                />
-              </Link>
-            </div>
+            <Link
+              href="/sklep"
+              aria-label="Wredny Kubek — Sklep"
+              onClick={() => setShowBubble(false)}
+              className="flex h-16 w-16 -translate-y-5 items-center justify-center rounded-full bg-card shadow-[0_4px_20px_rgba(0,0,0,0.18)] ring-1 ring-border transition-transform hover:scale-105 active:scale-95"
+            >
+              <Image
+                src="/wredny.svg"
+                alt="Wredny Kubek"
+                width={48}
+                height={48}
+                className="h-12 w-12 object-contain"
+                unoptimized
+              />
+            </Link>
           </div>
 
           {/* Ulubione */}
