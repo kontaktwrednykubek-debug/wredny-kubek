@@ -17,7 +17,7 @@ export async function geminiChat(
   if (!key) throw new Error("GEMINI_API_KEY not set");
 
   const res = await fetch(
-    `${BASE}/models/gemini-2.0-flash:generateContent?key=${key}`,
+    `${BASE}/models/gemini-2.5-flash-lite:generateContent?key=${key}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
