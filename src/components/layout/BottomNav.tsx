@@ -6,6 +6,7 @@ import Image from "next/image";
 import { Home, Store, Heart, User } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { useAssistantStore } from "@/features/assistant/useAssistantStore";
 import { Button } from "@/components/ui/button";
 
 function NavBtn({
@@ -47,6 +48,7 @@ export function BottomNav() {
   const [showLoginPopup, setShowLoginPopup] = React.useState(false);
   const [showBubble, setShowBubble] = React.useState(false);
   const [userEmail, setUserEmail] = React.useState<string | null>(null);
+  const openAssistant = useAssistantStore((s) => s.open);
 
   React.useEffect(() => setMounted(true), []);
 
@@ -60,8 +62,8 @@ export function BottomNav() {
   }, []);
 
   React.useEffect(() => {
-    const show = setTimeout(() => setShowBubble(true), 10000);
-    const hide = setTimeout(() => setShowBubble(false), 40000);
+    const show = setTimeout(() => setShowBubble(true), 120000);
+    const hide = setTimeout(() => setShowBubble(false), 160000);
     return () => { clearTimeout(show); clearTimeout(hide); };
   }, []);
 
@@ -125,10 +127,10 @@ export function BottomNav() {
 
           {/* Center — FAB-style elevated button */}
           <div className="flex flex-col items-center">
-            <Link
-              href="/sklep"
-              aria-label="Wredny Kubek — Sklep"
-              onClick={() => setShowBubble(false)}
+            <button
+              type="button"
+              aria-label="Wredny Doradca AI"
+              onClick={() => { setShowBubble(false); openAssistant(); }}
               className="flex h-16 w-16 -translate-y-5 items-center justify-center rounded-full bg-card shadow-[0_4px_20px_rgba(0,0,0,0.18)] ring-1 ring-border transition-transform hover:scale-105 active:scale-95"
             >
               <Image
@@ -139,7 +141,7 @@ export function BottomNav() {
                 className="h-12 w-12 object-contain"
                 unoptimized
               />
-            </Link>
+            </button>
           </div>
 
           {/* Ulubione */}

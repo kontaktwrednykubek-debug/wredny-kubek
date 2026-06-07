@@ -7,6 +7,8 @@ import { Footer } from "@/components/layout/Footer";
 import { brand } from "@/config/theme";
 import { cn } from "@/lib/utils";
 import { BottomNav } from "@/components/layout/BottomNav";
+import { FABWidget } from "@/components/layout/FABWidget";
+import { WrednyAssistant } from "@/components/WrednyAssistant";
 
 const inter = Inter({subsets:['latin'],variable:'--font-sans'});
 
@@ -89,6 +91,8 @@ export default function RootLayout({
             <div className="pb-20 md:pb-0"><Footer /></div>
           </div>
           <BottomNav />
+          <FABWidget />
+          <WrednyAssistant />
         </ThemeProvider>
       </body>
     </html>
