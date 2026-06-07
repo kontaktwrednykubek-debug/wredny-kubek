@@ -19,25 +19,21 @@ interface Product {
 // ─── Hardcoded quiz data ───────────────────────────────────────────────────
 
 const STEP1_OPTIONS = [
-  "Dla taty",
-  "Dla mamy",
-  "Dla dziadka",
-  "Dla babci",
+  "Dla mamy / taty",
+  "Dla dziadka / babci",
   "Dla dziecka",
-  "Dla szefa",
-  "Dla kumpla",
+  "Dla szefa / szefowej",
+  "Dla kumpla / kumpeli",
   "Dla siebie",
 ];
 
 const STEP2_MAP: Record<string, string[]> = {
-  "Dla taty":    ["Grillmaster", "Pracoholik", "Fan motoryzacji", "Majsterkowicz"],
-  "Dla mamy":    ["Romantyczka", "Pracująca mama", "Miłośniczka gotowania", "Ogrodniczka"],
-  "Dla dziadka": ["Spokojny emeryt", "Aktywny senior", "Fan historii", "Tradycjonalista"],
-  "Dla babci":   ["Romantyczka", "Aktywna seniorka", "Miłośniczka gotowania", "Tradycjonalistka"],
-  "Dla dziecka": ["Przedszkolak", "Nastolatek", "Fan gamingu", "Uczennica / Uczeń"],
-  "Dla szefa":   ["Wymagający szef", "Luzak w garniturze", "Workaholic", "Szef który wie wszystko"],
-  "Dla kumpla":  ["Narzekacz", "Wieczny optymista", "Programista / IT", "Kreatywny chaos"],
-  "Dla siebie":  ["Potrzebuję motywacji", "Lubię czarny humor", "Kawa = życie", "Pracuję z domu"],
+  "Dla mamy / taty":      ["Pracoholik / Pracoholiczka", "Romantyk / Romantyczka", "Fan gotowania i grilla", "Sportowiec / Ogrodniczka"],
+  "Dla dziadka / babci":  ["Spokojny emeryt / emerytkta", "Aktywny senior / seniorka", "Fan historii", "Tradycjonalista / tka"],
+  "Dla dziecka":          ["Przedszkolak", "Nastolatek", "Fan gamingu", "Uczeń / Uczennica"],
+  "Dla szefa / szefowej": ["Wymagający perfekcjonista", "Luzak w garniturze", "Workaholic", "Wie wszystko"],
+  "Dla kumpla / kumpeli": ["Narzekacz / Narzekaczka", "Wieczny optymista", "Programista / IT", "Kreatywny chaos"],
+  "Dla siebie":           ["Potrzebuję motywacji", "Lubię czarny humor", "Kawa = życie", "Pracuję z domu"],
 };
 
 const STEP3_OPTIONS = [
