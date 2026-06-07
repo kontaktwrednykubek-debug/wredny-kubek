@@ -98,8 +98,9 @@ export function Navbar() {
             <ThemeToggle />
           </div>
 
-          {/* Mobile: only hamburger */}
+          {/* Mobile: cart + hamburger */}
           <div className="flex items-center gap-1 md:hidden">
+            <CartIcon />
             <Button
               variant="ghost"
               size="icon"

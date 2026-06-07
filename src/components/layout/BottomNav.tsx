@@ -3,9 +3,8 @@
 import * as React from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Home, Store, Heart, ShoppingBag } from "lucide-react";
+import { Home, Store, Heart, User } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
-import { useCart } from "@/features/cart/useCart";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 
@@ -47,19 +46,24 @@ export function BottomNav() {
   const [mounted, setMounted] = React.useState(false);
   const [showLoginPopup, setShowLoginPopup] = React.useState(false);
   const [showBubble, setShowBubble] = React.useState(false);
+  const [userEmail, setUserEmail] = React.useState<string | null>(null);
 
   React.useEffect(() => setMounted(true), []);
+
+  React.useEffect(() => {
+    const supabase = createSupabaseBrowserClient();
+    supabase.auth.getUser().then(({ data }) => setUserEmail(data.user?.email ?? null));
+    const { data: sub } = supabase.auth.onAuthStateChange((_, session) => {
+      setUserEmail(session?.user?.email ?? null);
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
 
   React.useEffect(() => {
     const show = setTimeout(() => setShowBubble(true), 10000);
     const hide = setTimeout(() => setShowBubble(false), 16000);
     return () => { clearTimeout(show); clearTimeout(hide); };
   }, []);
-
-  const totalQty = useCart((s) =>
-    s.items.reduce((sum, i) => sum + i.quantity, 0),
-  );
-  const showBadge = mounted && totalQty > 0;
 
   async function handleHeartClick() {
     const supabase = createSupabaseBrowserClient();
@@ -94,11 +98,11 @@ export function BottomNav() {
             active={pathname.startsWith("/sklep")}
           />
 
-          {/* Center — Wredny Kubek (elevated, no background) */}
+          {/* Center — FAB-style elevated button */}
           <div className="relative flex flex-col items-center">
             {/* Speech bubble */}
             {showBubble && (
-              <div className="absolute bottom-[calc(100%+8px)] left-1/2 -translate-x-1/2 w-44 animate-bubble-in rounded-2xl border border-[#40C4A4] bg-white px-3 py-2.5 shadow-lg">
+              <div className="absolute bottom-[calc(100%+14px)] left-1/2 -translate-x-1/2 w-44 animate-bubble-in rounded-2xl border border-[#40C4A4] bg-white px-3 py-2.5 shadow-lg">
                 <button
                   onClick={() => setShowBubble(false)}
                   aria-label="Zamknij"
@@ -119,14 +123,14 @@ export function BottomNav() {
               href="/sklep"
               aria-label="Wredny Kubek — Sklep"
               onClick={() => setShowBubble(false)}
-              className="relative flex -translate-y-2 items-center justify-center transition-transform hover:scale-110 active:scale-95"
+              className="flex h-16 w-16 -translate-y-5 items-center justify-center rounded-full bg-card shadow-[0_4px_20px_rgba(0,0,0,0.18)] ring-1 ring-border transition-transform hover:scale-105 active:scale-95"
             >
               <Image
                 src="/wredny.svg"
                 alt="Wredny Kubek"
-                width={56}
-                height={56}
-                className="h-14 w-14 object-contain drop-shadow-lg"
+                width={48}
+                height={48}
+                className="h-12 w-12 object-contain"
                 unoptimized
               />
             </Link>
@@ -140,25 +144,13 @@ export function BottomNav() {
             onClick={handleHeartClick}
           />
 
-          {/* Koszyk */}
-          <Link
-            href="/koszyk"
-            className={`relative flex flex-col items-center gap-0.5 px-3 py-1 transition-colors ${
-              pathname.startsWith("/koszyk")
-                ? "text-primary"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <div className="relative">
-              <ShoppingBag className="h-5 w-5" />
-              {showBadge && (
-                <span className="absolute -right-2 -top-2 grid h-4 min-w-[16px] place-items-center rounded-full bg-destructive px-0.5 text-[9px] font-bold leading-none text-destructive-foreground">
-                  {totalQty > 99 ? "99+" : totalQty}
-                </span>
-              )}
-            </div>
-            <span className="text-[10px] font-semibold">Koszyk</span>
-          </Link>
+          {/* Account */}
+          <NavBtn
+            href={userEmail ? "/account" : "/login"}
+            icon={<User className="h-5 w-5" />}
+            label={mounted && userEmail ? "Konto" : "Zaloguj"}
+            active={pathname.startsWith("/account")}  
+          />
         </div>
       </nav>
 
