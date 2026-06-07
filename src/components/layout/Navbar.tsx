@@ -145,17 +145,19 @@ export function Navbar() {
                 Zaloguj się
               </Link>
             )}
-            <ThemeToggle />
+            <div onClick={() => setMenuOpen(false)}>
+              <ThemeToggle />
+            </div>
           </div>
 
-          {/* Nav links — centered */}
-          <nav className="flex flex-1 flex-col items-center gap-1 overflow-y-auto px-4 py-6">
+          {/* Nav links — centered horizontally and vertically */}
+          <nav className="flex flex-1 flex-col items-center justify-center gap-2 overflow-y-auto px-4">
             {navItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
                 onClick={() => setMenuOpen(false)}
-                className="w-full rounded-xl px-4 py-4 text-center text-xl font-semibold transition-colors hover:bg-muted"
+                className="w-full rounded-xl px-4 py-3 text-center text-3xl font-semibold transition-colors hover:bg-muted"
               >
                 {item.label}
               </Link>

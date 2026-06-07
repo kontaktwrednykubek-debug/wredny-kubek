@@ -79,22 +79,26 @@ export function BottomNav() {
     <>
       {/* Speech bubble — fixed viewport-centered, always above the cup */}
       {showBubble && (
-        <div className="fixed bottom-[104px] left-1/2 z-50 w-64 -translate-x-1/2 animate-bubble-in rounded-2xl border border-[#40C4A4] bg-white px-5 py-4 shadow-xl md:hidden">
-          <button
-            onClick={() => setShowBubble(false)}
-            aria-label="Zamknij"
-            className="absolute right-2.5 top-2.5 text-gray-400 text-base hover:text-gray-600 leading-none"
-          >
-            ×
-          </button>
-          <p className="pr-5 text-sm font-bold leading-snug text-black">
-            Wredny z wyglądu, genialny w środku.
-          </p>
-          <p className="mt-1 text-xs text-black/60">
-            Kliknij i sprawdź!
-          </p>
-          {/* Arrow pointing straight down, centered = aligns with cup center */}
-          <div className="absolute -bottom-[7px] left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 border-b border-r border-[#40C4A4] bg-white" />
+        /* Outer: static centering — NOT animated so -translate-x-1/2 is never overridden */
+        <div className="fixed bottom-[104px] left-1/2 z-50 -translate-x-1/2 md:hidden">
+          {/* Inner: runs the slide-up animation without touching translate-x */}
+          <div className="relative w-64 animate-bubble-in rounded-2xl border border-[#40C4A4] bg-white px-5 py-4 shadow-xl">
+            <button
+              onClick={() => setShowBubble(false)}
+              aria-label="Zamknij"
+              className="absolute right-2.5 top-2.5 text-gray-400 text-base hover:text-gray-600 leading-none"
+            >
+              ×
+            </button>
+            <p className="pr-5 text-sm font-bold leading-snug text-black">
+              Wredny z wyglądu, genialny w środku.
+            </p>
+            <p className="mt-1 text-xs text-black/60">
+              Kliknij i sprawdź!
+            </p>
+            {/* Arrow — centered below the bubble = points at cup center */}
+            <div className="absolute -bottom-[7px] left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 border-b border-r border-[#40C4A4] bg-white" />
+          </div>
         </div>
       )}
 
