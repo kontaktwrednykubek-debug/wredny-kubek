@@ -61,7 +61,7 @@ export function BottomNav() {
 
   React.useEffect(() => {
     const show = setTimeout(() => setShowBubble(true), 10000);
-    const hide = setTimeout(() => setShowBubble(false), 16000);
+    const hide = setTimeout(() => setShowBubble(false), 40000);
     return () => { clearTimeout(show); clearTimeout(hide); };
   }, []);
 
@@ -82,19 +82,19 @@ export function BottomNav() {
         /* Outer: static centering — NOT animated so -translate-x-1/2 is never overridden */
         <div className="fixed bottom-[104px] left-1/2 z-50 -translate-x-1/2 md:hidden">
           {/* Inner: runs the slide-up animation without touching translate-x */}
-          <div className="relative w-64 animate-bubble-in rounded-2xl border border-[#40C4A4] bg-white px-5 py-4 shadow-xl">
+          <div className="relative w-64 animate-bubble-in rounded-2xl border-2 border-[#40C4A4] bg-white px-5 py-5 shadow-xl">
             <button
               onClick={() => setShowBubble(false)}
               aria-label="Zamknij"
-              className="absolute right-2.5 top-2.5 text-gray-400 text-base hover:text-gray-600 leading-none"
+              className="absolute right-2.5 top-2.5 flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 text-gray-500 text-sm font-bold hover:bg-gray-200 hover:text-gray-800"
             >
               ×
             </button>
-            <p className="pr-5 text-sm font-bold leading-snug text-black">
+            <p className="pr-7 text-base font-bold leading-snug text-black">
               Wredny z wyglądu, genialny w środku.
             </p>
-            <p className="mt-1 text-xs text-black/60">
-              Kliknij i sprawdź!
+            <p className="mt-1.5 text-sm text-black/60">
+              Kliknij i sprawdź co potrafię!
             </p>
             {/* Arrow — centered below the bubble = points at cup center */}
             <div className="absolute -bottom-[7px] left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 border-b border-r border-[#40C4A4] bg-white" />
