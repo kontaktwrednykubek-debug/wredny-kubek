@@ -127,22 +127,8 @@ export function Navbar() {
             </Button>
           </div>
 
-          {/* Nav links — centered */}
-          <nav className="flex flex-1 flex-col items-center gap-1 overflow-y-auto px-4 py-6">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setMenuOpen(false)}
-                className="w-full rounded-xl px-4 py-4 text-center text-xl font-semibold transition-colors hover:bg-muted"
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-
-          {/* Bottom: login/logout + theme toggle */}
-          <div className="shrink-0 flex items-center justify-between border-t border-border px-6 py-4">
+          {/* Auth + theme row — above nav links */}
+          <div className="shrink-0 flex items-center justify-between border-b border-border px-6 py-3">
             {userEmail ? (
               <button
                 onClick={handleLogout}
@@ -161,6 +147,20 @@ export function Navbar() {
             )}
             <ThemeToggle />
           </div>
+
+          {/* Nav links — centered */}
+          <nav className="flex flex-1 flex-col items-center gap-1 overflow-y-auto px-4 py-6">
+            {navItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setMenuOpen(false)}
+                className="w-full rounded-xl px-4 py-4 text-center text-xl font-semibold transition-colors hover:bg-muted"
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
         </div>
       )}
 

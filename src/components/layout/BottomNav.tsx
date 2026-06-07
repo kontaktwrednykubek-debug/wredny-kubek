@@ -99,41 +99,45 @@ export function BottomNav() {
           />
 
           {/* Center — FAB-style elevated button */}
-          <div className="relative flex flex-col items-center">
-            {/* Speech bubble */}
-            {showBubble && (
-              <div className="absolute bottom-[calc(100%+14px)] left-1/2 -translate-x-1/2 w-44 animate-bubble-in rounded-2xl border border-[#40C4A4] bg-white px-3 py-2.5 shadow-lg">
-                <button
-                  onClick={() => setShowBubble(false)}
-                  aria-label="Zamknij"
-                  className="absolute right-1.5 top-1.5 text-gray-400 text-xs hover:text-gray-600 leading-none"
-                >
-                  ×
-                </button>
-                <p className="pr-3 text-xs font-bold leading-snug text-black">
-                  Wredny z wyglądu, genialny w środku.
-                </p>
-                <p className="mt-0.5 text-[10px] text-black/60">
-                  Kliknij i sprawdź!
-                </p>
-                <div className="absolute -bottom-[7px] left-1/2 -translate-x-1/2 h-3 w-3 rotate-45 border-b border-r border-[#40C4A4] bg-white" />
-              </div>
-            )}
-            <Link
-              href="/sklep"
-              aria-label="Wredny Kubek — Sklep"
-              onClick={() => setShowBubble(false)}
-              className="flex h-16 w-16 -translate-y-5 items-center justify-center rounded-full bg-card shadow-[0_4px_20px_rgba(0,0,0,0.18)] ring-1 ring-border transition-transform hover:scale-105 active:scale-95"
-            >
-              <Image
-                src="/wredny.svg"
-                alt="Wredny Kubek"
-                width={48}
-                height={48}
-                className="h-12 w-12 object-contain"
-                unoptimized
-              />
-            </Link>
+          <div className="flex flex-col items-center">
+            {/* Cup + bubble share the same -translate-y-5 so bubble aligns with cup */}
+            <div className="relative -translate-y-5">
+              {/* Speech bubble — positioned relative to the cup circle */}
+              {showBubble && (
+                <div className="absolute bottom-[calc(100%+10px)] left-1/2 -translate-x-1/2 w-44 animate-bubble-in rounded-2xl border border-[#40C4A4] bg-white px-3 py-2.5 shadow-lg">
+                  <button
+                    onClick={(e) => { e.preventDefault(); setShowBubble(false); }}
+                    aria-label="Zamknij"
+                    className="absolute right-1.5 top-1.5 text-gray-400 text-xs hover:text-gray-600 leading-none"
+                  >
+                    ×
+                  </button>
+                  <p className="pr-3 text-xs font-bold leading-snug text-black">
+                    Wredny z wyglądu, genialny w środku.
+                  </p>
+                  <p className="mt-0.5 text-[10px] text-black/60">
+                    Kliknij i sprawdź!
+                  </p>
+                  {/* Arrow pointing down at the cup */}
+                  <div className="absolute -bottom-[7px] left-1/2 -translate-x-1/2 h-3 w-3 rotate-45 border-b border-r border-[#40C4A4] bg-white" />
+                </div>
+              )}
+              <Link
+                href="/sklep"
+                aria-label="Wredny Kubek — Sklep"
+                onClick={() => setShowBubble(false)}
+                className="flex h-16 w-16 items-center justify-center rounded-full bg-card shadow-[0_4px_20px_rgba(0,0,0,0.18)] ring-1 ring-border transition-transform hover:scale-105 active:scale-95"
+              >
+                <Image
+                  src="/wredny.svg"
+                  alt="Wredny Kubek"
+                  width={48}
+                  height={48}
+                  className="h-12 w-12 object-contain"
+                  unoptimized
+                />
+              </Link>
+            </div>
           </div>
 
           {/* Ulubione */}
