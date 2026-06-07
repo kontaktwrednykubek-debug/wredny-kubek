@@ -33,11 +33,11 @@ export default async function WishlistPage() {
   return (
     <section className="container mx-auto max-w-4xl px-4 py-12">
       <Link
-        href="/account"
+        href="/"
         className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />
-        Wróć do konta
+        Wróć do strony głównej
       </Link>
 
       <h1 className="mb-1 text-3xl font-bold">Ulubione</h1>

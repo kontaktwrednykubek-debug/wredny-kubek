@@ -3,12 +3,14 @@
 import * as React from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Search, Menu, X, Heart, ArrowLeft } from "lucide-react";
+import { Search, Menu, X, Heart } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { brand } from "@/config/theme";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { UserMenu } from "@/components/layout/UserMenu";
 import { CartIcon } from "@/components/layout/CartIcon";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 const navItems = [
   { href: "/", label: "Główna" },
@@ -20,8 +22,9 @@ const navItems = [
 
 export function Navbar() {
   const [menuOpen, setMenuOpen] = React.useState(false);
+  const [showLoginPopup, setShowLoginPopup] = React.useState(false);
+  const router = useRouter();
 
-  // Zamykaj menu przy zmianie rozmiaru na desktop.
   React.useEffect(() => {
     const onResize = () => {
       if (window.innerWidth >= 768) setMenuOpen(false);
@@ -30,109 +33,153 @@ export function Navbar() {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
+  React.useEffect(() => {
+    document.body.style.overflow = menuOpen ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [menuOpen]);
+
+  async function handleHeartClick() {
+    const supabase = createSupabaseBrowserClient();
+    const { data } = await supabase.auth.getUser();
+    if (data.user) {
+      router.push("/account/ulubione");
+    } else {
+      setShowLoginPopup(true);
+    }
+  }
+
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-border bg-background/80 backdrop-blur-md">
-      <div className="container mx-auto flex h-20 items-center justify-between gap-2 px-4 sm:gap-4">
-        <Link
-          href="/"
-          aria-label={brand.name}
-          className="flex h-full items-center"
-        >
-          <Image
-            src="/wk-logo-light.png"
-            alt={brand.name}
-            width={160}
-            height={80}
-            priority
-            className="block h-14 w-auto object-contain dark:hidden sm:h-16"
-          />
-          <Image
-            src="/wk-logo-dark.png"
-            alt={brand.name}
-            width={160}
-            height={80}
-            priority
-            className="hidden h-14 w-auto object-contain dark:block sm:h-16"
-          />
-        </Link>
+    <>
+      <header className="sticky top-0 z-40 w-full border-b border-border bg-background/80 backdrop-blur-md">
+        <div className="container mx-auto flex h-20 items-center justify-between gap-2 px-4 sm:gap-4">
+          <Link href="/" aria-label={brand.name} className="flex h-full items-center">
+            <Image src="/wk-logo-light.png" alt={brand.name} width={160} height={80} priority className="block h-14 w-auto object-contain dark:hidden sm:h-16" />
+            <Image src="/wk-logo-dark.png" alt={brand.name} width={160} height={80} priority className="hidden h-14 w-auto object-contain dark:block sm:h-16" />
+          </Link>
 
-        <nav className="hidden items-center gap-6 md:flex">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+          <nav className="hidden items-center gap-6 md:flex">
+            {navItems.map((item) => (
+              <Link key={item.href} href={item.href} className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+
+          {/* Desktop icons */}
+          <div className="hidden items-center gap-1 sm:gap-2 md:flex">
+            <Button variant="ghost" size="icon" aria-label="Ulubione" onClick={handleHeartClick}>
+              <Heart className="h-6 w-6" />
+            </Button>
+            <Button variant="ghost" size="icon" aria-label="Szukaj">
+              <Search className="h-6 w-6" />
+            </Button>
+            <CartIcon />
+            <UserMenu />
+            <ThemeToggle />
+          </div>
+
+          {/* Mobile: only hamburger */}
+          <div className="flex items-center gap-1 md:hidden">
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label={menuOpen ? "Zamknij menu" : "Otwórz menu"}
+              onClick={() => setMenuOpen((v) => !v)}
             >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-
-        <div className="flex items-center gap-1 sm:gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Ulubione"
-            asChild
-          >
-            <Link href="/ulubione">
-              <Heart className="h-5 w-5" />
-            </Link>
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Powrót do strony głównej"
-            asChild
-          >
-            <Link href="/">
-              <ArrowLeft className="h-5 w-5" />
-            </Link>
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Szukaj"
-            className="hidden sm:inline-flex"
-          >
-            <Search className="h-5 w-5" />
-          </Button>
-          <CartIcon />
-          <UserMenu />
-          <ThemeToggle />
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label={menuOpen ? "Zamknij menu" : "Otwórz menu"}
-            className="md:hidden"
-            onClick={() => setMenuOpen((v) => !v)}
-          >
-            {menuOpen ? (
-              <X className="h-5 w-5" />
-            ) : (
-              <Menu className="h-5 w-5" />
-            )}
-          </Button>
+              {menuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </Button>
+          </div>
         </div>
-      </div>
+      </header>
 
-      {/* Mobile drawer */}
+      {/* Full-screen mobile menu */}
       {menuOpen && (
-        <nav className="border-t border-border bg-background md:hidden">
-          <div className="container mx-auto flex flex-col gap-1 px-4 py-3">
+        <div className="fixed inset-0 z-50 flex flex-col bg-background md:hidden">
+          {/* Top bar */}
+          <div className="flex h-20 shrink-0 items-center justify-between border-b border-border px-4">
+            <Link href="/" onClick={() => setMenuOpen(false)} aria-label={brand.name}>
+              <Image src="/wk-logo-light.png" alt={brand.name} width={140} height={70} className="block h-12 w-auto dark:hidden" />
+              <Image src="/wk-logo-dark.png" alt={brand.name} width={140} height={70} className="hidden h-12 w-auto dark:block" />
+            </Link>
+            <Button variant="ghost" size="icon" onClick={() => setMenuOpen(false)} aria-label="Zamknij menu">
+              <X className="h-6 w-6" />
+            </Button>
+          </div>
+
+          {/* Nav links */}
+          <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-4 py-6">
             {navItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
                 onClick={() => setMenuOpen(false)}
-                className="rounded-lg px-3 py-2 text-sm font-medium hover:bg-muted"
+                className="rounded-xl px-4 py-4 text-xl font-semibold transition-colors hover:bg-muted"
               >
                 {item.label}
               </Link>
             ))}
+          </nav>
+
+          {/* Icons row at bottom */}
+          <div className="shrink-0 border-t border-border px-4 py-5">
+            <div className="flex items-center justify-around">
+              <button
+                onClick={() => { setMenuOpen(false); handleHeartClick(); }}
+                className="flex flex-col items-center gap-1.5 rounded-xl p-3 transition-colors hover:bg-muted"
+                aria-label="Ulubione"
+              >
+                <Heart className="h-6 w-6" />
+                <span className="text-[10px] font-semibold text-muted-foreground">Ulubione</span>
+              </button>
+              <div className="flex flex-col items-center gap-1.5">
+                <CartIcon />
+                <span className="text-[10px] font-semibold text-muted-foreground">Koszyk</span>
+              </div>
+              <div className="flex flex-col items-center gap-1.5">
+                <UserMenu />
+                <span className="text-[10px] font-semibold text-muted-foreground">Konto</span>
+              </div>
+              <div className="flex flex-col items-center gap-1.5">
+                <ThemeToggle />
+                <span className="text-[10px] font-semibold text-muted-foreground">Motyw</span>
+              </div>
+            </div>
           </div>
-        </nav>
+        </div>
       )}
-    </header>
+
+      {/* Login required popup */}
+      {showLoginPopup && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          onClick={() => setShowLoginPopup(false)}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex flex-col items-center gap-4 text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-rose-500/10">
+                <Heart className="h-7 w-7 text-rose-500" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold">Zaloguj się</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Aby przeglądać ulubione produkty, musisz być zalogowany.
+                </p>
+              </div>
+              <div className="flex w-full flex-col gap-2">
+                <Link href="/login" className="w-full" onClick={() => setShowLoginPopup(false)}>
+                  <Button className="w-full">Zaloguj się</Button>
+                </Link>
+                <Button variant="ghost" className="w-full" onClick={() => setShowLoginPopup(false)}>
+                  Anuluj
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

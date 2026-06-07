@@ -69,7 +69,7 @@ export function UserMenu() {
     return (
       <Link href="/login">
         <Button variant="ghost" size="icon" aria-label="Zaloguj">
-          <LogIn className="h-5 w-5" />
+          <LogIn className="h-6 w-6" />
         </Button>
       </Link>
     );
@@ -83,7 +83,7 @@ export function UserMenu() {
         aria-label="Konto"
         onClick={() => setOpen(!open)}
       >
-        <UserIcon className="h-5 w-5" />
+        <UserIcon className="h-6 w-6" />
       </Button>
       {open && (
         <>

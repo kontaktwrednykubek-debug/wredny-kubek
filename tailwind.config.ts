@@ -68,9 +68,19 @@ const config: Config = {
           "50%": { transform: "rotate(-4deg) scale(1)" },
           "75%": { transform: "rotate(4deg) scale(1.05)" },
         },
+        pulseScale: {
+          "0%, 100%": { transform: "scale(1)" },
+          "50%": { transform: "scale(1.09)" },
+        },
+        bubbleIn: {
+          "0%": { opacity: "0", transform: "translateX(24px) scale(0.92)" },
+          "100%": { opacity: "1", transform: "translateX(0) scale(1)" },
+        },
       },
       animation: {
         wiggle: "wiggle 2s ease-in-out infinite",
+        "pulse-scale": "pulseScale 2.4s ease-in-out infinite",
+        "bubble-in": "bubbleIn 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards",
       },
     },
   },
