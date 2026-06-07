@@ -103,6 +103,7 @@ export function WrednyAssistant() {
 
   const [products, setProducts] = React.useState<Product[]>([]);
   const [comment, setComment] = React.useState("");
+  const [isFallback, setIsFallback] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
 
   // slide animation
@@ -130,7 +131,7 @@ export function WrednyAssistant() {
     close();
     setStep("greeting");
     setForWhom(""); setStyle(""); setCharacter(""); setSelected("");
-    setProducts([]); setComment(""); setLoading(false);
+    setProducts([]); setComment(""); setIsFallback(false); setLoading(false);
   }
 
   async function runSearch(char: string) {
@@ -145,6 +146,7 @@ export function WrednyAssistant() {
       const data = await res.json();
       setComment(data.comment ?? "");
       setProducts(data.products ?? []);
+      setIsFallback(data.isFallback ?? false);
     } catch {
       setComment("Coś poszło nie tak. Spróbuj ponownie.");
       setProducts([]);
@@ -297,37 +299,61 @@ export function WrednyAssistant() {
                     „{comment}"
                   </p>
                 )}
+
+                {isFallback && products.length > 0 && (
+                  <p className="text-xs text-muted-foreground -mt-2">
+                    Brak dokładnych dopasowań — oto kubki z podobnych kategorii:
+                  </p>
+                )}
+
                 {products.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-8">
-                    Brak kubków pasujących do wyboru. Dodaj produkty i wygeneruj dla nich embeddingi.
+                    Brak produktów w bazie. Dodaj kubki w panelu admina.
                   </p>
                 ) : (
-                  <div className="flex flex-col gap-3 overflow-y-auto">
+                  /* ── Horizontal snap carousel ── */
+                  <div className="flex gap-3 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-2 -mx-6 px-6">
                     {products.map((p) => {
                       const imgs = Array.isArray(p.images) ? p.images as string[] : [];
                       const imgSrc = imgs[0] ?? null;
                       return (
-                        <Link key={p.id} href={`/sklep/${p.slug}`} onClick={handleClose}
-                          className="flex items-center gap-3 rounded-2xl border border-border bg-muted/40 p-3 hover:bg-muted transition-colors">
-                          {imgSrc && (
-                            <Image src={imgSrc} alt={p.title} width={56} height={56}
-                              className="h-14 w-14 shrink-0 rounded-xl object-cover" />
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <p className="truncate text-sm font-semibold">{p.title}</p>
-                            <p className="line-clamp-2 text-xs text-muted-foreground">{p.description}</p>
-                            <p className="mt-1 text-sm font-bold text-[#40C4A4]">
+                        <Link
+                          key={p.id}
+                          href={`/sklep/${p.slug}`}
+                          onClick={handleClose}
+                          className="snap-start shrink-0 w-44 flex flex-col rounded-2xl border border-border bg-card overflow-hidden shadow-sm hover:shadow-md hover:border-[#40C4A4]/60 transition-all active:scale-[0.97]"
+                        >
+                          <div className="relative h-44 w-full bg-muted overflow-hidden">
+                            {imgSrc ? (
+                              <Image
+                                src={imgSrc}
+                                alt={p.title}
+                                fill
+                                className="object-cover"
+                                sizes="176px"
+                              />
+                            ) : (
+                              <div className="flex h-full items-center justify-center">
+                                <ShoppingCart className="h-8 w-8 text-muted-foreground/40" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex flex-col gap-1 p-3">
+                            <p className="line-clamp-2 text-xs font-semibold leading-tight">{p.title}</p>
+                            <p className="text-sm font-bold text-[#40C4A4]">
                               {(p.price_grosze / 100).toLocaleString("pl-PL", { style: "currency", currency: "PLN" })}
                             </p>
                           </div>
-                          <ShoppingCart className="h-4 w-4 shrink-0 text-muted-foreground" />
                         </Link>
                       );
                     })}
                   </div>
                 )}
-                <button onClick={() => goTo("greeting")}
-                  className="mt-auto w-full rounded-2xl border-2 border-[#40C4A4]/60 py-3 text-sm font-semibold text-[#40C4A4] hover:bg-[#40C4A4]/10">
+
+                <button
+                  onClick={() => goTo("greeting")}
+                  className="mt-auto w-full rounded-2xl border-2 border-[#40C4A4]/60 py-3 text-sm font-semibold text-[#40C4A4] hover:bg-[#40C4A4]/10"
+                >
                   Zacznij od nowa
                 </button>
               </div>
