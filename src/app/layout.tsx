@@ -85,8 +85,8 @@ export default function RootLayout({
         <ThemeProvider>
           <div className="flex flex-col min-h-screen overflow-x-hidden">
             <Navbar />
-            <main className="flex-1 w-full max-w-full pb-16 md:pb-0">{children}</main>
-            <div className="hidden md:block"><Footer /></div>
+            <main className="flex-1 w-full max-w-full pt-20 pb-20 md:pb-0">{children}</main>
+            <div className="pb-20 md:pb-0"><Footer /></div>
           </div>
           <BottomNav />
         </ThemeProvider>

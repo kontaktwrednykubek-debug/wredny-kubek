@@ -145,7 +145,7 @@ export default async function ShopPage({
                               brak zdjęcia
                             </div>
                           )}
-                          <div className="absolute right-2 top-2 opacity-0 transition-opacity group-hover/card:opacity-100">
+                          <div className="absolute right-2 top-2">
                             <WishlistButton slug={p.slug as string} initialSaved={savedSlugs.has(p.slug as string)} />
                           </div>
                         </div>

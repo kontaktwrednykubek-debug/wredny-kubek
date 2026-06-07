@@ -46,8 +46,15 @@ export function BottomNav() {
   const router = useRouter();
   const [mounted, setMounted] = React.useState(false);
   const [showLoginPopup, setShowLoginPopup] = React.useState(false);
+  const [showBubble, setShowBubble] = React.useState(false);
 
   React.useEffect(() => setMounted(true), []);
+
+  React.useEffect(() => {
+    const show = setTimeout(() => setShowBubble(true), 10000);
+    const hide = setTimeout(() => setShowBubble(false), 16000);
+    return () => { clearTimeout(show); clearTimeout(hide); };
+  }, []);
 
   const totalQty = useCart((s) =>
     s.items.reduce((sum, i) => sum + i.quantity, 0),
@@ -87,21 +94,43 @@ export function BottomNav() {
             active={pathname.startsWith("/sklep")}
           />
 
-          {/* Center — Wredny Kubek (elevated) */}
-          <Link
-            href="/sklep"
-            aria-label="Wredny Kubek — Sklep"
-            className="relative flex h-14 w-14 -translate-y-3 items-center justify-center rounded-full bg-[#40C4A4] shadow-xl ring-[3px] ring-background transition-transform hover:scale-105 active:scale-95"
-          >
-            <Image
-              src="/wredny.svg"
-              alt="Wredny Kubek"
-              width={40}
-              height={40}
-              className="h-10 w-10 object-contain"
-              unoptimized
-            />
-          </Link>
+          {/* Center — Wredny Kubek (elevated, no background) */}
+          <div className="relative flex flex-col items-center">
+            {/* Speech bubble */}
+            {showBubble && (
+              <div className="absolute bottom-[calc(100%+8px)] left-1/2 -translate-x-1/2 w-44 animate-bubble-in rounded-2xl border border-[#40C4A4] bg-white px-3 py-2.5 shadow-lg">
+                <button
+                  onClick={() => setShowBubble(false)}
+                  aria-label="Zamknij"
+                  className="absolute right-1.5 top-1.5 text-gray-400 text-xs hover:text-gray-600 leading-none"
+                >
+                  ×
+                </button>
+                <p className="pr-3 text-xs font-bold leading-snug text-black">
+                  Wredny z wyglądu, genialny w środku.
+                </p>
+                <p className="mt-0.5 text-[10px] text-black/60">
+                  Kliknij i sprawdź!
+                </p>
+                <div className="absolute -bottom-[7px] left-1/2 -translate-x-1/2 h-3 w-3 rotate-45 border-b border-r border-[#40C4A4] bg-white" />
+              </div>
+            )}
+            <Link
+              href="/sklep"
+              aria-label="Wredny Kubek — Sklep"
+              onClick={() => setShowBubble(false)}
+              className="relative flex -translate-y-2 items-center justify-center transition-transform hover:scale-110 active:scale-95"
+            >
+              <Image
+                src="/wredny.svg"
+                alt="Wredny Kubek"
+                width={56}
+                height={56}
+                className="h-14 w-14 object-contain drop-shadow-lg"
+                unoptimized
+              />
+            </Link>
+          </div>
 
           {/* Ulubione */}
           <NavBtn

@@ -31,6 +31,7 @@ export type ProductInitial = {
   description: string;
   body: string;
   category: string;
+  categories?: string[];
   price_grosze: number;
   images: string[];
   specs: Record<string, string>;
@@ -79,7 +80,19 @@ export function ProductForm({
   const [variantStock, setVariantStock] = React.useState<Record<string, number>>(
     initial?.variant_stock ?? {},
   );
-  const [category, setCategory] = React.useState(initial?.category ?? "merch");
+  const [selectedCategories, setSelectedCategories] = React.useState<string[]>(
+    initial?.categories?.length
+      ? initial.categories
+      : initial?.category
+      ? [initial.category]
+      : ["merch"],
+  );
+
+  function toggleCategory(slug: string) {
+    setSelectedCategories((prev) =>
+      prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug],
+    );
+  }
   const [priceZl, setPriceZl] = React.useState(
     initial ? (initial.price_grosze / 100).toFixed(2) : "",
   );
@@ -263,7 +276,8 @@ export function ProductForm({
       body,
       showVariantStock,
       variantStock,
-      category,
+      categories: selectedCategories,
+      category: selectedCategories[0] ?? "",
       priceGrosze: priceGr,
       images,
       specs: specsObj,
@@ -327,33 +341,39 @@ export function ProductForm({
             required
           />
         </Field>
-        <Field label="Kategoria">
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            className={inputCls}
-          >
-            <option value="">— wybierz —</option>
-            {categories
-              .filter((c) => c.parent_id === null)
-              .map((parent) => {
-                const children = categories.filter(
-                  (c) => c.parent_id === parent.id,
-                );
-                return (
-                  <optgroup key={parent.id} label={parent.name}>
-                    <option value={parent.slug}>
-                      {parent.name} (główna)
-                    </option>
-                    {children.map((child) => (
-                      <option key={child.id} value={child.slug}>
-                        — {child.name}
-                      </option>
-                    ))}
-                  </optgroup>
-                );
-              })}
-          </select>
+        <Field label="Kategorie" hint="Zaznacz jedną lub więcej kategorii. Pierwsza zaznaczona to kategoria główna.">
+          <div className="mt-1 grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {categories.map((cat) => {
+              const checked = selectedCategories.includes(cat.slug);
+              const isFirst = selectedCategories[0] === cat.slug;
+              return (
+                <label
+                  key={cat.id}
+                  className={`flex cursor-pointer items-center gap-2 rounded-xl border-2 px-3 py-2 text-sm transition ${
+                    checked
+                      ? "border-primary bg-primary/5 font-medium"
+                      : "border-border hover:border-primary/40"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggleCategory(cat.slug)}
+                    className="h-4 w-4 accent-primary"
+                  />
+                  <span className="flex-1 truncate">{cat.name}</span>
+                  {isFirst && checked && (
+                    <span className="shrink-0 rounded bg-primary px-1 py-0.5 text-[9px] font-bold uppercase text-primary-foreground">
+                      główna
+                    </span>
+                  )}
+                </label>
+              );
+            })}
+          </div>
+          {selectedCategories.length === 0 && (
+            <p className="mt-1 text-xs text-destructive">Wybierz co najmniej jedną kategorię.</p>
+          )}
         </Field>
         <Field label="Krótki opis">
           <textarea

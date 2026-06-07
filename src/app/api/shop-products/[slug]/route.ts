@@ -96,6 +96,7 @@ const updateSchema = z.object({
   description: z.string().max(5000).optional(),
   body: z.string().max(20000).optional(),
   category: z.string().max(50).optional(),
+  categories: z.array(z.string().max(50)).max(10).optional(),
   priceGrosze: z.number().int().min(0).optional(),
   images: z.array(z.string().url()).max(10).optional(),
   specs: z.record(z.string()).optional(),
@@ -133,7 +134,12 @@ export async function PATCH(
   if (p.title !== undefined) update.title = p.title;
   if (p.description !== undefined) update.description = p.description;
   if (p.body !== undefined) update.body = p.body;
-  if (p.category !== undefined) update.category = p.category;
+  if (p.categories !== undefined) {
+    update.categories = p.categories;
+    update.category = p.categories[0] ?? p.category ?? "";
+  } else if (p.category !== undefined) {
+    update.category = p.category;
+  }
   if (p.priceGrosze !== undefined) update.price_grosze = p.priceGrosze;
   if (p.images !== undefined) update.images = p.images;
   if (p.specs !== undefined) update.specs = p.specs;

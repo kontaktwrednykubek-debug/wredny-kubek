@@ -70,7 +70,7 @@ export function Navbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 w-full border-b border-border bg-background/80 backdrop-blur-md">
+      <header className="fixed top-0 left-0 right-0 z-40 w-full border-b border-border bg-background/80 backdrop-blur-md">
         <div className="container mx-auto flex h-20 items-center justify-between gap-2 px-4 sm:gap-4">
           <Link href="/" aria-label={brand.name} className="flex h-full items-center">
             <Image src="/wk-logo-light.png" alt={brand.name} width={160} height={80} priority className="block h-14 w-auto object-contain dark:hidden sm:h-16" />
