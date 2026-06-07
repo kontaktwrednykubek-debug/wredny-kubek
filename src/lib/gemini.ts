@@ -43,13 +43,14 @@ export async function geminiEmbed(text: string): Promise<number[]> {
   if (!key) throw new Error("GEMINI_API_KEY not set");
 
   const res = await fetch(
-    `${BASE}/models/text-embedding-004:embedContent?key=${key}`,
+    `${BASE}/models/gemini-embedding-001:embedContent?key=${key}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "models/text-embedding-004",
+        model: "models/gemini-embedding-001",
         content: { parts: [{ text }] },
+        outputDimensionality: 768,
       }),
     },
   );
