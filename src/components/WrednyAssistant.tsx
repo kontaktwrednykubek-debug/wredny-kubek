@@ -21,21 +21,23 @@ interface Product {
 const STEP1_OPTIONS = [
   "Dla taty",
   "Dla mamy",
-  "Dla dziadka / babci",
+  "Dla dziadka",
+  "Dla babci",
   "Dla dziecka",
-  "Dla szefa / szefowej",
-  "Dla kumpla z pracy",
+  "Dla szefa",
+  "Dla kumpla",
   "Dla siebie",
 ];
 
 const STEP2_MAP: Record<string, string[]> = {
-  "Dla taty":            ["Grillmaster i sport", "Pracoholik z kawą", "Emeryt z humorem", "Fan motoryzacji", "Domowy majsterkowicz"],
-  "Dla mamy":            ["Romantyczka", "Pracująca mama-superbohaterka", "Miłośniczka gotowania", "Ogrodniczka", "Moda i styl"],
-  "Dla dziadka / babci": ["Spokojny emeryt", "Aktywny senior", "Fan historii / polityki", "Tradycjonalista"],
-  "Dla dziecka":         ["Przedszkolak / bajki", "Nastolatek", "Fan gamingu", "Uczennica / Uczeń"],
-  "Dla szefa / szefowej":["Wymagający perfekcjonista", "Luzak w garniturze", "Workaholic", "Szef który wszystko wie"],
-  "Dla kumpla z pracy":  ["Narzekacz pierwszej klasy", "Wieczny optymista", "Programista / IT", "Kreatywny chaos"],
-  "Dla siebie":          ["Potrzebuję motywacji", "Czarny humor to mój język", "Kawa = życie", "Pracuję z domu"],
+  "Dla taty":    ["Grillmaster", "Pracoholik", "Fan motoryzacji", "Majsterkowicz"],
+  "Dla mamy":    ["Romantyczka", "Pracująca mama", "Miłośniczka gotowania", "Ogrodniczka"],
+  "Dla dziadka": ["Spokojny emeryt", "Aktywny senior", "Fan historii", "Tradycjonalista"],
+  "Dla babci":   ["Romantyczka", "Aktywna seniorka", "Miłośniczka gotowania", "Tradycjonalistka"],
+  "Dla dziecka": ["Przedszkolak", "Nastolatek", "Fan gamingu", "Uczennica / Uczeń"],
+  "Dla szefa":   ["Wymagający szef", "Luzak w garniturze", "Workaholic", "Szef który wie wszystko"],
+  "Dla kumpla":  ["Narzekacz", "Wieczny optymista", "Programista / IT", "Kreatywny chaos"],
+  "Dla siebie":  ["Potrzebuję motywacji", "Lubię czarny humor", "Kawa = życie", "Pracuję z domu"],
 };
 
 const STEP3_OPTIONS = [
@@ -64,7 +66,7 @@ function RadioOption({
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`flex items-center gap-3 w-full rounded-2xl border-2 px-4 py-3 text-left text-sm font-medium transition-all active:scale-[0.98] disabled:opacity-50 ${
+      className={`flex items-center gap-3 w-full rounded-2xl border-2 px-4 py-3 text-left text-base font-medium transition-all active:scale-[0.98] disabled:opacity-50 ${
         selected
           ? "border-[#40C4A4] bg-[#40C4A4]/15"
           : "border-border bg-muted/30 hover:border-[#40C4A4]/60 hover:bg-[#40C4A4]/5"
@@ -212,8 +214,8 @@ export function WrednyAssistant() {
             {step === "step1" && (
               <div className="flex flex-1 flex-col">
                 <StepDots current={1} />
-                <h2 className="mb-1 text-lg font-bold">Dla kogo szukasz?</h2>
-                <p className="mb-4 text-xs text-muted-foreground">Wybierz jedną opcję</p>
+                <h2 className="mb-1 text-xl font-bold">Dla kogo szukasz?</h2>
+                <p className="mb-4 text-sm text-muted-foreground">Wybierz jedną opcję</p>
                 <div className="flex flex-col gap-2 overflow-y-auto">
                   {STEP1_OPTIONS.map((opt) => (
                     <RadioOption key={opt} label={opt} selected={selected === opt}
@@ -234,12 +236,12 @@ export function WrednyAssistant() {
             {step === "step2" && (
               <div className="flex flex-1 flex-col">
                 <StepDots current={2} />
-                <div className="mb-4 flex items-center gap-2 text-xs text-muted-foreground">
+                <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
                   <span>Wybrałeś:</span>
                   <span className="rounded-full bg-[#40C4A4]/15 px-2.5 py-0.5 font-semibold text-foreground">{forWhom}</span>
                 </div>
-                <h2 className="mb-1 text-lg font-bold">Jaki to typ?</h2>
-                <p className="mb-4 text-xs text-muted-foreground">Wybierz pasujący opis</p>
+                <h2 className="mb-1 text-xl font-bold">Jaki to typ?</h2>
+                <p className="mb-4 text-sm text-muted-foreground">Wybierz pasujący opis</p>
                 <div className="flex flex-col gap-2 overflow-y-auto">
                   {step2Options.map((opt) => (
                     <RadioOption key={opt} label={opt} selected={selected === opt}
@@ -260,13 +262,13 @@ export function WrednyAssistant() {
             {step === "step3" && (
               <div className="flex flex-1 flex-col">
                 <StepDots current={3} />
-                <div className="mb-4 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                <div className="mb-4 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                   <span>Wybrałeś:</span>
                   <span className="rounded-full bg-[#40C4A4]/15 px-2.5 py-0.5 font-semibold text-foreground">{forWhom}</span>
                   <span className="rounded-full bg-[#40C4A4]/15 px-2.5 py-0.5 font-semibold text-foreground">{style}</span>
                 </div>
-                <h2 className="mb-1 text-lg font-bold">Jaki ma charakter?</h2>
-                <p className="mb-4 text-xs text-muted-foreground">Ostatnie pytanie, obiecuję</p>
+                <h2 className="mb-1 text-xl font-bold">Jaki ma charakter?</h2>
+                <p className="mb-4 text-sm text-muted-foreground">Ostatnie pytanie, obiecuję</p>
                 <div className="flex flex-col gap-2 overflow-y-auto">
                   {STEP3_OPTIONS.map((opt) => (
                     <RadioOption key={opt} label={opt} selected={selected === opt}
