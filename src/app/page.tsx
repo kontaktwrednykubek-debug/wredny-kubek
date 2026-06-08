@@ -20,7 +20,7 @@ export default async function HomePage() {
   const supabase = createSupabaseServerClient();
   const bannersRes = await supabase
     .from("banners")
-    .select("id, title, image_url, link_url")
+    .select("id, title, image_url, image_url_mobile, link_url")
     .eq("is_active", true)
     .order("sort_order", { ascending: true })
     .limit(3);

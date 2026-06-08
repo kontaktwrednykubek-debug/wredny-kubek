@@ -6,9 +6,12 @@ export const runtime = "nodejs";
 
 const MAX_BYTES = 15 * 1024 * 1024;
 const ALLOWED = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"];
-const BANNER_WIDTH = 1920;
-const BANNER_HEIGHT = 600;
 const WEBP_QUALITY = 85;
+
+const DIMENSIONS = {
+  desktop: { width: 1920, height: 600 },  // 16:5 — szeroki pasek
+  mobile:  { width: 640,  height: 960 },  // 2:3 — pionowy / kwadratowy telefon
+};
 
 export async function POST(req: Request) {
   const supabase = createSupabaseServerClient();
@@ -20,29 +23,26 @@ export async function POST(req: Request) {
 
   const form = await req.formData().catch(() => null);
   const file = form?.get("file");
+  const device = (form?.get("device") as string) === "mobile" ? "mobile" : "desktop";
   if (!(file instanceof File)) return NextResponse.json({ error: "no_file" }, { status: 400 });
   if (file.size > MAX_BYTES) return NextResponse.json({ error: "file_too_large" }, { status: 400 });
   if (!ALLOWED.includes(file.type)) return NextResponse.json({ error: "invalid_type" }, { status: 400 });
+
+  const { width, height } = DIMENSIONS[device];
 
   let webpBuffer: Buffer;
   try {
     const inputBuffer = Buffer.from(await file.arrayBuffer());
     webpBuffer = await sharp(inputBuffer)
       .rotate()
-      .resize({
-        width: BANNER_WIDTH,
-        height: BANNER_HEIGHT,
-        fit: "cover",
-        position: "center",
-        withoutEnlargement: true,
-      })
+      .resize({ width, height, fit: "cover", position: "center", withoutEnlargement: true })
       .webp({ quality: WEBP_QUALITY, effort: 4 })
       .toBuffer();
   } catch {
     return NextResponse.json({ error: "conversion_failed" }, { status: 500 });
   }
 
-  const path = `banners/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.webp`;
+  const path = `banners/${device}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.webp`;
 
   const { error } = await supabase.storage
     .from("shop-products")
