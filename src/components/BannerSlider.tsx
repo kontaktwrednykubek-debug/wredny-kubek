@@ -79,8 +79,8 @@ export function BannerSlider({ banners }: { banners: Banner[] }) {
                 />
               </div>
             )}
-            {/* Desktop: zawsze 16:5 */}
-            <div className="hidden md:block relative w-full" style={{ aspectRatio: "16/5" }}>
+            {/* Desktop: pełny ekran minus nagłówek (h-20 = 80px) */}
+            <div className="hidden md:block relative w-full" style={{ height: "calc(100vh - 80px)" }}>
               <Image
                 src={b.image_url}
                 alt={b.alt_text ?? b.title ?? "Baner promocyjny"}
