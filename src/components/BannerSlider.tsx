@@ -53,7 +53,34 @@ export function BannerSlider({ banners }: { banners: Banner[] }) {
           className={`transition-opacity duration-700 ${i === index ? "opacity-100 relative z-10" : "opacity-0 absolute inset-0 z-0"}`}
         >
           <Wrapper banner={b}>
-            <div className="relative w-full aspect-[16/5]">
+            {/* Telefon: wersja mobilna 2:3 (jeśli wgrana) */}
+            {b.image_url_mobile && (
+              <div className="block md:hidden relative w-full" style={{ aspectRatio: "2/3" }}>
+                <Image
+                  src={b.image_url_mobile}
+                  alt={b.alt_text ?? b.title ?? "Baner promocyjny"}
+                  fill
+                  priority={i === 0}
+                  className="object-cover"
+                  sizes="100vw"
+                />
+              </div>
+            )}
+            {/* Telefon fallback (brak wersji mobilnej): desktop 16:5 */}
+            {!b.image_url_mobile && (
+              <div className="block md:hidden relative w-full" style={{ aspectRatio: "16/5" }}>
+                <Image
+                  src={b.image_url}
+                  alt={b.alt_text ?? b.title ?? "Baner promocyjny"}
+                  fill
+                  priority={i === 0}
+                  className="object-cover"
+                  sizes="100vw"
+                />
+              </div>
+            )}
+            {/* Desktop: zawsze 16:5 */}
+            <div className="hidden md:block relative w-full" style={{ aspectRatio: "16/5" }}>
               <Image
                 src={b.image_url}
                 alt={b.alt_text ?? b.title ?? "Baner promocyjny"}
