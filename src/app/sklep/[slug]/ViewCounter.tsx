@@ -37,7 +37,7 @@ export function ViewCounter({ productId }: { productId: string }) {
   const { count, period } = state;
   const label = formatCount(count);
   const plural = pluralOsob(count);
-  const periodLabel = period <= 7 ? "w ciągu ostatnich 7 dni" : "w tym miesiącu";
+  const periodLabel = period <= 7 ? "w ciągu ostatnich 7 dni" : "";
   const icon = period <= 7 ? "🔥" : "👀";
   const prefix = period <= 7 ? "Popularny wybór:" : "W tym miesiącu:";
 
@@ -48,7 +48,7 @@ export function ViewCounter({ productId }: { productId: string }) {
         <span className="relative inline-flex h-2 w-2 rounded-full bg-orange-500" />
       </span>
       <span>
-        {icon} {prefix} <strong className="font-semibold">{label} {plural}</strong> ten kubek {periodLabel}.
+        {icon} {prefix} <strong className="font-semibold">{label} {plural}</strong> ten kubek{periodLabel ? ` ${periodLabel}` : ""}.
       </span>
     </div>
   );

@@ -184,7 +184,7 @@ export function WrednyChatModal({ onClose }: { onClose: () => void }) {
               {messages.length === 0 && (
                 <div className="flex items-start gap-2">
                   <span className="mt-0.5 text-lg">🤖</span>
-                  <div className="max-w-[85%] rounded-2xl rounded-tl-sm bg-muted px-3 py-2 text-sm">
+                  <div className="max-w-[85%] rounded-2xl rounded-tl-sm bg-muted px-3 py-2 text-base">
                     Hej! Ta rozmowa jest prywatna i nigdzie niezapisywana. Dla kogo szukasz kubka?
                   </div>
                 </div>
@@ -193,7 +193,7 @@ export function WrednyChatModal({ onClose }: { onClose: () => void }) {
                 <div key={i} className={`flex items-start gap-2 ${m.role === "user" ? "flex-row-reverse" : ""}`}>
                   {m.role === "assistant" && <span className="mt-0.5 shrink-0 text-lg">🤖</span>}
                   <div
-                    className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap ${
+                    className={`max-w-[85%] rounded-2xl px-3 py-2 text-base whitespace-pre-wrap ${
                       m.role === "user"
                         ? "rounded-tr-sm bg-[#40C4A4] text-white"
                         : "rounded-tl-sm bg-muted text-foreground"
@@ -224,7 +224,7 @@ export function WrednyChatModal({ onClose }: { onClose: () => void }) {
                   onChange={(e) => { setInput(e.target.value); autoResize(); }}
                   onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void sendMessage(); } }}
                   placeholder="Napisz coś... (Enter = wyślij, Shift+Enter = nowa linia)"
-                  className="flex-1 resize-none overflow-hidden rounded-2xl border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#40C4A4] leading-[1.5]"
+                  className="flex-1 resize-none overflow-hidden rounded-2xl border border-input bg-background px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-[#40C4A4] leading-[1.5]"
                   disabled={loading}
                   maxLength={500}
                   style={{ minHeight: "38px", maxHeight: "120px" }}
