@@ -44,6 +44,7 @@ export type ProductInitial = {
   view_count_base?: number;
   view_count_period?: number;
   related_product_ids?: string[];
+  tags?: string[];
 };
 
 const CONDITIONS = ["Nowy", "Używany"] as const;
@@ -93,6 +94,15 @@ export function ProductForm({
   const [relatedProductIds, setRelatedProductIds] = React.useState<string[]>(
     initial?.related_product_ids ?? [],
   );
+  const [tags, setTags] = React.useState<string[]>(initial?.tags ?? []);
+  const [tagInput, setTagInput] = React.useState("");
+
+  function addTag() {
+    const v = tagInput.trim().toLowerCase().replace(/\s+/g, "-");
+    if (!v || tags.includes(v)) return;
+    setTags((prev) => [...prev, v]);
+    setTagInput("");
+  }
   const [allProducts, setAllProducts] = React.useState<{ id: string; slug: string; title: string }[]>([]);
 
   React.useEffect(() => {
@@ -312,6 +322,7 @@ export function ProductForm({
       viewCountBase: parseInt(viewCountBase || "0", 10) || 0,
       viewCountPeriod,
       relatedProductIds,
+      tags,
     };
 
     setSubmitting(true);
@@ -465,6 +476,32 @@ export function ProductForm({
             className={inputCls}
             placeholder="Szczegółowy opis produktu, historia, zastosowanie, pielęgnacja..."
           />
+        </Field>
+        <Field
+          label="Tagi SEO / wektoryzacja"
+          hint="Słowa kluczowe (okazja, zawody, humor) — pomagają AI lepiej dopasować produkt. Wpisz i naciśnij Enter."
+        >
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTag(); } }}
+              placeholder="np. urodziny, informatyk, sarkastyczny..."
+              className={`${inputCls} flex-1`}
+            />
+            <button type="button" onClick={addTag} className="rounded-xl border border-border bg-muted px-3 py-1.5 text-sm hover:bg-border transition-colors">+</button>
+          </div>
+          {tags.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {tags.map((tag) => (
+                <span key={tag} className="flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary border border-primary/20">
+                  #{tag}
+                  <button type="button" onClick={() => setTags((prev) => prev.filter((t) => t !== tag))} className="ml-0.5 hover:text-destructive">×</button>
+                </span>
+              ))}
+            </div>
+          )}
         </Field>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Cena (PLN)" required>

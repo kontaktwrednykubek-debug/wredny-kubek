@@ -28,12 +28,12 @@ const STEP1_OPTIONS = [
 ];
 
 const STEP2_MAP: Record<string, string[]> = {
-  "Dla mamy / taty":      ["Pracoholik / Pracoholiczka", "Romantyk / Romantyczka", "Fan gotowania i grilla", "Sportowiec / Ogrodniczka"],
-  "Dla dziadka / babci":  ["Spokojny emeryt / emerytkta", "Aktywny senior / seniorka", "Fan historii", "Tradycjonalista / tka"],
-  "Dla dziecka":          ["Przedszkolak", "Nastolatek", "Fan gamingu", "Uczeń / Uczennica"],
-  "Dla szefa / szefowej": ["Wymagający perfekcjonista", "Luzak w garniturze", "Workaholic", "Wie wszystko"],
-  "Dla kumpla / kumpeli": ["Narzekacz / Narzekaczka", "Wieczny optymista", "Programista / IT", "Kreatywny chaos"],
-  "Dla siebie":           ["Potrzebuję motywacji", "Lubię czarny humor", "Kawa = życie", "Pracuję z domu"],
+  "Dla mamy / taty":      ["Humor i Styl Zycia", "Zodiak i Astrologia", "Personalizacja i Okazje", "Kubki Magiczne i Efektowne"],
+  "Dla dziadka / babci":  ["Humor i Styl Zycia", "Personalizacja i Okazje", "Mystery Box", "Kubki Magiczne i Efektowne"],
+  "Dla dziecka":          ["Gry i Animacje", "Harry Potter", "Zodiak i Astrologia", "Kubki Magiczne i Efektowne"],
+  "Dla szefa / szefowej": ["Kierownik tego cyrku", "Biurowe Do pracy", "Dla Charakternych", "Humor i Styl Zycia"],
+  "Dla kumpla / kumpeli": ["Dla Charakternych", "Gry i Animacje", "Popkultura i Seriale", "Humor i Styl Zycia"],
+  "Dla siebie":           ["Zodiak i Astrologia", "Dla Charakternych", "Mystery Box", "Pasje"],
 };
 
 const STEP3_OPTIONS = [

@@ -57,6 +57,7 @@ const createSchema = z.object({
   viewCountBase: z.number().int().min(0).default(0),
   viewCountPeriod: z.number().int().min(0).default(7),
   relatedProductIds: z.array(z.string().uuid()).max(20).default([]),
+  tags: z.array(z.string().max(50)).max(30).default([]),
 });
 
 async function requireAdmin() {
@@ -102,7 +103,7 @@ export async function POST(req: Request) {
       category: p.categories?.[0] ?? p.category,
       categories: p.categories ?? [p.category],
       embedding: await geminiEmbed(
-        [p.title, p.description, p.body, ...(p.categories ?? [p.category])].filter(Boolean).join(" ")
+        [p.title, p.description, p.body, ...(p.categories ?? [p.category]), ...p.tags].filter(Boolean).join(" ")
       ).catch(() => null),
       price_grosze: p.priceGrosze,
       images: p.images,
@@ -116,6 +117,7 @@ export async function POST(req: Request) {
       view_count_base: p.viewCountBase,
       view_count_period: p.viewCountPeriod,
       related_product_ids: p.relatedProductIds,
+      tags: p.tags,
     })
     .select("id, slug")
     .single();

@@ -9,23 +9,39 @@ Zero wulgaryzmów. Nie wymieniaj nazw kubków — to zrobi UI. Zakończ zachęt�
 
 // Map quiz answers to DB category slugs
 const CATEGORY_MAP: Record<string, string[]> = {
+  // Step 1 — dla kogo
   "Dla mamy / taty":      ["kierownik-tego-cyrku", "personalizacja-i-okazje", "pasje", "charakterne"],
   "Dla dziadka / babci":  ["charakterne", "pasje", "personalizacja-i-okazje"],
-  "Dla dziecka":          ["zodiak-i-astrologia", "merch"],
-  "Dla szefa / szefowej": ["kierownik-tego-cyrku"],
+  "Dla dziecka":          ["zodiak-i-astrologia", "gry-i-animacje", "harry-potter"],
+  "Dla szefa / szefowej": ["kierownik-tego-cyrku", "biurowe"],
   "Dla kumpla / kumpeli": ["kierownik-tego-cyrku", "charakterne", "pasje"],
   "Dla siebie":           ["mystery-box", "charakterne", "zodiak-i-astrologia"],
-  "Ironista / sarkasta":   ["charakterne", "kierownik-tego-cyrku"],
-  "Wesoły pozytywiak":     ["personalizacja-i-okazje", "zodiak-i-astrologia"],
-  "Poważny i skupiony":    ["kierownik-tego-cyrku"],
-  "Romantyczny / wrażliwy":["personalizacja-i-okazje", "pamietniki-wampirow"],
-  "Chroniczny marudzący":  ["charakterne", "kierownik-tego-cyrku", "pasje"],
+  // Step 2 — kategoria zainteresowań
+  "Humor i Styl Zycia":           ["humor-i-styl-zycia", "charakterne", "pasje"],
+  "Zodiak i Astrologia":          ["zodiak-i-astrologia"],
+  "Personalizacja i Okazje":      ["personalizacja-i-okazje"],
+  "Kubki Magiczne i Efektowne":   ["kubki-magiczne-i-efektowne", "magiczne", "brokatowe-ombre-lustrzane"],
+  "Gry i Animacje":               ["gry-i-animacje", "popkultura-i-seriale"],
+  "Harry Potter":                 ["harry-potter", "pamietniki-wampirow"],
+  "Mystery Box":                  ["mystery-box"],
+  "Kierownik tego cyrku":         ["kierownik-tego-cyrku"],
+  "Biurowe Do pracy":             ["biurowe"],
+  "Dla Charakternych":            ["charakterne", "kierownik-tego-cyrku"],
+  "Popkultura i Seriale":         ["popkultura-i-seriale", "gry-i-animacje"],
+  "Pasje":                        ["pasje"],
+  // Step 3 — charakter
+  "Ironista / sarkasta":          ["charakterne", "kierownik-tego-cyrku"],
+  "Wesoły pozytywiak":            ["personalizacja-i-okazje", "zodiak-i-astrologia"],
+  "Poważny i skupiony":           ["kierownik-tego-cyrku"],
+  "Romantyczny / wrażliwy":       ["personalizacja-i-okazje", "pamietniki-wampirow"],
+  "Chroniczny marudzący":         ["charakterne", "kierownik-tego-cyrku", "pasje"],
 };
 
-function getCategoriesFromAnswers(forWhom: string, character: string): string[] {
+function getCategoriesFromAnswers(forWhom: string, style: string, character: string): string[] {
   const a = CATEGORY_MAP[forWhom] ?? [];
-  const b = CATEGORY_MAP[character] ?? [];
-  return [...new Set([...a, ...b])];
+  const b = CATEGORY_MAP[style] ?? [];
+  const c = CATEGORY_MAP[character] ?? [];
+  return [...new Set([...b, ...a, ...c])]; // styl z kroku 2 ma priorytet
 }
 
 export async function POST(req: NextRequest) {
@@ -41,7 +57,7 @@ export async function POST(req: NextRequest) {
   let isFallback = false;
 
   try {
-    const searchQuery = `kubek prezent ${forWhom} ${style} ${character} humor`;
+    const searchQuery = `kubek prezent ${style} ${forWhom} ${character} humor wredny`;
     const embedding = await geminiEmbed(searchQuery);
     const { data } = await supabase.rpc("match_products", {
       query_embedding: embedding,
@@ -56,7 +72,7 @@ export async function POST(req: NextRequest) {
   // 2. Fallback: category-based query when no vector results
   if (products.length === 0) {
     isFallback = true;
-    const cats = getCategoriesFromAnswers(forWhom, character);
+    const cats = getCategoriesFromAnswers(forWhom, style, character);
 
     let query = supabase
       .from("shop_products")

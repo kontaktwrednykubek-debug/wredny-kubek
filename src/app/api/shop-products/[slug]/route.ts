@@ -111,6 +111,7 @@ const updateSchema = z.object({
   viewCountBase: z.number().int().min(0).optional(),
   viewCountPeriod: z.number().int().min(0).optional(),
   relatedProductIds: z.array(z.string().uuid()).max(20).optional(),
+  tags: z.array(z.string().max(50)).max(30).optional(),
 });
 
 /**
@@ -158,6 +159,7 @@ export async function PATCH(
   if (p.viewCountBase !== undefined) update.view_count_base = p.viewCountBase;
   if (p.viewCountPeriod !== undefined) update.view_count_period = p.viewCountPeriod;
   if (p.relatedProductIds !== undefined) update.related_product_ids = p.relatedProductIds;
+  if (p.tags !== undefined) update.tags = p.tags;
 
   // Re-generate embedding when searchable text fields change
   if (p.title || p.description || p.body || p.categories) {
@@ -172,6 +174,7 @@ export async function PATCH(
         update.description ?? existing.description,
         update.body ?? existing.body,
         ...((update.categories as string[]) ?? [update.category ?? existing.category]),
+        ...((update.tags as string[]) ?? []),
       ].filter(Boolean).join(" ");
       update.embedding = await geminiEmbed(text).catch(() => null);
     }

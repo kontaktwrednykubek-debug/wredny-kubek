@@ -11,6 +11,7 @@ import { ProductPageClient } from "./ProductPageClient";
 import { ProductRatingTrigger } from "./ProductRatingTrigger";
 import { ViewCounter } from "./ViewCounter";
 import { RelatedProducts } from "./RelatedProducts";
+import { WrednyChatButton } from "./WrednyChatButton";
 
 export async function generateMetadata({
   params,
@@ -95,6 +96,9 @@ export default async function ProductDetailsPage({
             {formatPrice(product.price_grosze)}
           </p>
 
+          {/* Wredny AI */}
+          <WrednyChatButton />
+
           {/* Krótki opis */}
           {product.description && (
             <p className="whitespace-pre-line text-muted-foreground">
@@ -139,18 +143,9 @@ export default async function ProductDetailsPage({
         </div>
       </div>
 
-      {/* Długi opis produktu + dane techniczne — pełna szerokość pod galerią i sekcją zakupu */}
+      {/* Dane techniczne + opis — pełna szerokość pod galerią i sekcją zakupu */}
       {(body || Object.keys(specs).length > 0) && (
         <div className="mt-6 lg:mt-8 flex flex-col gap-4 sm:gap-5">
-          {body && (
-            <div className="rounded-2xl border border-border bg-card p-5">
-              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                Opis produktu
-              </h2>
-              <p className="whitespace-pre-line text-sm leading-relaxed text-foreground/80">{body}</p>
-            </div>
-          )}
-
           {Object.keys(specs).length > 0 && (
             <div className="rounded-2xl border border-border bg-card p-5">
               <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
@@ -167,6 +162,15 @@ export default async function ProductDetailsPage({
                   </div>
                 ))}
               </dl>
+            </div>
+          )}
+
+          {body && (
+            <div className="rounded-2xl border border-border bg-card p-5">
+              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                Opis produktu
+              </h2>
+              <p className="whitespace-pre-line text-sm leading-relaxed text-foreground/80">{body}</p>
             </div>
           )}
         </div>
