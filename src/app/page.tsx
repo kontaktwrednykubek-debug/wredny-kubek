@@ -280,7 +280,7 @@ export default async function HomePage() {
 
       {/* KARUZELA KATEGORII */}
       {categoryCards.length > 0 && (
-        <section className="bg-muted border-t border-border">
+        <section className="mt-5 bg-zinc-100 dark:bg-zinc-900 border-t-2 border-zinc-200 dark:border-zinc-800">
           <div className="container mx-auto px-5 py-14 sm:px-6 md:py-16 lg:px-10 xl:px-12">
             <div className="mb-8 flex flex-col items-start gap-3 md:mb-10 md:flex-row md:items-end md:justify-between">
               <div>
