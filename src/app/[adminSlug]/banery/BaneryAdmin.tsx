@@ -160,8 +160,8 @@ export function BaneryAdmin({ adminSlug }: { adminSlug: string }) {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="rounded-xl bg-card border border-border p-4 space-y-1">
             <p className="flex items-center gap-1.5 font-semibold text-sm"><Monitor className="h-4 w-4" /> Desktop</p>
-            <p className="text-lg font-bold">1920 × 600 px</p>
-            <p className="text-xs text-muted-foreground">Proporcje 16:5 · szeroki poziomy pasek</p>
+            <p className="text-lg font-bold">1920 × 1080 px</p>
+            <p className="text-xs text-muted-foreground">Proporcje 16:9 · pełny ekran</p>
             <p className="text-xs text-muted-foreground">Format wejściowy: JPG, PNG, WebP · max 15 MB</p>
           </div>
           <div className="rounded-xl bg-card border border-border p-4 space-y-1">
@@ -181,9 +181,9 @@ export function BaneryAdmin({ adminSlug }: { adminSlug: string }) {
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <UploadZone
             label="Zdjęcie desktopowe *"
-            hint="1920×600 px — wymagane"
+            hint="1920×1080 px — wymagane"
             device="desktop" state={desktop} setter={setDesktop} inputRef={desktopRef}
-            aspect="aspect-[16/5]"
+            aspect="aspect-video"
           />
           <UploadZone
             label="Zdjęcie mobilne"
@@ -239,7 +239,7 @@ export function BaneryAdmin({ adminSlug }: { adminSlug: string }) {
             <div key={b.id} className={`rounded-2xl border overflow-hidden ${b.is_active ? "border-border" : "border-border/50 opacity-60"}`}>
               <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto]">
                 {/* Desktop thumb */}
-                <div className="relative aspect-[16/5] w-full bg-muted">
+                <div className="relative aspect-video w-full bg-muted">
                   <Image src={b.image_url} alt={b.title ?? "Baner"} fill className="object-cover" sizes="80vw" />
                   <span className="absolute left-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-semibold text-white flex items-center gap-1">
                     <Monitor className="h-2.5 w-2.5" /> Desktop

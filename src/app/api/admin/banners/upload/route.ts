@@ -9,7 +9,7 @@ const ALLOWED = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/av
 const WEBP_QUALITY = 85;
 
 const DIMENSIONS = {
-  desktop: { width: 1920, height: 600 },  // 16:5 — szeroki pasek
+  desktop: { width: 1920, height: 1080 }, // 16:9 — pełny ekran
   mobile:  { width: 640,  height: 960 },  // 2:3 — pionowy / kwadratowy telefon
 };
 

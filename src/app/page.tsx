@@ -100,7 +100,9 @@ export default async function HomePage() {
       {/* HERO — baner fullwidth LUB stary hero (gdy brak banerów) */}
       {activeBanners.length > 0 ? (
         <>
-          <BannerSlider banners={activeBanners} />
+          <div style={{ marginTop: "50px" }}>
+            <BannerSlider banners={activeBanners} />
+          </div>
           <section className="bg-muted border-b border-border">
             <div className="container mx-auto px-5 py-10 text-center sm:px-6 lg:px-10 xl:px-12">
               <h1 className="text-[2rem] font-extrabold leading-[1.1] tracking-tight text-balance sm:text-[2.6rem] md:text-[2.8rem] lg:text-[3.4rem] xl:text-[4.2rem] [word-break:keep-all] [overflow-wrap:normal]">

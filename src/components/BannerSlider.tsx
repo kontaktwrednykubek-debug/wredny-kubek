@@ -80,7 +80,7 @@ export function BannerSlider({ banners }: { banners: Banner[] }) {
               </div>
             )}
             {/* Desktop: naturalny aspect ratio 1920:600 — pełny baner bez przycinania */}
-            <div className="hidden md:block relative w-full" style={{ aspectRatio: "1920/600" }}>
+            <div className="hidden md:block relative w-full" style={{ aspectRatio: "16/9" }}>
               <Image
                 src={b.image_url}
                 alt={b.alt_text ?? b.title ?? "Baner promocyjny"}
