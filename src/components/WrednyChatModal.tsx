@@ -14,7 +14,16 @@ export function WrednyChatModal({ onClose }: { onClose: () => void }) {
   const [loading, setLoading] = React.useState(false);
   const [questionsLeft, setQuestionsLeft] = React.useState<number | null>(null);
   const [checkingAuth, setCheckingAuth] = React.useState(false);
+  const [ageConfirmed, setAgeConfirmed] = React.useState(false);
+  const textareaRef = React.useRef<HTMLTextAreaElement>(null);
   const bottomRef = React.useRef<HTMLDivElement>(null);
+
+  function autoResize() {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = Math.min(el.scrollHeight, 120) + "px";
+  }
 
   React.useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -101,15 +110,21 @@ export function WrednyChatModal({ onClose }: { onClose: () => void }) {
             <div className="space-y-3 text-sm text-muted-foreground">
               <p>🎁 Powiedz mi dla kogo szukasz kubka, a dobiorę coś co rozbawi nawet marudę.</p>
               <p>⚡ Grzecznych asystentów jest wszędzie pełno. Ten mówi Ci prawdę.</p>
-              <p className="rounded-xl border border-border bg-card p-3 text-xs">
-                <strong>Limit:</strong> Zalogowani użytkownicy otrzymują <strong>7 darmowych pytań</strong>. Niezarejestrowani — zero. Fair?
-              </p>
             </div>
-            <div className="mt-auto">
+            <div className="mt-auto space-y-3">
+              <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-card p-3 text-sm">
+                <input
+                  type="checkbox"
+                  checked={ageConfirmed}
+                  onChange={(e) => setAgeConfirmed(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 accent-[#40C4A4] shrink-0"
+                />
+                <span className="text-muted-foreground">Mam <strong className="text-foreground">ukończone 18 lat</strong> i wyrażam zgodę na rozmowę z asystentem AI.</span>
+              </label>
               <button
                 onClick={checkAuthAndStart}
-                disabled={checkingAuth}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#40C4A4] py-3 text-sm font-bold text-white hover:bg-[#40C4A4]/90 transition-colors disabled:opacity-60"
+                disabled={checkingAuth || !ageConfirmed}
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#40C4A4] py-3 text-sm font-bold text-white hover:bg-[#40C4A4]/90 transition-colors disabled:opacity-40"
               >
                 {checkingAuth ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageCircle className="h-4 w-4" />}
                 {checkingAuth ? "Sprawdzam..." : "Zacznijmy gadać"}
@@ -165,11 +180,6 @@ export function WrednyChatModal({ onClose }: { onClose: () => void }) {
         {/* ── CHAT ── */}
         {screen === "chat" && (
           <>
-            {questionsLeft !== null && (
-              <div className="border-b border-border px-4 py-1.5 text-[11px] text-muted-foreground text-right">
-                Pozostało pytań: <strong>{questionsLeft}</strong>
-              </div>
-            )}
             <div className="flex flex-1 flex-col gap-3 overflow-y-auto p-4">
               {messages.length === 0 && (
                 <div className="flex items-start gap-2">
@@ -206,20 +216,23 @@ export function WrednyChatModal({ onClose }: { onClose: () => void }) {
               <div ref={bottomRef} />
             </div>
             <div className="border-t border-border p-3">
-              <div className="flex gap-2">
-                <input
+              <div className="flex items-end gap-2">
+                <textarea
+                  ref={textareaRef}
                   value={input}
-                  onChange={(e) => setInput(e.target.value)}
+                  rows={1}
+                  onChange={(e) => { setInput(e.target.value); autoResize(); }}
                   onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void sendMessage(); } }}
-                  placeholder="Napisz coś..."
-                  className="flex-1 rounded-2xl border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#40C4A4]"
+                  placeholder="Napisz coś... (Enter = wyślij, Shift+Enter = nowa linia)"
+                  className="flex-1 resize-none overflow-hidden rounded-2xl border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#40C4A4] leading-[1.5]"
                   disabled={loading}
                   maxLength={500}
+                  style={{ minHeight: "38px", maxHeight: "120px" }}
                 />
                 <button
                   onClick={() => void sendMessage()}
                   disabled={loading || !input.trim()}
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#40C4A4] text-white disabled:opacity-40 hover:bg-[#40C4A4]/90 transition-colors"
+                  className="mb-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#40C4A4] text-white disabled:opacity-40 hover:bg-[#40C4A4]/90 transition-colors"
                 >
                   <Send className="h-4 w-4" />
                 </button>
