@@ -239,7 +239,7 @@ export default async function HomePage() {
       )}
 
       {/* BANER ALLEGRO */}
-      <section className="bg-background">
+      <section className="bg-background pb-14 md:pb-20">
         <div className="container mx-auto px-5 sm:px-6 lg:px-10 xl:px-12">
           <a
             href="https://allegrolokalnie.pl/uzytkownik/Client:126072599"
@@ -280,7 +280,7 @@ export default async function HomePage() {
 
       {/* KARUZELA KATEGORII */}
       {categoryCards.length > 0 && (
-        <section className="bg-muted/40">
+        <section className="bg-muted border-t border-border">
           <div className="container mx-auto px-5 py-14 sm:px-6 md:py-16 lg:px-10 xl:px-12">
             <div className="mb-8 flex flex-col items-start gap-3 md:mb-10 md:flex-row md:items-end md:justify-between">
               <div>
