@@ -97,35 +97,53 @@ export default async function HomePage() {
   });
   return (
     <>
-      {/* HERO */}
-      <section className="bg-muted">
-        <div className="container mx-auto grid items-center gap-8 px-5 py-12 sm:px-6 md:grid-cols-2 md:gap-12 md:py-16 lg:gap-16 lg:px-10 xl:px-12">
-          <div className="min-w-0">
-            <h1 className="text-[2rem] font-extrabold leading-[1.1] tracking-tight text-balance sm:text-[2.6rem] md:text-[2.8rem] lg:text-[3.4rem] xl:text-[4.2rem] [word-break:keep-all] [overflow-wrap:normal]">
-              Wredny kubek<br />Prezent z charakterem
-            </h1>
-            <p className="mt-5 max-w-lg text-base text-muted-foreground sm:text-lg">
-              Twój własny styl bez owijania w bawełnę.
-            </p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Link href="/sklep">
-                <Button
-                  size="lg"
-                  className="h-12 px-6 text-base bg-teal-500 text-white hover:bg-teal-600 sm:h-11 sm:px-5 sm:text-sm"
-                >
-                  Zobacz sklep
-                </Button>
-              </Link>
+      {/* HERO — baner fullwidth LUB stary hero (gdy brak banerów) */}
+      {activeBanners.length > 0 ? (
+        <>
+          <BannerSlider banners={activeBanners} />
+          <section className="bg-muted border-b border-border">
+            <div className="container mx-auto px-5 py-10 text-center sm:px-6 lg:px-10 xl:px-12">
+              <h1 className="text-[2rem] font-extrabold leading-[1.1] tracking-tight text-balance sm:text-[2.6rem] md:text-[2.8rem] lg:text-[3.4rem] xl:text-[4.2rem] [word-break:keep-all] [overflow-wrap:normal]">
+                Wredny kubek — Prezent z charakterem
+              </h1>
+              <p className="mx-auto mt-4 max-w-lg text-base text-muted-foreground sm:text-lg">
+                Twój własny styl bez owijania w bawełnę.
+              </p>
+              <div className="mt-6 flex flex-wrap justify-center gap-3">
+                <Link href="/sklep">
+                  <Button size="lg" className="h-12 px-6 text-base bg-teal-500 text-white hover:bg-teal-600 sm:h-11 sm:px-5 sm:text-sm">
+                    <ShoppingBag className="mr-2 h-4 w-4" />
+                    Zobacz sklep
+                  </Button>
+                </Link>
+              </div>
             </div>
+          </section>
+        </>
+      ) : (
+        <section className="bg-muted">
+          <div className="container mx-auto grid items-center gap-8 px-5 py-12 sm:px-6 md:grid-cols-2 md:gap-12 md:py-16 lg:gap-16 lg:px-10 xl:px-12">
+            <div className="min-w-0">
+              <h1 className="text-[2rem] font-extrabold leading-[1.1] tracking-tight text-balance sm:text-[2.6rem] md:text-[2.8rem] lg:text-[3.4rem] xl:text-[4.2rem] [word-break:keep-all] [overflow-wrap:normal]">
+                Wredny kubek<br />Prezent z charakterem
+              </h1>
+              <p className="mt-5 max-w-lg text-base text-muted-foreground sm:text-lg">
+                Twój własny styl bez owijania w bawełnę.
+              </p>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <Link href="/sklep">
+                  <Button size="lg" className="h-12 px-6 text-base bg-teal-500 text-white hover:bg-teal-600 sm:h-11 sm:px-5 sm:text-sm">
+                    Zobacz sklep
+                  </Button>
+                </Link>
+              </div>
+            </div>
+            <HeroSlideshow />
           </div>
-          <HeroSlideshow />
-        </div>
-      </section>
+        </section>
+      )}
 
       <HeroSearch />
-
-      {/* BANNER SLIDER */}
-      {activeBanners.length > 0 && <BannerSlider banners={activeBanners} />}
 
       {/* CECHY — DARMOWA DOSTAWA, CZAS REALIZACJI, JAKOŚĆ PREMIUM, BEZPIECZNE PŁATNOŚCI */}
       <section className="bg-background border-b border-border">
