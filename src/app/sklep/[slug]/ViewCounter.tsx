@@ -42,12 +42,14 @@ export function ViewCounter({ productId }: { productId: string }) {
   const prefix = period <= 7 ? "Popularny wybór:" : "W tym miesiącu:";
 
   return (
-    <div className="flex items-center gap-2 rounded-xl bg-orange-500/10 px-3 py-2 text-sm font-medium text-orange-600 dark:text-orange-400">
-      <span className="relative flex h-2.5 w-2.5 shrink-0">
+    <div className="flex items-start gap-2 rounded-xl bg-orange-500/10 px-3 py-2 text-sm text-orange-600 dark:text-orange-400">
+      <span className="relative mt-[5px] flex h-2 w-2 shrink-0">
         <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-orange-400 opacity-75" />
-        <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-orange-500" />
+        <span className="relative inline-flex h-2 w-2 rounded-full bg-orange-500" />
       </span>
-      {icon} {prefix} <strong>{label} {plural}</strong> ten kubek {periodLabel}.
+      <span>
+        {icon} {prefix} <strong className="font-semibold">{label} {plural}</strong> ten kubek {periodLabel}.
+      </span>
     </div>
   );
 }

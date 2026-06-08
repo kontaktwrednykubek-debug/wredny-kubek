@@ -109,7 +109,7 @@ export function ProductForm({
       ? initial.categories
       : initial?.category
       ? [initial.category]
-      : ["merch"],
+      : [],
   );
 
   function toggleCategory(slug: string) {
@@ -370,35 +370,77 @@ export function ProductForm({
           />
         </Field>
         <Field label="Kategorie" hint="Zaznacz jedną lub więcej kategorii. Pierwsza zaznaczona to kategoria główna.">
-          <div className="mt-1 grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {categories.map((cat) => {
-              const checked = selectedCategories.includes(cat.slug);
-              const isFirst = selectedCategories[0] === cat.slug;
-              return (
-                <label
-                  key={cat.id}
-                  className={`flex cursor-pointer items-center gap-2 rounded-xl border-2 px-3 py-2 text-sm transition ${
-                    checked
-                      ? "border-primary bg-primary/5 font-medium"
-                      : "border-border hover:border-primary/40"
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => toggleCategory(cat.slug)}
-                    className="h-4 w-4 accent-primary"
-                  />
-                  <span className="flex-1 truncate">{cat.name}</span>
-                  {isFirst && checked && (
-                    <span className="shrink-0 rounded bg-primary px-1 py-0.5 text-[9px] font-bold uppercase text-primary-foreground">
-                      główna
-                    </span>
-                  )}
-                </label>
-              );
-            })}
-          </div>
+          {(() => {
+            const parents = categories.filter((c) => !c.parent_id);
+            const childrenOf = (parentId: string) =>
+              categories.filter((c) => c.parent_id === parentId);
+            return (
+              <div className="mt-1 space-y-2">
+                {parents.map((parent) => {
+                  const children = childrenOf(parent.id);
+                  const parentChecked = selectedCategories.includes(parent.slug);
+                  const isFirst = selectedCategories[0] === parent.slug;
+                  return (
+                    <div key={parent.id}>
+                      {/* Rodzic */}
+                      <label
+                        className={`flex cursor-pointer items-center gap-2 rounded-xl border-2 px-3 py-2 text-sm font-medium transition ${
+                          parentChecked
+                            ? "border-primary bg-primary/5"
+                            : "border-border hover:border-primary/40"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={parentChecked}
+                          onChange={() => toggleCategory(parent.slug)}
+                          className="h-4 w-4 accent-primary"
+                        />
+                        <span className="flex-1 truncate">{parent.name}</span>
+                        {isFirst && parentChecked && (
+                          <span className="shrink-0 rounded bg-primary px-1 py-0.5 text-[9px] font-bold uppercase text-primary-foreground">
+                            główna
+                          </span>
+                        )}
+                      </label>
+                      {/* Dzieci — zawsze widoczne jako wcięty wiersz */}
+                      {children.length > 0 && (
+                        <div className="ml-5 mt-1 grid grid-cols-1 gap-1 sm:grid-cols-2">
+                          {children.map((child) => {
+                            const childChecked = selectedCategories.includes(child.slug);
+                            const isFirstChild = selectedCategories[0] === child.slug;
+                            return (
+                              <label
+                                key={child.id}
+                                className={`flex cursor-pointer items-center gap-2 rounded-lg border-2 px-3 py-1.5 text-sm transition ${
+                                  childChecked
+                                    ? "border-primary bg-primary/5 font-medium"
+                                    : "border-border/60 hover:border-primary/40"
+                                }`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={childChecked}
+                                  onChange={() => toggleCategory(child.slug)}
+                                  className="h-3.5 w-3.5 accent-primary"
+                                />
+                                <span className="flex-1 truncate text-xs">{child.name}</span>
+                                {isFirstChild && childChecked && (
+                                  <span className="shrink-0 rounded bg-primary px-1 py-0.5 text-[9px] font-bold uppercase text-primary-foreground">
+                                    główna
+                                  </span>
+                                )}
+                              </label>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
           {selectedCategories.length === 0 && (
             <p className="mt-1 text-xs text-destructive">Wybierz co najmniej jedną kategorię.</p>
           )}
