@@ -40,6 +40,8 @@ export type ProductInitial = {
   reviews_count: number;
   show_variant_stock: boolean;
   variant_stock: Record<string, number>;
+  show_view_counter?: boolean;
+  view_count_base?: number;
 };
 
 const CONDITIONS = ["Nowy", "Używany"] as const;
@@ -76,6 +78,12 @@ export function ProductForm({
   const [body, setBody] = React.useState(initial?.body ?? "");
   const [showVariantStock, setShowVariantStock] = React.useState(
     initial?.show_variant_stock ?? false,
+  );
+  const [showViewCounter, setShowViewCounter] = React.useState(
+    initial?.show_view_counter ?? false,
+  );
+  const [viewCountBase, setViewCountBase] = React.useState(
+    String(initial?.view_count_base ?? 0),
   );
   const [variantStock, setVariantStock] = React.useState<Record<string, number>>(
     initial?.variant_stock ?? {},
@@ -284,6 +292,8 @@ export function ProductForm({
       variants,
       rating,
       reviewsCount: parseInt(reviewsCount || "0", 10) || 0,
+      showViewCounter,
+      viewCountBase: parseInt(viewCountBase || "0", 10) || 0,
     };
 
     setSubmitting(true);
@@ -700,6 +710,42 @@ export function ProductForm({
             </p>
           </div>
         </label>
+      </fieldset>
+
+      {/* Licznik popularności */}
+      <fieldset className="space-y-4 rounded-2xl border border-border bg-card p-4 sm:p-5">
+        <legend className="px-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+          Licznik popularności
+        </legend>
+        <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border/60 p-4 hover:bg-muted/30">
+          <input
+            type="checkbox"
+            checked={showViewCounter}
+            onChange={(e) => setShowViewCounter(e.target.checked)}
+            className="mt-0.5 h-4 w-4 accent-primary"
+          />
+          <div>
+            <p className="text-sm font-medium">Włącz licznik popularności 🔥</p>
+            <p className="text-xs text-muted-foreground">
+              Pod tytułem produktu pojawi się komunikat: &quot;X osób wyświetliło ten kubek w tym tygodniu&quot;.
+            </p>
+          </div>
+        </label>
+        {showViewCounter && (
+          <Field
+            label="Mnożnik / Wartość bazowa"
+            hint="Dodatkowa liczba dodawana do rzeczywistych wyświetleń. Przydatne na start, zanim sklep złapie ruch."
+          >
+            <input
+              type="number"
+              min="0"
+              value={viewCountBase}
+              onChange={(e) => setViewCountBase(e.target.value)}
+              className={inputCls}
+              placeholder="np. 150"
+            />
+          </Field>
+        )}
       </fieldset>
 
       {/* Dane techniczne */}

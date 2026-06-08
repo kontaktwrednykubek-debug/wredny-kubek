@@ -348,12 +348,22 @@ export function WrednyAssistant() {
                   </div>
                 )}
 
-                <button
-                  onClick={() => goTo("greeting")}
-                  className="mt-auto w-full rounded-2xl border-2 border-[#40C4A4]/60 py-3 text-sm font-semibold text-[#40C4A4] hover:bg-[#40C4A4]/10"
-                >
-                  Zacznij od nowa
-                </button>
+                <div className="mt-auto flex flex-col gap-2">
+                  <Link
+                    href="/sklep"
+                    onClick={handleClose}
+                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#40C4A4] py-3 text-sm font-bold text-white hover:bg-[#40C4A4]/90 transition-colors"
+                  >
+                    <ShoppingCart className="h-4 w-4" />
+                    Przejdź do sklepu
+                  </Link>
+                  <button
+                    onClick={() => goTo("greeting")}
+                    className="w-full rounded-2xl border-2 border-[#40C4A4]/60 py-3 text-sm font-semibold text-[#40C4A4] hover:bg-[#40C4A4]/10"
+                  >
+                    Zacznij od nowa
+                  </button>
+                </div>
               </div>
             )}
 

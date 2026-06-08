@@ -107,6 +107,8 @@ const updateSchema = z.object({
   isPublished: z.boolean().optional(),
   showVariantStock: z.boolean().optional(),
   variantStock: z.record(z.number().int().min(0)).optional(),
+  showViewCounter: z.boolean().optional(),
+  viewCountBase: z.number().int().min(0).optional(),
 });
 
 /**
@@ -150,6 +152,8 @@ export async function PATCH(
   if (p.isPublished !== undefined) update.is_published = p.isPublished;
   if (p.showVariantStock !== undefined) update.show_variant_stock = p.showVariantStock;
   if (p.variantStock !== undefined) update.variant_stock = p.variantStock;
+  if (p.showViewCounter !== undefined) update.show_view_counter = p.showViewCounter;
+  if (p.viewCountBase !== undefined) update.view_count_base = p.viewCountBase;
 
   // Re-generate embedding when searchable text fields change
   if (p.title || p.description || p.body || p.categories) {

@@ -9,6 +9,7 @@ import { formatPrice } from "@/lib/utils";
 import { ProductGalleryClient } from "./ProductGalleryClient";
 import { ProductPageClient } from "./ProductPageClient";
 import { ProductRatingTrigger } from "./ProductRatingTrigger";
+import { ViewCounter } from "./ViewCounter";
 
 export async function generateMetadata({
   params,
@@ -40,7 +41,7 @@ export default async function ProductDetailsPage({
   const { data: product } = await supabase
     .from("shop_products")
     .select(
-      "slug, title, description, body, category, price_grosze, images, specs, variants, rating, reviews_count, show_variant_stock, variant_stock",
+      "id, slug, title, description, body, category, price_grosze, images, specs, variants, rating, reviews_count, show_variant_stock, variant_stock, show_view_counter, view_count_base",
     )
     .eq("slug", params.slug)
     .eq("is_published", true)
@@ -82,6 +83,11 @@ export default async function ProductDetailsPage({
               reviewsCount={product.reviews_count ?? 0}
             />
           </div>
+
+          {/* Licznik popularności */}
+          {product.show_view_counter && (
+            <ViewCounter productId={product.id} />
+          )}
 
           {/* Cena */}
           <p className="text-2xl sm:text-3xl font-bold text-primary">
