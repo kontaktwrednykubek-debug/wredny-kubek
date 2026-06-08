@@ -138,8 +138,8 @@ export default async function ProductDetailsPage({
           )}
 
           {/* Wredny AI — pod przyciskami zakupu */}
-          <div className="flex flex-col gap-2 pt-1">
-            <p className="text-center text-xs text-muted-foreground">
+          <div className="flex flex-col gap-3 mt-[30px]">
+            <p className="text-center text-sm font-medium text-muted-foreground">
               Coś Cię gryzie? Dopytaj o co chcesz, ten czat i tak nigdzie się nie zapisuje.
             </p>
             <WrednyChatButton />

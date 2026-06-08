@@ -7,11 +7,6 @@ import { useAssistantStore } from "@/features/assistant/useAssistantStore";
 export function FABWidget() {
   const open = useAssistantStore((s) => s.open);
 
-  React.useEffect(() => {
-    const timer = setTimeout(() => open(), 20000);
-    return () => clearTimeout(timer);
-  }, [open]);
-
   return (
     <button
       onClick={open}
