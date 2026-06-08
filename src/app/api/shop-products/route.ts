@@ -55,6 +55,8 @@ const createSchema = z.object({
   variantStock: z.record(z.number().int().min(0)).default({}),
   showViewCounter: z.boolean().default(false),
   viewCountBase: z.number().int().min(0).default(0),
+  viewCountPeriod: z.number().int().min(0).default(7),
+  relatedProductIds: z.array(z.string().uuid()).max(20).default([]),
 });
 
 async function requireAdmin() {
@@ -112,6 +114,8 @@ export async function POST(req: Request) {
       variant_stock: p.variantStock,
       show_view_counter: p.showViewCounter,
       view_count_base: p.viewCountBase,
+      view_count_period: p.viewCountPeriod,
+      related_product_ids: p.relatedProductIds,
     })
     .select("id, slug")
     .single();

@@ -41,19 +41,29 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ ok: true });
 }
 
-// GET /api/product-view?product_id=xxx&days=7
-// Zwraca liczbę unikalnych IP w oknie czasowym + view_count_base
+// GET /api/product-view?product_id=xxx
+// Zwraca liczbę unikalnych IP w oknie z view_count_period + base
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const product_id = searchParams.get("product_id");
-  const days = parseInt(searchParams.get("days") ?? "7", 10);
-  if (!product_id) return NextResponse.json({ count: 0 });
+  if (!product_id) return NextResponse.json({ count: 0, visible: false });
 
   const supabase = serviceClient();
 
+  // Pobierz konfigurację produktu
+  const { data: product } = await supabase
+    .from("shop_products")
+    .select("view_count_base, show_view_counter, view_count_period")
+    .eq("id", product_id)
+    .maybeSingle();
+
+  if (!product?.show_view_counter) {
+    return NextResponse.json({ count: 0, visible: false });
+  }
+
+  const days = product.view_count_period ?? 7;
   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
 
-  // Unikalne IP w oknie
   const { data } = await supabase
     .from("page_views")
     .select("ip_hash")
@@ -62,19 +72,9 @@ export async function GET(req: NextRequest) {
 
   const unique = new Set((data ?? []).map((r) => r.ip_hash)).size;
 
-  // Pobierz base + show_view_counter
-  const { data: product } = await supabase
-    .from("shop_products")
-    .select("view_count_base, show_view_counter")
-    .eq("id", product_id)
-    .maybeSingle();
-
-  if (!product?.show_view_counter) {
-    return NextResponse.json({ count: 0, visible: false });
-  }
-
   return NextResponse.json({
     count: unique + (product.view_count_base ?? 0),
+    period: days,
     visible: true,
   });
 }

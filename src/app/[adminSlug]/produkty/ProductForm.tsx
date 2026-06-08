@@ -42,6 +42,8 @@ export type ProductInitial = {
   variant_stock: Record<string, number>;
   show_view_counter?: boolean;
   view_count_base?: number;
+  view_count_period?: number;
+  related_product_ids?: string[];
 };
 
 const CONDITIONS = ["Nowy", "Używany"] as const;
@@ -85,6 +87,20 @@ export function ProductForm({
   const [viewCountBase, setViewCountBase] = React.useState(
     String(initial?.view_count_base ?? 0),
   );
+  const [viewCountPeriod, setViewCountPeriod] = React.useState(
+    initial?.view_count_period ?? 7,
+  );
+  const [relatedProductIds, setRelatedProductIds] = React.useState<string[]>(
+    initial?.related_product_ids ?? [],
+  );
+  const [allProducts, setAllProducts] = React.useState<{ id: string; slug: string; title: string }[]>([]);
+
+  React.useEffect(() => {
+    fetch("/api/shop-products")
+      .then((r) => r.json())
+      .then((j) => setAllProducts(j.products ?? []))
+      .catch(() => {});
+  }, []);
   const [variantStock, setVariantStock] = React.useState<Record<string, number>>(
     initial?.variant_stock ?? {},
   );
@@ -294,6 +310,8 @@ export function ProductForm({
       reviewsCount: parseInt(reviewsCount || "0", 10) || 0,
       showViewCounter,
       viewCountBase: parseInt(viewCountBase || "0", 10) || 0,
+      viewCountPeriod,
+      relatedProductIds,
     };
 
     setSubmitting(true);
@@ -732,19 +750,80 @@ export function ProductForm({
           </div>
         </label>
         {showViewCounter && (
-          <Field
-            label="Mnożnik / Wartość bazowa"
-            hint="Dodatkowa liczba dodawana do rzeczywistych wyświetleń. Przydatne na start, zanim sklep złapie ruch."
-          >
-            <input
-              type="number"
-              min="0"
-              value={viewCountBase}
-              onChange={(e) => setViewCountBase(e.target.value)}
-              className={inputCls}
-              placeholder="np. 150"
-            />
-          </Field>
+          <div className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field
+                label="Wartość bazowa"
+                hint="Liczba dodawana do rzeczywistych wyświetleń — ustaw startowy boost."
+              >
+                <input
+                  type="number"
+                  min="0"
+                  value={viewCountBase}
+                  onChange={(e) => setViewCountBase(e.target.value)}
+                  className={inputCls}
+                  placeholder="np. 150"
+                />
+              </Field>
+              <Field label="Okno czasowe" hint="Okres, z którego liczone są wyświetlenia.">
+                <select
+                  value={viewCountPeriod}
+                  onChange={(e) => setViewCountPeriod(Number(e.target.value))}
+                  className={inputCls}
+                >
+                  <option value={7}>🔥 Ostatnie 7 dni</option>
+                  <option value={30}>👀 Ostatnie 30 dni (miesiąc)</option>
+                </select>
+              </Field>
+            </div>
+          </div>
+        )}
+      </fieldset>
+
+      {/* Powiązane produkty */}
+      <fieldset className="space-y-4 rounded-2xl border border-border bg-card p-4 sm:p-5">
+        <legend className="px-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+          Powiązane produkty
+        </legend>
+        <p className="text-xs text-muted-foreground">
+          Zaznacz produkty do wyświetlenia w sekcji &quot;Inne wredne kubki&quot; na stronie tego produktu.
+          Jeśli nie zaznaczysz żadnych, system automatycznie dobierze podobne wektorowo.
+        </p>
+        {allProducts.length === 0 ? (
+          <p className="text-xs text-muted-foreground italic">Ładuję produkty…</p>
+        ) : (
+          <div className="grid grid-cols-1 gap-2 max-h-56 overflow-y-auto pr-1">
+            {allProducts
+              .filter((p) => p.slug !== (initial?.slug ?? ""))
+              .map((p) => {
+                const checked = relatedProductIds.includes(p.id);
+                return (
+                  <label
+                    key={p.id}
+                    className={`flex cursor-pointer items-center gap-3 rounded-xl border-2 px-3 py-2 text-sm transition ${
+                      checked
+                        ? "border-primary bg-primary/5 font-medium"
+                        : "border-border hover:border-primary/40"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() =>
+                        setRelatedProductIds((prev) =>
+                          checked ? prev.filter((id) => id !== p.id) : [...prev, p.id],
+                        )
+                      }
+                      className="h-4 w-4 accent-primary"
+                    />
+                    <span className="flex-1 truncate">{p.title}</span>
+                  </label>
+                );
+              })}
+          </div>
+        )}
+        {relatedProductIds.length > 0 && (
+          <p className="text-xs text-primary font-medium">Zaznaczono: {relatedProductIds.length}</p>
         )}
       </fieldset>
 

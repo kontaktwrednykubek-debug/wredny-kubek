@@ -10,6 +10,7 @@ import { ProductGalleryClient } from "./ProductGalleryClient";
 import { ProductPageClient } from "./ProductPageClient";
 import { ProductRatingTrigger } from "./ProductRatingTrigger";
 import { ViewCounter } from "./ViewCounter";
+import { RelatedProducts } from "./RelatedProducts";
 
 export async function generateMetadata({
   params,
@@ -170,6 +171,9 @@ export default async function ProductDetailsPage({
           )}
         </div>
       )}
+
+      {/* Powiązane produkty */}
+      <RelatedProducts slug={params.slug} />
     </section>
   );
 }
