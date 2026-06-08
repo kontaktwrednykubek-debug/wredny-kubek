@@ -112,6 +112,7 @@ const updateSchema = z.object({
   viewCountPeriod: z.number().int().min(0).optional(),
   relatedProductIds: z.array(z.string().uuid()).max(20).optional(),
   tags: z.array(z.string().max(50)).max(30).optional(),
+  labels: z.array(z.string().max(50)).max(10).optional(),
 });
 
 /**
@@ -160,6 +161,7 @@ export async function PATCH(
   if (p.viewCountPeriod !== undefined) update.view_count_period = p.viewCountPeriod;
   if (p.relatedProductIds !== undefined) update.related_product_ids = p.relatedProductIds;
   if (p.tags !== undefined) update.tags = p.tags;
+  if (p.labels !== undefined) update.labels = p.labels;
 
   // Re-generate embedding when searchable text fields change
   if (p.title || p.description || p.body || p.categories) {

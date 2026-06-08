@@ -58,6 +58,7 @@ const createSchema = z.object({
   viewCountPeriod: z.number().int().min(0).default(7),
   relatedProductIds: z.array(z.string().uuid()).max(20).default([]),
   tags: z.array(z.string().max(50)).max(30).default([]),
+  labels: z.array(z.string().max(50)).max(10).default([]),
 });
 
 async function requireAdmin() {
@@ -118,6 +119,7 @@ export async function POST(req: Request) {
       view_count_period: p.viewCountPeriod,
       related_product_ids: p.relatedProductIds,
       tags: p.tags,
+      labels: p.labels,
     })
     .select("id, slug")
     .single();

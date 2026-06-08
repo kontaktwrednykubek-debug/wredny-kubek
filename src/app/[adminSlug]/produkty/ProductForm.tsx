@@ -45,7 +45,15 @@ export type ProductInitial = {
   view_count_period?: number;
   related_product_ids?: string[];
   tags?: string[];
+  labels?: string[];
 };
+
+const BADGE_OPTIONS = [
+  { value: "bestseller", emoji: "🔥", label: "Bestseller", desc: "Lider sprzedaży — najchętniej kupowany" },
+  { value: "najczesciej-kupowany", emoji: "😂", label: "Najczęściej kupowany", desc: "Ranking zamówień w kategorii" },
+  { value: "idealny-na-prezent", emoji: "🎁", label: "Idealny na prezent", desc: "Chętnie wybierany jako upominek" },
+  { value: "wysylka-jutro", emoji: "⚡", label: "Wysyłka jutro", desc: "Gotowy do wysyłki następnego dnia" },
+] as const;
 
 const CONDITIONS = ["Nowy", "Używany"] as const;
 const QUANTITIES = Array.from({ length: 30 }, (_, i) => String(i + 1));
@@ -96,6 +104,11 @@ export function ProductForm({
   );
   const [tags, setTags] = React.useState<string[]>(initial?.tags ?? []);
   const [tagInput, setTagInput] = React.useState("");
+  const [labels, setLabels] = React.useState<string[]>(initial?.labels ?? []);
+
+  function toggleLabel(value: string) {
+    setLabels((prev) => prev.includes(value) ? prev.filter((l) => l !== value) : [...prev, value]);
+  }
 
   function addTag() {
     const v = tagInput.trim().toLowerCase().replace(/\s+/g, "-");
@@ -323,6 +336,7 @@ export function ProductForm({
       viewCountPeriod,
       relatedProductIds,
       tags,
+      labels,
     };
 
     setSubmitting(true);
@@ -477,6 +491,39 @@ export function ProductForm({
             placeholder="Szczegółowy opis produktu, historia, zastosowanie, pielęgnacja..."
           />
         </Field>
+        {/* Etykiety / Badges */}
+        <div className="rounded-2xl border border-border bg-muted/50 p-4 sm:p-5 space-y-3">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Etykieta produktu</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">Wyróżnienie widoczne na karcie produktu w sklepie</p>
+          </div>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {BADGE_OPTIONS.map((opt) => {
+              const checked = labels.includes(opt.value);
+              return (
+                <label
+                  key={opt.value}
+                  className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition-colors ${
+                    checked ? "border-primary bg-primary/5" : "border-border bg-background hover:bg-muted/60"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggleLabel(opt.value)}
+                    className="h-4 w-4 accent-primary shrink-0"
+                  />
+                  <span className="text-xl shrink-0">{opt.emoji}</span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold leading-tight">{opt.label}</span>
+                    <span className="block text-xs text-muted-foreground">{opt.desc}</span>
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+
         <Field
           label="Tagi SEO / wektoryzacja"
           hint="Słowa kluczowe (okazja, zawody, humor) — pomagają AI lepiej dopasować produkt. Wpisz i naciśnij Enter."

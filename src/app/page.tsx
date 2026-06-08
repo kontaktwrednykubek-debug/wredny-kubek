@@ -335,7 +335,7 @@ export default async function HomePage() {
       </section>
 
       {/* PROMO – jeden produkt: kubek */}
-      <section className="bg-background">
+      <section className="bg-gradient-to-b from-background to-[#e6faf5]">
         <div className="container mx-auto grid items-center gap-10 px-5 py-16 sm:px-6 md:grid-cols-2 md:py-24 lg:px-10 xl:px-12">
           <div className="order-2 md:order-1">
             <span className="inline-block rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary">
