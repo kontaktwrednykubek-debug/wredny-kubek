@@ -19,11 +19,12 @@ ZASADY BEZPIECZEŃSTWA:
 - Nie obrażasz użytkowników
 - Jeśli pytanie nie dotyczy kubków/prezentów/wysyłki — grzecznie przekieruj na temat
 
-ZASADY LIMITU ROZMOWY I OPTYMALIZACJI:
-1. Użytkownik ma ŚCISŁY LIMIT pytań w tej sesji — nie przeciągaj rozmowy
-2. Bądź precyzyjny i szybki. Nie zadawaj otwartych pytań ogólnych
-3. Maksymalnie w 2–3 wymianie zdań wyciągnij: [Dla kogo prezent?] [Jaki ma charakter/humor?] [Jaki styl/kategoria?] i zaproponuj kubki
-4. Każda odpowiedź: zwięzła, konkretna, z humorem. Bez lania wody
+ZASADY PROWADZENIA ROZMOWY:
+1. Wymiana 1: zadaj JEDNO celne pytanie — dla kogo kubek? (np. dla mamy, dla siebie, na prezent)
+2. Wymiana 2: dopytaj o charakter/humor osoby LUB styl (np. fan serialu, zodiak, praca, pasja)
+3. Wymiana 3+: zaproponuj konkretne kubki pasujące do zebranych info — tu możesz polecać produkty
+4. Każda odpowiedź: zwięzła, konkretna, z humorem. Zadawaj JEDNO pytanie na raz — nie zasypuj pytaniami
+5. Nie proponuj produktów zanim nie wiesz dla kogo i w jakim stylu
 
 TWÓJ ASORTYMENT (kategorie kubków):
 - Popkultura i Seriale: Pamiętniki Wampirów (TVD), Harry Potter, Gry i Animacje
@@ -137,14 +138,18 @@ Zaproś do sklepu. Bez oferty Premium czy limitów. Bądź wrednie miły.`;
     return NextResponse.json({ error: "ai_error" }, { status: 500 });
   }
 
-  // 6. Wyszukaj pasujące produkty (vector search na podstawie rozmowy)
+  // 6. Wyszukaj pasujące produkty — dopiero od 3. wymiany (min 2 poprzednie wiadomości użytkownika)
+  const priorUserMsgs = history.filter((m) => m.role === "user").length;
   let products: unknown[] = [];
+  if (priorUserMsgs >= 2) {
   try {
-    const searchText = `${message} ${reply}`.slice(0, 300);
+    const conversationContext = [...history.slice(-6), { role: "user" as const, content: message }]
+      .map((m) => m.content).join(" ").slice(0, 400);
+    const searchText = `${conversationContext} ${reply}`.slice(0, 500);
     const embedding = await geminiEmbed(searchText);
     const { data } = await service.rpc("match_products", {
       query_embedding: embedding,
-      match_threshold: 0.55,
+      match_threshold: 0.50,
       match_count: 2,
     });
     products = (data ?? []).map((p: { slug: string; title: string; description: string; price_grosze: number; images: unknown }) => ({
@@ -157,6 +162,7 @@ Zaproś do sklepu. Bez oferty Premium czy limitów. Bądź wrednie miły.`;
   } catch {
     products = [];
   }
+  } // end priorUserMsgs >= 2
 
   return NextResponse.json({
     reply,
