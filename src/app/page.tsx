@@ -100,7 +100,7 @@ export default async function HomePage() {
       {/* HERO — baner fullwidth LUB stary hero (gdy brak banerów) */}
       {activeBanners.length > 0 ? (
         <>
-          <div className="md:-mt-5">
+          <div className="md:-mt-[30px]">
             <BannerSlider banners={activeBanners} />
           </div>
           <section className="bg-muted border-b border-border">
