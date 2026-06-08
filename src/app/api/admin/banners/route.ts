@@ -26,13 +26,13 @@ export async function POST(req: NextRequest) {
   const user = await requireAdmin();
   if (!user) return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
-  const { title, image_url, image_url_mobile, link_url, sort_order } = await req.json();
+  const { title, image_url, image_url_mobile, alt_text, link_url, sort_order } = await req.json();
   if (!image_url) return NextResponse.json({ error: "image_url required" }, { status: 400 });
 
   const supabase = createSupabaseServiceClient();
   const { data, error } = await supabase
     .from("banners")
-    .insert({ title, image_url, image_url_mobile: image_url_mobile ?? null, link_url, sort_order: sort_order ?? 0 })
+    .insert({ title, image_url, image_url_mobile: image_url_mobile ?? null, alt_text: alt_text ?? null, link_url, sort_order: sort_order ?? 0 })
     .select()
     .single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

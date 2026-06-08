@@ -10,6 +10,7 @@ type Banner = {
   title: string | null;
   image_url: string;
   image_url_mobile: string | null;
+  alt_text: string | null;
   link_url: string | null;
 };
 
@@ -55,7 +56,7 @@ export function BannerSlider({ banners }: { banners: Banner[] }) {
             <div className="relative w-full aspect-[16/5]">
               <Image
                 src={b.image_url}
-                alt={b.title ?? "Baner promocyjny"}
+                alt={b.alt_text ?? b.title ?? "Baner promocyjny"}
                 fill
                 priority={i === 0}
                 className="object-cover"

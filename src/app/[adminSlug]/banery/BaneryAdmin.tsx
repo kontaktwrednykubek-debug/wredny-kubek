@@ -9,6 +9,7 @@ type Banner = {
   title: string | null;
   image_url: string;
   image_url_mobile: string | null;
+  alt_text: string | null;
   link_url: string | null;
   sort_order: number;
   is_active: boolean;
@@ -23,6 +24,7 @@ export function BaneryAdmin({ adminSlug }: { adminSlug: string }) {
   const [banners, setBanners] = React.useState<Banner[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [title, setTitle] = React.useState("");
+  const [altText, setAltText] = React.useState("");
   const [linkUrl, setLinkUrl] = React.useState("");
   const [desktop, setDesktop] = React.useState<UploadState>(emptyUpload());
   const [mobile, setMobile] = React.useState<UploadState>(emptyUpload());
@@ -64,12 +66,13 @@ export function BaneryAdmin({ adminSlug }: { adminSlug: string }) {
         title: title || null,
         image_url: desktop.url,
         image_url_mobile: mobile.url ?? null,
+        alt_text: altText || null,
         link_url: linkUrl || null,
         sort_order: banners.length,
       }),
     });
     if (!res.ok) { const d = await res.json(); setError(d.error ?? "Błąd"); return; }
-    setTitle(""); setLinkUrl(""); setDesktop(emptyUpload()); setMobile(emptyUpload());
+    setTitle(""); setAltText(""); setLinkUrl(""); setDesktop(emptyUpload()); setMobile(emptyUpload());
     load();
   }
 
@@ -203,6 +206,13 @@ export function BaneryAdmin({ adminSlug }: { adminSlug: string }) {
               placeholder="np. /sklep lub https://..."
               className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#40C4A4]/40" />
           </div>
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Opis SEO / alt text *</label>
+          <input value={altText} onChange={e => setAltText(e.target.value)}
+            placeholder="np. Kubki z nadrukiem na Dzień Taty – WrednyKubek.pl"
+            className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#40C4A4]/40" />
+          <p className="mt-1 text-xs text-muted-foreground">Widoczny dla wyszukiwarek (Google). Opisz co jest na zdjęciu — np. &quot;Śmieszne kubki z nadrukiem na prezent&quot;.</p>
         </div>
 
         {error && <p className="text-sm text-destructive">{error}</p>}
