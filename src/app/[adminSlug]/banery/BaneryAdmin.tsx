@@ -160,7 +160,7 @@ export function BaneryAdmin({ adminSlug }: { adminSlug: string }) {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="rounded-xl bg-card border border-border p-4 space-y-1">
             <p className="flex items-center gap-1.5 font-semibold text-sm"><Monitor className="h-4 w-4" /> Desktop</p>
-            <p className="text-lg font-bold">1920 × 1080 px</p>
+            <p className="text-lg font-bold">1920 × 1000 px</p>
             <p className="text-xs text-muted-foreground">Proporcje 16:9 · pełny ekran</p>
             <p className="text-xs text-muted-foreground">Format wejściowy: JPG, PNG, WebP · max 15 MB</p>
           </div>
@@ -181,7 +181,7 @@ export function BaneryAdmin({ adminSlug }: { adminSlug: string }) {
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <UploadZone
             label="Zdjęcie desktopowe *"
-            hint="1920×1080 px — wymagane"
+            hint="1920×1000 px — wymagane"
             device="desktop" state={desktop} setter={setDesktop} inputRef={desktopRef}
             aspect="aspect-video"
           />
