@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { geminiChat } from "@/lib/gemini";
+import { geminiChat, geminiEmbed } from "@/lib/gemini";
+
+const SESSION_QUESTIONS = 7;
+const SESSION_DURATION_MS = 60 * 60 * 1000; // 1 godzina
 
 const serviceClient = () =>
   createClient(
@@ -82,25 +85,37 @@ Zaproś do sklepu. Bez oferty Premium czy limitów. Bądź wrednie miły.`;
     }
   }
 
-  // 3. Sprawdź licznik pytań
-  const service = serviceClient();
-  const { data: profile } = await service
-    .from("profiles")
-    .select("ai_questions_left")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  const questionsLeft = profile?.ai_questions_left ?? 0;
-
-  if (questionsLeft <= 0) {
-    return NextResponse.json({ error: "no_questions_left" }, { status: 403 });
-  }
-
   if (!message?.trim()) {
     return NextResponse.json({ error: "empty_message" }, { status: 400 });
   }
 
-  // 4. Zmniejsz licznik (transakcyjnie)
+  // 3. Sprawdź / zresetuj sesję godzinową
+  const service = serviceClient();
+  const { data: profile } = await service
+    .from("profiles")
+    .select("ai_questions_left, ai_session_expires_at")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const now = new Date();
+  const expiresAt = profile?.ai_session_expires_at ? new Date(profile.ai_session_expires_at) : null;
+  const sessionActive = expiresAt !== null && expiresAt > now;
+  let questionsLeft = profile?.ai_questions_left ?? 0;
+
+  if (!sessionActive) {
+    // Nowa sesja — reset licznika i ustaw wygaśnięcie za 1h
+    const newExpiry = new Date(now.getTime() + SESSION_DURATION_MS).toISOString();
+    await service.from("profiles").update({
+      ai_questions_left: SESSION_QUESTIONS,
+      ai_session_expires_at: newExpiry,
+    }).eq("id", user.id);
+    questionsLeft = SESSION_QUESTIONS;
+  } else if (questionsLeft <= 0) {
+    const minutesLeft = Math.ceil((expiresAt!.getTime() - now.getTime()) / 60000);
+    return NextResponse.json({ error: "session_exhausted", minutesLeft }, { status: 403 });
+  }
+
+  // 4. Zmniejsz licznik
   const { error: updateError } = await service
     .from("profiles")
     .update({ ai_questions_left: questionsLeft - 1 })
@@ -114,23 +129,43 @@ Zaproś do sklepu. Bez oferty Premium czy limitów. Bądź wrednie miły.`;
   const history: Message[] = Array.isArray(messages) ? messages.slice(-10) : [];
   const allMessages: Message[] = [...history, { role: "user", content: message }];
 
+  let reply: string;
   try {
-    const reply = await geminiChat(allMessages, SYSTEM_PROMPT);
-    return NextResponse.json({
-      reply,
-      questionsLeft: questionsLeft - 1,
-    });
+    reply = await geminiChat(allMessages, SYSTEM_PROMPT);
   } catch {
-    // Zwróć token z powrotem przy błędzie Gemini
-    await service
-      .from("profiles")
-      .update({ ai_questions_left: questionsLeft })
-      .eq("id", user.id);
+    await service.from("profiles").update({ ai_questions_left: questionsLeft }).eq("id", user.id);
     return NextResponse.json({ error: "ai_error" }, { status: 500 });
   }
+
+  // 6. Wyszukaj pasujące produkty (vector search na podstawie rozmowy)
+  let products: unknown[] = [];
+  try {
+    const searchText = `${message} ${reply}`.slice(0, 300);
+    const embedding = await geminiEmbed(searchText);
+    const { data } = await service.rpc("match_products", {
+      query_embedding: embedding,
+      match_threshold: 0.55,
+      match_count: 2,
+    });
+    products = (data ?? []).map((p: { slug: string; title: string; description: string; price_grosze: number; images: unknown }) => ({
+      slug: p.slug,
+      title: p.title,
+      description: p.description,
+      price_grosze: p.price_grosze,
+      image: Array.isArray(p.images) ? (p.images[0] ?? null) : null,
+    }));
+  } catch {
+    products = [];
+  }
+
+  return NextResponse.json({
+    reply,
+    products,
+    questionsLeft: questionsLeft - 1,
+  });
 }
 
-// GET — sprawdź ile pytań zostało
+// GET — sprawdź status sesji
 export async function GET() {
   const supabase = createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -140,12 +175,24 @@ export async function GET() {
   const service = serviceClient();
   const { data: profile } = await service
     .from("profiles")
-    .select("ai_questions_left")
+    .select("ai_questions_left, ai_session_expires_at")
     .eq("id", user.id)
     .maybeSingle();
 
+  const now = new Date();
+  const expiresAt = profile?.ai_session_expires_at ? new Date(profile.ai_session_expires_at) : null;
+  const sessionActive = expiresAt !== null && expiresAt > now;
+  const questionsLeft = profile?.ai_questions_left ?? 0;
+
+  // Sesja wygasła lub nie istnieje → traktuj jak świeżą (użytkownik ma dostęp)
+  const effectiveLeft = sessionActive ? questionsLeft : SESSION_QUESTIONS;
+  const minutesLeft = (sessionActive && questionsLeft <= 0 && expiresAt)
+    ? Math.ceil((expiresAt.getTime() - now.getTime()) / 60000)
+    : null;
+
   return NextResponse.json({
-    questionsLeft: profile?.ai_questions_left ?? 0,
+    questionsLeft: effectiveLeft,
     authenticated: true,
+    minutesLeft,
   });
 }

@@ -1,21 +1,46 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import { X, Send, Loader2, Lock, MessageCircle } from "lucide-react";
 import Link from "next/link";
+import { formatPrice } from "@/lib/utils";
 
-type Message = { role: "user" | "assistant"; content: string };
+type Product = { slug: string; title: string; description: string; price_grosze: number; image: string | null };
+type Message = { role: "user" | "assistant"; content: string; products?: Product[] };
 type Screen = "info" | "login_gate" | "chat" | "no_tokens";
+
+function ProductCard({ p }: { p: Product }) {
+  return (
+    <Link
+      href={`/sklep/${p.slug}`}
+      className="flex items-center gap-3 rounded-xl border border-border bg-background p-2 hover:bg-muted transition-colors"
+    >
+      <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-muted">
+        {p.image ? (
+          <Image src={p.image} alt={p.title} fill sizes="56px" className="object-cover" />
+        ) : (
+          <div className="flex h-full items-center justify-center text-2xl">☕</div>
+        )}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-semibold leading-tight">{p.title}</p>
+        {p.description && <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{p.description}</p>}
+        <p className="mt-1 text-sm font-bold text-[#40C4A4]">{formatPrice(p.price_grosze)}</p>
+      </div>
+    </Link>
+  );
+}
 
 export function WrednyChatModal({ onClose }: { onClose: () => void }) {
   const [screen, setScreen] = React.useState<Screen>("info");
   const [messages, setMessages] = React.useState<Message[]>([]);
   const [input, setInput] = React.useState("");
   const [loading, setLoading] = React.useState(false);
-  const [questionsLeft, setQuestionsLeft] = React.useState<number | null>(null);
   const [checkingAuth, setCheckingAuth] = React.useState(false);
   const [ageConfirmed, setAgeConfirmed] = React.useState(false);
   const [farewell, setFarewell] = React.useState("");
+  const [minutesLeft, setMinutesLeft] = React.useState<number | null>(null);
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
   const bottomRef = React.useRef<HTMLDivElement>(null);
 
@@ -37,10 +62,10 @@ export function WrednyChatModal({ onClose }: { onClose: () => void }) {
       const data = await res.json();
       if (!data.authenticated) {
         setScreen("login_gate");
-      } else if (data.questionsLeft <= 0) {
+      } else if (data.minutesLeft !== null && data.questionsLeft <= 0) {
+        setMinutesLeft(data.minutesLeft);
         setScreen("no_tokens");
       } else {
-        setQuestionsLeft(data.questionsLeft);
         setScreen("chat");
       }
     } finally {
@@ -52,6 +77,7 @@ export function WrednyChatModal({ onClose }: { onClose: () => void }) {
     const text = input.trim();
     if (!text || loading) return;
     setInput("");
+    if (textareaRef.current) { textareaRef.current.style.height = "38px"; }
 
     const newMessages: Message[] = [...messages, { role: "user", content: text }];
     setMessages(newMessages);
@@ -61,21 +87,41 @@ export function WrednyChatModal({ onClose }: { onClose: () => void }) {
       const res = await fetch("/api/wredny-chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: messages.slice(-8), message: text }),
+        body: JSON.stringify({ messages: messages.slice(-8).map(({ role, content }) => ({ role, content })), message: text }),
       });
       const data = await res.json();
 
       if (res.status === 401) { setScreen("login_gate"); return; }
-      if (res.status === 403) { setScreen("no_tokens"); return; }
-      if (!res.ok) { setMessages((prev) => [...prev, { role: "assistant", content: "Coś poszło nie tak. Spróbuj ponownie." }]); return; }
+      if (res.status === 403) {
+        setMinutesLeft(data.minutesLeft ?? null);
+        // Generate farewell before switching screen
+        const farewellRes = await fetch("/api/wredny-chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "farewell", messages: newMessages.map(({ role, content }) => ({ role, content })) }),
+        }).then((r) => r.json()).catch(() => ({ farewell: "" }));
+        setFarewell(farewellRes.farewell ?? "");
+        setTimeout(() => setScreen("no_tokens"), 400);
+        return;
+      }
+      if (!res.ok) {
+        setMessages((prev) => [...prev, { role: "assistant", content: "Coś poszło nie tak. Spróbuj ponownie." }]);
+        return;
+      }
 
-      setMessages([...newMessages, { role: "assistant", content: data.reply }]);
-      setQuestionsLeft(data.questionsLeft);
+      const assistantMsg: Message = {
+        role: "assistant",
+        content: data.reply,
+        products: Array.isArray(data.products) && data.products.length > 0 ? data.products : undefined,
+      };
+      const updatedMessages = [...newMessages, assistantMsg];
+      setMessages(updatedMessages);
+
       if (data.questionsLeft <= 0) {
         const farewellRes = await fetch("/api/wredny-chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "farewell", messages: [...newMessages, { role: "assistant", content: data.reply }] }),
+          body: JSON.stringify({ action: "farewell", messages: updatedMessages.map(({ role, content }) => ({ role, content })) }),
         }).then((r) => r.json()).catch(() => ({ farewell: "" }));
         setFarewell(farewellRes.farewell ?? "");
         setTimeout(() => setScreen("no_tokens"), 1800);
@@ -143,13 +189,13 @@ export function WrednyChatModal({ onClose }: { onClose: () => void }) {
         {/* ── LOGIN GATE ── */}
         {screen === "login_gate" && (
           <div className="flex flex-1 flex-col items-center justify-center gap-5 p-6 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted text-3xl">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
               <Lock className="h-7 w-7 text-muted-foreground" />
             </div>
             <div>
-              <p className="text-lg font-bold">Odblokuj bezcenzuralnego Asystenta AI</p>
+              <p className="text-lg font-bold">Odblokuj Asystenta AI</p>
               <p className="mt-1 text-sm text-muted-foreground">
-                Zaloguj się jednym kliknięciem i odbierz <strong>7 darmowych pytań</strong>.
+                Zaloguj się jednym kliknięciem i zacznij rozmawiać z Wrednym AI.
               </p>
             </div>
             <Link
@@ -159,12 +205,9 @@ export function WrednyChatModal({ onClose }: { onClose: () => void }) {
             >
               Zaloguj się przez Google
             </Link>
-            <button onClick={onClose} className="text-xs text-muted-foreground hover:underline">
-              Może później
-            </button>
+            <button onClick={onClose} className="text-xs text-muted-foreground hover:underline">Może później</button>
           </div>
         )}
-
 
         {/* ── NO TOKENS ── */}
         {screen === "no_tokens" && (
@@ -175,7 +218,10 @@ export function WrednyChatModal({ onClose }: { onClose: () => void }) {
               {farewell ? (
                 <p className="text-sm text-muted-foreground leading-relaxed">{farewell}</p>
               ) : (
-                <p className="text-sm text-muted-foreground">Mam nadzieję, że znajdziesz idealne coś dla siebie. Kubek czeka! 🎁</p>
+                <p className="text-sm text-muted-foreground">Mam nadzieję, że znajdziesz idealny kubek. Wróć za godzinę! 🎁</p>
+              )}
+              {minutesLeft !== null && minutesLeft > 0 && (
+                <p className="text-xs text-muted-foreground">Nowa sesja dostępna za <strong>{minutesLeft} min</strong>.</p>
               )}
             </div>
             <Link
@@ -185,9 +231,7 @@ export function WrednyChatModal({ onClose }: { onClose: () => void }) {
             >
               Przejdź do sklepu →
             </Link>
-            <button onClick={onClose} className="text-xs text-muted-foreground hover:underline">
-              Zamknij
-            </button>
+            <button onClick={onClose} className="text-xs text-muted-foreground hover:underline">Zamknij</button>
           </div>
         )}
 
@@ -204,17 +248,24 @@ export function WrednyChatModal({ onClose }: { onClose: () => void }) {
                 </div>
               )}
               {messages.map((m, i) => (
-                <div key={i} className={`flex items-start gap-2 ${m.role === "user" ? "flex-row-reverse" : ""}`}>
-                  {m.role === "assistant" && <span className="mt-0.5 shrink-0 text-lg">🤖</span>}
-                  <div
-                    className={`max-w-[85%] rounded-2xl px-3 py-2 text-base whitespace-pre-wrap ${
-                      m.role === "user"
-                        ? "rounded-tr-sm bg-[#40C4A4] text-white"
-                        : "rounded-tl-sm bg-muted text-foreground"
-                    }`}
-                  >
-                    {m.content}
+                <div key={i} className={`flex flex-col gap-2 ${m.role === "user" ? "items-end" : "items-start"}`}>
+                  <div className={`flex items-start gap-2 ${m.role === "user" ? "flex-row-reverse" : ""}`}>
+                    {m.role === "assistant" && <span className="mt-0.5 shrink-0 text-lg">🤖</span>}
+                    <div
+                      className={`max-w-[85%] rounded-2xl px-3 py-2 text-base whitespace-pre-wrap ${
+                        m.role === "user"
+                          ? "rounded-tr-sm bg-[#40C4A4] text-white"
+                          : "rounded-tl-sm bg-muted text-foreground"
+                      }`}
+                    >
+                      {m.content}
+                    </div>
                   </div>
+                  {m.products && m.products.length > 0 && (
+                    <div className="ml-8 flex w-full max-w-[85%] flex-col gap-2">
+                      {m.products.map((p) => <ProductCard key={p.slug} p={p} />)}
+                    </div>
+                  )}
                 </div>
               ))}
               {loading && (
