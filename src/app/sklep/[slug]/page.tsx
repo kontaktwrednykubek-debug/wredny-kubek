@@ -96,9 +96,6 @@ export default async function ProductDetailsPage({
             {formatPrice(product.price_grosze)}
           </p>
 
-          {/* Wredny AI */}
-          <WrednyChatButton />
-
           {/* Krótki opis */}
           {product.description && (
             <p className="whitespace-pre-line text-muted-foreground">
@@ -139,6 +136,14 @@ export default async function ProductDetailsPage({
               />
             </React.Suspense>
           )}
+
+          {/* Wredny AI — pod przyciskami zakupu */}
+          <div className="flex flex-col gap-2 pt-1">
+            <p className="text-center text-xs text-muted-foreground">
+              Coś Cię gryzie? Dopytaj o co chcesz, ten czat i tak nigdzie się nie zapisuje.
+            </p>
+            <WrednyChatButton />
+          </div>
 
         </div>
       </div>
