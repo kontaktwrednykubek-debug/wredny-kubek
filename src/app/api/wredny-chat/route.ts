@@ -64,7 +64,25 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "not_authenticated" }, { status: 401 });
   }
 
-  // 2. Sprawdź licznik pytań
+  // 2. Wczytaj body wcześnie — farewell nie wymaga tokenu
+  const body = await req.json().catch(() => ({} as { messages: Message[]; message: string; action?: string }));
+  const { messages, message, action } = body;
+
+  // Specjalna akcja: generuj pożegnanie (nie dekrementuje, nie wymaga tokenu)
+  if (action === "farewell") {
+    const history: Message[] = Array.isArray(messages) ? messages.slice(-10) : [];
+    const farewellPrompt = `Na podstawie poniższej rozmowy z klientem wygeneruj krótkie, ciepłe pożegnanie (max 2 zdania).
+Ton: z humorem, nawiązujący do tego czego szukał klient. Wyciągnij pozytywne słowa/temat z rozmowy i użyj ich.
+Zaproś do sklepu. Bez oferty Premium czy limitów. Bądź wrednie miły.`;
+    try {
+      const farewell = await geminiChat(history, farewellPrompt);
+      return NextResponse.json({ farewell });
+    } catch {
+      return NextResponse.json({ farewell: "Było mi wrednie miło pogadać! Zajrzyj do sklepu — kubek na Ciebie czeka. ☕" });
+    }
+  }
+
+  // 3. Sprawdź licznik pytań
   const service = serviceClient();
   const { data: profile } = await service
     .from("profiles")
@@ -78,8 +96,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "no_questions_left" }, { status: 403 });
   }
 
-  // 3. Pobierz historię rozmowy i nową wiadomość
-  const { messages, message } = await req.json().catch(() => ({} as { messages: Message[]; message: string }));
   if (!message?.trim()) {
     return NextResponse.json({ error: "empty_message" }, { status: 400 });
   }

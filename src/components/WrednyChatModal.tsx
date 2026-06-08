@@ -15,6 +15,7 @@ export function WrednyChatModal({ onClose }: { onClose: () => void }) {
   const [questionsLeft, setQuestionsLeft] = React.useState<number | null>(null);
   const [checkingAuth, setCheckingAuth] = React.useState(false);
   const [ageConfirmed, setAgeConfirmed] = React.useState(false);
+  const [farewell, setFarewell] = React.useState("");
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
   const bottomRef = React.useRef<HTMLDivElement>(null);
 
@@ -71,7 +72,13 @@ export function WrednyChatModal({ onClose }: { onClose: () => void }) {
       setMessages([...newMessages, { role: "assistant", content: data.reply }]);
       setQuestionsLeft(data.questionsLeft);
       if (data.questionsLeft <= 0) {
-        setTimeout(() => setScreen("no_tokens"), 2000);
+        const farewellRes = await fetch("/api/wredny-chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "farewell", messages: [...newMessages, { role: "assistant", content: data.reply }] }),
+        }).then((r) => r.json()).catch(() => ({ farewell: "" }));
+        setFarewell(farewellRes.farewell ?? "");
+        setTimeout(() => setScreen("no_tokens"), 1800);
       }
     } finally {
       setLoading(false);
@@ -158,20 +165,27 @@ export function WrednyChatModal({ onClose }: { onClose: () => void }) {
           </div>
         )}
 
+
         {/* ── NO TOKENS ── */}
         {screen === "no_tokens" && (
           <div className="flex flex-1 flex-col items-center justify-center gap-5 p-6 text-center">
-            <div className="text-4xl">💸</div>
-            <div>
-              <p className="text-lg font-bold">Wykorzystałeś darmowe pytania</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                7 pytań za darmo to i tak sporo. Chcesz więcej? Rozmawiaj bez limitów z pakietem Premium.
-              </p>
+            <div className="text-5xl">☕</div>
+            <div className="space-y-2">
+              <p className="text-lg font-bold">Było mi wrednie miło pogadać!</p>
+              {farewell ? (
+                <p className="text-sm text-muted-foreground leading-relaxed">{farewell}</p>
+              ) : (
+                <p className="text-sm text-muted-foreground">Mam nadzieję, że znajdziesz idealne coś dla siebie. Kubek czeka! 🎁</p>
+              )}
             </div>
-            <button
+            <Link
+              href="/sklep"
               onClick={onClose}
-              className="w-full rounded-2xl border-2 border-[#40C4A4] py-3 text-sm font-bold text-[#40C4A4] hover:bg-[#40C4A4]/10 transition-colors"
+              className="w-full rounded-2xl bg-[#40C4A4] py-3 text-center text-sm font-bold text-white hover:bg-[#40C4A4]/90 transition-colors"
             >
+              Przejdź do sklepu →
+            </Link>
+            <button onClick={onClose} className="text-xs text-muted-foreground hover:underline">
               Zamknij
             </button>
           </div>
