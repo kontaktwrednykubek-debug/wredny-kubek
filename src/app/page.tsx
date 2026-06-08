@@ -14,9 +14,18 @@ import {
   CategoryCarousel,
   type CategoryCard,
 } from "@/features/catalog/CategoryCarousel";
+import { BannerSlider } from "@/components/BannerSlider";
 
 export default async function HomePage() {
   const supabase = createSupabaseServerClient();
+  const bannersRes = await supabase
+    .from("banners")
+    .select("id, title, image_url, link_url")
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true })
+    .limit(3);
+  const activeBanners = bannersRes.data ?? [];
+
   const [carouselRes, categoriesRes, productsForCoverRes, featuredRes] = await Promise.all([
     supabase
       .from("shop_products")
@@ -115,6 +124,9 @@ export default async function HomePage() {
 
       <HeroSearch />
 
+      {/* BANNER SLIDER */}
+      {activeBanners.length > 0 && <BannerSlider banners={activeBanners} />}
+
       {/* CECHY — DARMOWA DOSTAWA, CZAS REALIZACJI, JAKOŚĆ PREMIUM, BEZPIECZNE PŁATNOŚCI */}
       <section className="bg-background border-b border-border">
         <div className="container mx-auto px-5 py-12 sm:px-6 lg:px-10 xl:px-12">
@@ -131,7 +143,7 @@ export default async function HomePage() {
               </svg>
               <div>
                 <p className="text-sm font-extrabold uppercase tracking-wider">Darmowa dostawa</p>
-                <p className="mt-1 text-xs text-muted-foreground">Dla zamówień powyżej 200 zł</p>
+                <p className="mt-1 text-xs text-muted-foreground">Bezpłatna wysyłka kurierem<br />w całej Polsce — bez minimalnej kwoty</p>
               </div>
             </div>
 
@@ -145,7 +157,7 @@ export default async function HomePage() {
               </svg>
               <div>
                 <p className="text-sm font-extrabold uppercase tracking-wider">Czas realizacji</p>
-                <p className="mt-1 text-xs text-muted-foreground">2–4 dni robocze od momentu otrzymania płatności</p>
+                <p className="mt-1 text-xs text-muted-foreground">Od 1 do 14 dni roboczych<br />od potwierdzenia zamówienia</p>
               </div>
             </div>
 
@@ -170,7 +182,7 @@ export default async function HomePage() {
               </svg>
               <div>
                 <p className="text-sm font-extrabold uppercase tracking-wider">Bezpieczne płatności</p>
-                <p className="mt-1 text-xs text-muted-foreground">System płatności elektronicznych Tpay</p>
+                <p className="mt-1 text-xs text-muted-foreground">Karta, BLIK, przelew<br />obsługiwane przez Stripe</p>
               </div>
             </div>
           </div>
