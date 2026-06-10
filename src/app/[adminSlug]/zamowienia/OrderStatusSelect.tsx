@@ -32,8 +32,7 @@ export function OrderStatusSelect({
   const [value, setValue] = React.useState(status);
   const [pending, setPending] = React.useState(false);
 
-  async function onChange(e: React.ChangeEvent<HTMLSelectElement>) {
-    const next = e.target.value;
+  async function updateStatus(next: string) {
     const prev = value;
     setValue(next);
     setPending(true);
@@ -53,18 +52,33 @@ export function OrderStatusSelect({
     }
   }
 
+  async function onChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    await updateStatus(e.target.value);
+  }
+
   return (
-    <select
-      value={value}
-      onChange={onChange}
-      disabled={pending}
-      className={`cursor-pointer rounded-full px-2.5 py-1 text-xs font-medium outline-none transition disabled:opacity-60 ${colors[value] ?? "bg-muted"}`}
-    >
-      {options.map((o) => (
-        <option key={o.value} value={o.value} className="bg-background">
-          {o.label}
-        </option>
-      ))}
-    </select>
+    <div className="flex flex-col items-end gap-1.5">
+      {value === "PENDING" && (
+        <button
+          onClick={() => updateStatus("PAID")}
+          disabled={pending}
+          className="rounded-full bg-emerald-500 px-3 py-1 text-xs font-semibold text-white transition hover:bg-emerald-600 disabled:opacity-60"
+        >
+          ✓ Potwierdź płatność
+        </button>
+      )}
+      <select
+        value={value}
+        onChange={onChange}
+        disabled={pending}
+        className={`cursor-pointer rounded-full px-2.5 py-1 text-xs font-medium outline-none transition disabled:opacity-60 ${colors[value] ?? "bg-muted"}`}
+      >
+        {options.map((o) => (
+          <option key={o.value} value={o.value} className="bg-background">
+            {o.label}
+          </option>
+        ))}
+      </select>
+    </div>
   );
 }
