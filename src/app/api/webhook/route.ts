@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
-import { sendOrderConfirmationEmail } from "@/lib/email/sendOrderEmail";
+import { sendOrderConfirmationEmail, sendAdminNotificationEmail } from "@/lib/email/sendOrderEmail";
 
 export const runtime = "nodejs";
 
@@ -189,7 +189,20 @@ export async function POST(req: Request) {
     });
   } catch (err) {
     console.error("[stripe-webhook] sendOrderConfirmationEmail failed:", err);
-    // Nie blokuj webhooka błędem maila
+  }
+
+  // Powiadomienie dla admina
+  try {
+    await sendAdminNotificationEmail({
+      orderId: orderRow.id,
+      customerName: shipping.fullName ?? profile?.full_name ?? "Klient",
+      customerEmail: to ?? "",
+      totalGr,
+      productLabel: (orderRow.label as string | null) ?? orderRow.product_id ?? "",
+      shippingMethod: shipping.shippingMethodName ?? "Nieznana",
+    });
+  } catch (err) {
+    console.error("[stripe-webhook] sendAdminNotificationEmail failed:", err);
   }
 
   return NextResponse.json({ received: true });

@@ -4,6 +4,7 @@ import {
   OrderConfirmationEmail,
   type OrderEmailItem,
 } from "@/emails/OrderConfirmationEmail";
+import { AdminPaymentNotificationEmail } from "@/emails/AdminPaymentNotificationEmail";
 
 /**
  * Zwraca poprawny adres nadawcy dla Resend.
@@ -144,6 +145,65 @@ export async function sendOrderConfirmationEmail(params: {
   if (result.error) {
     console.error("[email] Resend error:", result.error);
     throw new Error(result.error.message);
+  }
+
+  return { id: result.data?.id };
+}
+
+/**
+ * Wysyła powiadomienie do admina (Mileny) o nowym opłaconym zamówieniu.
+ */
+export async function sendAdminNotificationEmail(params: {
+  orderId: string;
+  customerName: string;
+  customerEmail: string;
+  totalGr: number;
+  productLabel: string;
+  shippingMethod: string;
+}) {
+  const apiKey = process.env.RESEND_API_KEY;
+  const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL?.trim();
+  if (!apiKey || !adminEmail) {
+    console.warn("[email] Brak RESEND_API_KEY lub ADMIN_NOTIFICATION_EMAIL — pomijam powiadomienie admina.");
+    return { skipped: true };
+  }
+
+  const resend = new Resend(apiKey);
+  const appUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    process.env.NEXT_PUBLIC_APP_URL ??
+    "https://wrednykubek.pl";
+  const logoUrl = `${appUrl}/wk.svg`;
+  const from = resolveResendFrom();
+  const orderShort = params.orderId.slice(0, 8).toUpperCase();
+  const amount = `${(params.totalGr / 100).toFixed(2).replace(".", ",")} zł`;
+
+  const emailComponent = AdminPaymentNotificationEmail({
+    orderId: params.orderId,
+    customerName: params.customerName,
+    customerEmail: params.customerEmail,
+    amount,
+    productLabel: params.productLabel,
+    shippingMethod: params.shippingMethod,
+    logoUrl,
+  });
+
+  const [html, text] = await Promise.all([
+    render(emailComponent),
+    render(emailComponent, { plainText: true }),
+  ]);
+
+  const result = await resend.emails.send({
+    from,
+    to: adminEmail,
+    subject: `💰 Wpadło hajs! Zamówienie #${orderShort} opłacone`,
+    html,
+    text,
+    headers: { "X-Entity-Ref-ID": params.orderId },
+  });
+
+  if (result.error) {
+    console.error("[email] Admin notification error:", result.error);
   }
 
   return { id: result.data?.id };

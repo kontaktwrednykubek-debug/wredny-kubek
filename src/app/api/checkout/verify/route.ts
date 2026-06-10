@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
-import { sendOrderConfirmationEmail } from "@/lib/email/sendOrderEmail";
+import { sendOrderConfirmationEmail, sendAdminNotificationEmail } from "@/lib/email/sendOrderEmail";
 import { env } from "@/lib/env";
 
 export const runtime = "nodejs";
@@ -140,6 +140,31 @@ export async function POST(req: Request) {
     }
   } catch (err) {
     console.error("[verify] sendOrderConfirmationEmail failed:", err);
+  }
+
+  // Powiadomienie dla admina
+  try {
+    const shipping = (existing.shipping_info ?? {}) as Record<string, string>;
+    const customerEmail =
+      session.customer_details?.email ?? session.customer_email ?? "";
+    const profile = existing.user_id
+      ? (await supabase.from("profiles").select("email, full_name").eq("id", existing.user_id).maybeSingle()).data
+      : null;
+    const freeShipping2 = (existing.shipping_info as Record<string, string> | null)?.shippingPriceGr === "0";
+    const fullShipping2 = Number(shipping.shippingPriceGr ?? 0);
+    const rawDiscount2 = existing.discount_grosze ?? 0;
+    const totalGr2 = Math.max(0, (existing.amount_grosze ?? 0) - (freeShipping2 ? 0 : rawDiscount2)) + (freeShipping2 ? 0 : fullShipping2);
+
+    await sendAdminNotificationEmail({
+      orderId,
+      customerName: shipping.fullName ?? profile?.full_name ?? "Klient",
+      customerEmail: profile?.email ?? shipping.email ?? customerEmail,
+      totalGr: totalGr2,
+      productLabel: (existing.label as string | null) ?? existing.product_id ?? "",
+      shippingMethod: shipping.shippingMethodName ?? "Nieznana",
+    });
+  } catch (err) {
+    console.error("[verify] sendAdminNotificationEmail failed:", err);
   }
 
   return NextResponse.json({ paid: true });
