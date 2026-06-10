@@ -18,6 +18,7 @@ export type ShippingMethodRow = {
   name: string;
   description: string;
   price_grosze: number;
+  free_shipping_threshold_grosze: number | null;
   requires_parcel_code: boolean;
   carrier: string | null;
   is_active: boolean;
@@ -52,6 +53,7 @@ export function ShippingMethodsAdmin({
       if ("name" in patch) body.name = patch.name;
       if ("description" in patch) body.description = patch.description;
       if ("price_grosze" in patch) body.priceGrosze = patch.price_grosze;
+      if ("free_shipping_threshold_grosze" in patch) body.freeShippingThresholdGrosze = patch.free_shipping_threshold_grosze;
       if ("requires_parcel_code" in patch)
         body.requiresParcelCode = patch.requires_parcel_code;
       if ("carrier" in patch) body.carrier = patch.carrier;
@@ -140,6 +142,7 @@ function MethodRow({
     name: method.name,
     description: method.description,
     price_grosze: method.price_grosze,
+    free_shipping_threshold_grosze: method.free_shipping_threshold_grosze,
     requires_parcel_code: method.requires_parcel_code,
     carrier: method.carrier ?? "",
     is_active: method.is_active,
@@ -149,6 +152,7 @@ function MethodRow({
     draft.name !== method.name ||
     draft.description !== method.description ||
     draft.price_grosze !== method.price_grosze ||
+    draft.free_shipping_threshold_grosze !== method.free_shipping_threshold_grosze ||
     draft.requires_parcel_code !== method.requires_parcel_code ||
     (draft.carrier ?? "") !== (method.carrier ?? "") ||
     draft.is_active !== method.is_active ||
@@ -196,6 +200,21 @@ function MethodRow({
               setDraft((d) => ({
                 ...d,
                 price_grosze: parseInt(e.target.value || "0", 10) || 0,
+              }))
+            }
+            className={inputCls}
+          />
+        </Field>
+        <Field label="Darmowa wysyłka od (gr, puste = brak progu)">
+          <input
+            type="number"
+            min={0}
+            placeholder="np. 20000 = 200 zł"
+            value={draft.free_shipping_threshold_grosze ?? ""}
+            onChange={(e) =>
+              setDraft((d) => ({
+                ...d,
+                free_shipping_threshold_grosze: e.target.value === "" ? null : parseInt(e.target.value, 10) || 0,
               }))
             }
             className={inputCls}
@@ -270,6 +289,7 @@ function MethodRow({
               name: draft.name,
               description: draft.description,
               price_grosze: draft.price_grosze,
+              free_shipping_threshold_grosze: draft.free_shipping_threshold_grosze,
               requires_parcel_code: draft.requires_parcel_code,
               carrier: draft.carrier || null,
               is_active: draft.is_active,

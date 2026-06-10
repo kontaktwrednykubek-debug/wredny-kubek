@@ -20,6 +20,7 @@ export type CheckoutShippingMethod = {
   name: string;
   description: string;
   priceGrosze: number;
+  freeShippingThresholdGrosze: number | null;
   requiresParcelCode: boolean;
   tiers: ShippingTier[];
 };
@@ -82,7 +83,11 @@ export function CheckoutClient({
   const totalQty = items.reduce((s, i) => s + i.quantity, 0);
   const method = methods.find((m) => m.code === shippingMethod);
   const shippingPrice = calcShippingPrice(method, totalQty);
-  const isFreeShipping = discount?.type === "free_shipping";
+  const isFreeShippingDiscount = discount?.type === "free_shipping";
+  const isFreeShippingThreshold =
+    method?.freeShippingThresholdGrosze != null &&
+    itemsTotal >= method.freeShippingThresholdGrosze;
+  const isFreeShipping = isFreeShippingDiscount || isFreeShippingThreshold;
   const effectiveShipping = isFreeShipping ? 0 : shippingPrice;
   const discountGrosze = isFreeShipping ? 0 : (discount?.grosze ?? 0);
   const total = Math.max(0, itemsTotal - discountGrosze) + effectiveShipping;
@@ -502,7 +507,7 @@ export function CheckoutClient({
                       </div>
                     </div>
                     <span className="shrink-0 text-sm font-bold text-primary">
-                      {calcShippingPrice(m, totalQty) === 0
+                      {(m.freeShippingThresholdGrosze != null && itemsTotal >= m.freeShippingThresholdGrosze) || calcShippingPrice(m, totalQty) === 0
                         ? "Gratis"
                         : formatPrice(calcShippingPrice(m, totalQty))}
                     </span>
@@ -594,14 +599,24 @@ export function CheckoutClient({
             <span className="text-muted-foreground">
               Dostawa ({method?.name})
             </span>
-            <span className={discount?.type === "free_shipping" ? "line-through text-muted-foreground" : ""}>
+            <span className={isFreeShipping ? "line-through text-muted-foreground" : ""}>
               {shippingPrice === 0 ? "Gratis" : formatPrice(shippingPrice)}
             </span>
           </div>
-          {discount?.type === "free_shipping" && (
+          {isFreeShipping && (
             <div className="flex justify-between text-sm">
-              <span className="text-emerald-600">Dostawa po rabacie</span>
+              <span className="text-emerald-600">
+                {isFreeShippingThreshold ? "Darmowa dostawa (próg kwoty)" : "Dostawa po rabacie"}
+              </span>
               <span className="font-semibold text-emerald-600">Gratis</span>
+            </div>
+          )}
+          {!isFreeShipping && method?.freeShippingThresholdGrosze != null && (
+            <div className="rounded-lg bg-primary/5 border border-primary/20 px-3 py-2 text-xs text-muted-foreground">
+              <span className="font-medium text-primary">
+                Jeszcze {formatPrice(method.freeShippingThresholdGrosze - itemsTotal)}
+              </span>{" "}
+              do darmowej dostawy!
             </div>
           )}
           {discount && discount.type !== "free_shipping" && discountGrosze > 0 && (

@@ -6,6 +6,7 @@ const patchSchema = z.object({
   name: z.string().min(2).max(100).optional(),
   description: z.string().max(300).optional(),
   priceGrosze: z.number().int().min(0).max(100000).optional(),
+  freeShippingThresholdGrosze: z.number().int().min(0).max(10000000).nullable().optional(),
   requiresParcelCode: z.boolean().optional(),
   carrier: z.string().max(40).nullable().optional(),
   isActive: z.boolean().optional(),
@@ -50,6 +51,7 @@ export async function PATCH(
   if (p.name !== undefined) update.name = p.name;
   if (p.description !== undefined) update.description = p.description;
   if (p.priceGrosze !== undefined) update.price_grosze = p.priceGrosze;
+  if (p.freeShippingThresholdGrosze !== undefined) update.free_shipping_threshold_grosze = p.freeShippingThresholdGrosze;
   if (p.requiresParcelCode !== undefined)
     update.requires_parcel_code = p.requiresParcelCode;
   if (p.carrier !== undefined) update.carrier = p.carrier;

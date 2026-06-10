@@ -11,7 +11,7 @@ export default async function CheckoutPage() {
   const { data } = await supabase
     .from("shipping_methods")
     .select(
-      "code, name, description, price_grosze, requires_parcel_code, sort_order, shipping_method_tiers(id, min_quantity, price_grosze)",
+      "code, name, description, price_grosze, free_shipping_threshold_grosze, requires_parcel_code, sort_order, shipping_method_tiers(id, min_quantity, price_grosze)",
     )
     .eq("is_active", true)
     .order("sort_order", { ascending: true });
@@ -21,6 +21,7 @@ export default async function CheckoutPage() {
     name: m.name as string,
     description: m.description as string,
     priceGrosze: m.price_grosze as number,
+    freeShippingThresholdGrosze: (m.free_shipping_threshold_grosze as number | null) ?? null,
     requiresParcelCode: Boolean(m.requires_parcel_code),
     tiers: (
       (m.shipping_method_tiers as { id: string; min_quantity: number; price_grosze: number }[]) ?? []

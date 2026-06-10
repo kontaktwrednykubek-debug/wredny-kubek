@@ -8,7 +8,7 @@ export default async function ShippingAdminPage() {
   const { data } = await supabase
     .from("shipping_methods")
     .select(
-      "id, code, name, description, price_grosze, requires_parcel_code, carrier, is_active, sort_order, shipping_method_tiers(id, min_quantity, price_grosze)",
+      "id, code, name, description, price_grosze, free_shipping_threshold_grosze, requires_parcel_code, carrier, is_active, sort_order, shipping_method_tiers(id, min_quantity, price_grosze)",
     )
     .order("sort_order", { ascending: true });
 
@@ -18,6 +18,7 @@ export default async function ShippingAdminPage() {
     name: m.name as string,
     description: m.description as string,
     price_grosze: m.price_grosze as number,
+    free_shipping_threshold_grosze: (m.free_shipping_threshold_grosze as number | null) ?? null,
     requires_parcel_code: Boolean(m.requires_parcel_code),
     carrier: (m.carrier as string | null) ?? null,
     is_active: Boolean(m.is_active),

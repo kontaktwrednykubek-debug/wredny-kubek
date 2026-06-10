@@ -7,6 +7,7 @@ const upsertSchema = z.object({
   name: z.string().min(2).max(100),
   description: z.string().max(300).default(""),
   priceGrosze: z.number().int().min(0).max(100000),
+  freeShippingThresholdGrosze: z.number().int().min(0).max(10000000).nullable().optional(),
   requiresParcelCode: z.boolean().default(false),
   carrier: z.string().max(40).optional().nullable(),
   isActive: z.boolean().default(true),
@@ -35,7 +36,7 @@ export async function GET() {
   const { data, error } = await supabase
     .from("shipping_methods")
     .select(
-      "id, code, name, description, price_grosze, requires_parcel_code, carrier, is_active, sort_order, shipping_method_tiers(id, min_quantity, price_grosze)",
+      "id, code, name, description, price_grosze, free_shipping_threshold_grosze, requires_parcel_code, carrier, is_active, sort_order, shipping_method_tiers(id, min_quantity, price_grosze)",
     )
     .order("sort_order", { ascending: true });
   if (error) {
@@ -65,6 +66,7 @@ export async function POST(req: Request) {
       name: p.name,
       description: p.description,
       price_grosze: p.priceGrosze,
+      free_shipping_threshold_grosze: p.freeShippingThresholdGrosze ?? null,
       requires_parcel_code: p.requiresParcelCode,
       carrier: p.carrier ?? null,
       is_active: p.isActive,
