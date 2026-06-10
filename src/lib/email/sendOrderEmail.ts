@@ -8,7 +8,7 @@ import {
 /**
  * Zwraca poprawny adres nadawcy dla Resend.
  * Domena wrednykubek.pl jest zweryfikowana — RESEND_FROM_EMAIL powinno być
- * w formacie "Wredny Kubek <zamowienia@wrednykubek.pl>".
+ * w formacie "Wredny Kubek <czegoznowu@wrednykubek.pl>".
  * Fallback na onboarding@resend.dev tylko gdy brak zmiennej lub domena jest
  * publiczną (gmail, outlook itp.) — Resend nie pozwala ich używać jako nadawcy.
  */

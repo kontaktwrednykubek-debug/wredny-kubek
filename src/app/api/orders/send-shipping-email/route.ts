@@ -131,7 +131,7 @@ export async function POST(req: Request) {
         {
           error: result.error.message,
           details: result.error,
-          hint: "W sandbox Resend możesz wysłać mail TYLKO na email konta Resend (kontakt.wrednykubek@gmail.com). Zweryfikuj domenę w Resend, aby wysyłać na dowolne adresy.",
+          hint: "Zweryfikuj domenę wrednykubek.pl w panelu Resend, aby wysyłać na dowolne adresy.",
         },
         { status: 500 },
       );
