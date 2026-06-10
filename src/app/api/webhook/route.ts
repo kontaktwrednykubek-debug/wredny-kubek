@@ -9,6 +9,7 @@ export const runtime = "nodejs";
  * Webhook Stripe — odbiera `checkout.session.completed`,
  * oznacza powiązane zamówienie jako PAID i wysyła email potwierdzający.
  *
+ * Endpoint: POST /api/webhook
  * Wymaga ustawienia: STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, RESEND_API_KEY.
  */
 export async function POST(req: Request) {

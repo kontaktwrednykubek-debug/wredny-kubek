@@ -16,7 +16,7 @@ const bodySchema = z.object({
  *
  * Tworzy sesję Stripe Checkout dla istniejącego zamówienia (status PENDING).
  * Zwraca URL do przekierowania. Po opłaceniu Stripe wywoła webhook
- * `/api/webhooks/stripe`, który ustawi PAID i wyśle maila potwierdzającego.
+ * `/api/webhook`, który ustawi PAID i wyśle maila potwierdzającego.
  */
 export async function POST(req: Request) {
   if (!env.STRIPE_SECRET_KEY) {
