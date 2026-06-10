@@ -144,24 +144,34 @@ export async function POST(req: Request) {
 
   // Powiadomienie dla admina
   try {
-    const shipping = (existing.shipping_info ?? {}) as Record<string, string>;
-    const customerEmail =
+    const shipping2 = (existing.shipping_info ?? {}) as Record<string, string>;
+    const customerEmail2 =
       session.customer_details?.email ?? session.customer_email ?? "";
-    const profile = existing.user_id
+    const profile2 = existing.user_id
       ? (await supabase.from("profiles").select("email, full_name").eq("id", existing.user_id).maybeSingle()).data
       : null;
-    const freeShipping2 = (existing.shipping_info as Record<string, string> | null)?.shippingPriceGr === "0";
-    const fullShipping2 = Number(shipping.shippingPriceGr ?? 0);
+    const freeShipping2 = shipping2.shippingPriceGr === "0";
+    const fullShipping2 = Number(shipping2.shippingPriceGr ?? 0);
     const rawDiscount2 = existing.discount_grosze ?? 0;
     const totalGr2 = Math.max(0, (existing.amount_grosze ?? 0) - (freeShipping2 ? 0 : rawDiscount2)) + (freeShipping2 ? 0 : fullShipping2);
 
     await sendAdminNotificationEmail({
       orderId,
-      customerName: shipping.fullName ?? profile?.full_name ?? "Klient",
-      customerEmail: profile?.email ?? shipping.email ?? customerEmail,
+      customerName: shipping2.fullName ?? profile2?.full_name ?? "Klient",
+      customerEmail: profile2?.email ?? shipping2.email ?? customerEmail2,
+      customerPhone: shipping2.phone,
       totalGr: totalGr2,
-      productLabel: (existing.label as string | null) ?? existing.product_id ?? "",
-      shippingMethod: shipping.shippingMethodName ?? "Nieznana",
+      items: [{
+        name: (existing.label as string | null) ?? existing.product_id ?? "",
+        quantity: existing.quantity ?? 1,
+      }],
+      deliveryMethod: shipping2.shippingMethodName ?? "Nieznana",
+      shippingAddress: {
+        street: shipping2.address ?? "",
+        city: shipping2.city ?? "",
+        postalCode: shipping2.zip ?? "",
+        extraInfo: shipping2.parcelCode ? `Paczkomat: ${shipping2.parcelCode}` : undefined,
+      },
     });
   } catch (err) {
     console.error("[verify] sendAdminNotificationEmail failed:", err);

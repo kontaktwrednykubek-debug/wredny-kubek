@@ -4,7 +4,10 @@ import {
   OrderConfirmationEmail,
   type OrderEmailItem,
 } from "@/emails/OrderConfirmationEmail";
-import { AdminPaymentNotificationEmail } from "@/emails/AdminPaymentNotificationEmail";
+import {
+  AdminPaymentNotificationEmail,
+  type AdminOrderItem,
+} from "@/emails/AdminPaymentNotificationEmail";
 
 /**
  * Zwraca poprawny adres nadawcy dla Resend.
@@ -157,9 +160,16 @@ export async function sendAdminNotificationEmail(params: {
   orderId: string;
   customerName: string;
   customerEmail: string;
+  customerPhone?: string;
   totalGr: number;
-  productLabel: string;
-  shippingMethod: string;
+  items: AdminOrderItem[];
+  deliveryMethod: string;
+  shippingAddress: {
+    street: string;
+    city: string;
+    postalCode: string;
+    extraInfo?: string;
+  };
 }) {
   const apiKey = process.env.RESEND_API_KEY;
   const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL?.trim();
@@ -182,9 +192,11 @@ export async function sendAdminNotificationEmail(params: {
     orderId: params.orderId,
     customerName: params.customerName,
     customerEmail: params.customerEmail,
+    customerPhone: params.customerPhone,
     amount,
-    productLabel: params.productLabel,
-    shippingMethod: params.shippingMethod,
+    items: params.items,
+    deliveryMethod: params.deliveryMethod,
+    shippingAddress: params.shippingAddress,
     logoUrl,
   });
 

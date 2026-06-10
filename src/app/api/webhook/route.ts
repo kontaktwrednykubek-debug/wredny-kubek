@@ -197,9 +197,19 @@ export async function POST(req: Request) {
       orderId: orderRow.id,
       customerName: shipping.fullName ?? profile?.full_name ?? "Klient",
       customerEmail: to ?? "",
+      customerPhone: shipping.phone,
       totalGr,
-      productLabel: (orderRow.label as string | null) ?? orderRow.product_id ?? "",
-      shippingMethod: shipping.shippingMethodName ?? "Nieznana",
+      items: [{
+        name: (orderRow.label as string | null) ?? orderRow.product_id ?? "",
+        quantity: orderRow.quantity ?? 1,
+      }],
+      deliveryMethod: shipping.shippingMethodName ?? "Nieznana",
+      shippingAddress: {
+        street: shipping.address ?? "",
+        city: shipping.city ?? "",
+        postalCode: shipping.zip ?? "",
+        extraInfo: shipping.parcelCode ? `Paczkomat: ${shipping.parcelCode}` : undefined,
+      },
     });
   } catch (err) {
     console.error("[stripe-webhook] sendAdminNotificationEmail failed:", err);
