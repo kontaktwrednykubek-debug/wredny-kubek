@@ -47,6 +47,7 @@ const cols = [
   {
     title: "Informacje",
     links: [
+      { href: "/kontakt", label: "Kontakt" },
       { href: "/polityka-prywatnosci", label: "Polityka Prywatności" },
       { href: "/regulamin", label: "Regulamin sklepu" },
     ],
@@ -102,15 +103,14 @@ export function Footer() {
         </div>
       </div>
       <div className="border-t border-border">
-        <div className="container mx-auto flex flex-col items-center justify-between gap-2 px-4 py-4 text-xs text-muted-foreground sm:flex-row">
-          <p>© {new Date().getFullYear()} {brand.name}. Wszystkie prawa zastrzeżone.</p>
+        <div className="container mx-auto px-4 py-4 text-center text-xs text-muted-foreground">
           <p>
-            Wykonanie:{" "}
+            © {new Date().getFullYear()} {brand.name}. Wszystkie prawa zastrzeżone.{" "}Wykonanie:{" "}
             <a
               href="https://www.andrzejmich.ch"
               target="_blank"
               rel="noopener noreferrer"
-              className="font-medium text-foreground transition-colors hover:text-primary"
+              className="text-[13px] font-bold text-foreground transition-colors hover:text-primary"
             >
               Andrzej Mich
             </a>

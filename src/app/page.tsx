@@ -163,7 +163,7 @@ export default async function HomePage() {
               </svg>
               <div>
                 <p className="text-sm font-extrabold uppercase tracking-wider">Darmowa dostawa</p>
-                <p className="mt-1 text-xs text-muted-foreground">Bezpłatna wysyłka kurierem<br />w całej Polsce — bez minimalnej kwoty</p>
+                <p className="mt-1 text-xs text-muted-foreground">Darmowa wysyłka od 200 zł<br />w całej Polsce</p>
               </div>
             </div>
 
@@ -202,7 +202,7 @@ export default async function HomePage() {
               </svg>
               <div>
                 <p className="text-sm font-extrabold uppercase tracking-wider">Bezpieczne płatności</p>
-                <p className="mt-1 text-xs text-muted-foreground">Karta, BLIK, przelew<br />obsługiwane przez Stripe</p>
+                <p className="mt-1 text-xs text-muted-foreground">Karta, Blik, Przelew<br />obsługiwane przez Stripe</p>
               </div>
             </div>
           </div>
