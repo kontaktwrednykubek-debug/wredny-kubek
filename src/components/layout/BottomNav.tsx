@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Home, Store, Heart, User } from "lucide-react";
+import { Home, Store, Heart, User, ShieldCheck } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { useAssistantStore } from "@/features/assistant/useAssistantStore";
@@ -48,6 +48,7 @@ export function BottomNav() {
   const [showLoginPopup, setShowLoginPopup] = React.useState(false);
   const [showBubble, setShowBubble] = React.useState(false);
   const [userEmail, setUserEmail] = React.useState<string | null>(null);
+  const [adminUrl, setAdminUrl] = React.useState<string | null>(null);
   const openAssistant = useAssistantStore((s) => s.open);
 
   React.useEffect(() => setMounted(true), []);
@@ -57,6 +58,16 @@ export function BottomNav() {
     supabase.auth.getUser().then(({ data }) => setUserEmail(data.user?.email ?? null));
     const { data: sub } = supabase.auth.onAuthStateChange((_, session) => {
       setUserEmail(session?.user?.email ?? null);
+      if (session?.user) {
+        fetch("/api/me/admin-url").then(r => r.ok ? r.json() : null).then(j => setAdminUrl(j?.url ?? null)).catch(() => {});
+      } else {
+        setAdminUrl(null);
+      }
+    });
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) {
+        fetch("/api/me/admin-url").then(r => r.ok ? r.json() : null).then(j => setAdminUrl(j?.url ?? null)).catch(() => {});
+      }
     });
     return () => sub.subscription.unsubscribe();
   }, []);
@@ -152,13 +163,22 @@ export function BottomNav() {
             onClick={handleHeartClick}
           />
 
-          {/* Account */}
-          <NavBtn
-            href={userEmail ? "/account" : "/login"}
-            icon={<User className="h-5 w-5" />}
-            label={mounted && userEmail ? "Konto" : "Zaloguj"}
-            active={pathname.startsWith("/account")}  
-          />
+          {/* Account / Admin */}
+          {adminUrl ? (
+            <NavBtn
+              href={adminUrl}
+              icon={<ShieldCheck className="h-5 w-5" />}
+              label="Admin"
+              active={pathname.includes("admin")}
+            />
+          ) : (
+            <NavBtn
+              href={userEmail ? "/account" : "/login"}
+              icon={<User className="h-5 w-5" />}
+              label={mounted && userEmail ? "Konto" : "Zaloguj"}
+              active={pathname.startsWith("/account")}
+            />
+          )}
         </div>
       </nav>
 

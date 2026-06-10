@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Search, Menu, X, Heart } from "lucide-react";
+import { Search, Menu, X, Heart, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { brand } from "@/config/theme";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,7 @@ export function Navbar() {
   const [menuOpen, setMenuOpen] = React.useState(false);
   const [showLoginPopup, setShowLoginPopup] = React.useState(false);
   const [userEmail, setUserEmail] = React.useState<string | null>(null);
+  const [adminUrl, setAdminUrl] = React.useState<string | null>(null);
   const router = useRouter();
 
   React.useEffect(() => {
@@ -33,6 +34,16 @@ export function Navbar() {
     });
     const { data: sub } = supabase.auth.onAuthStateChange((_, session) => {
       setUserEmail(session?.user?.email ?? null);
+      if (session?.user) {
+        fetch("/api/me/admin-url").then(r => r.ok ? r.json() : null).then(j => setAdminUrl(j?.url ?? null)).catch(() => {});
+      } else {
+        setAdminUrl(null);
+      }
+    });
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) {
+        fetch("/api/me/admin-url").then(r => r.ok ? r.json() : null).then(j => setAdminUrl(j?.url ?? null)).catch(() => {});
+      }
     });
     return () => sub.subscription.unsubscribe();
   }, []);
@@ -162,6 +173,16 @@ export function Navbar() {
                 {item.label}
               </Link>
             ))}
+            {adminUrl && (
+              <Link
+                href={adminUrl}
+                onClick={() => setMenuOpen(false)}
+                className="mt-2 flex w-full items-center justify-center gap-3 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-2xl font-semibold text-primary transition-colors hover:bg-primary/10"
+              >
+                <ShieldCheck className="h-7 w-7" />
+                Panel admina
+              </Link>
+            )}
           </nav>
         </div>
       )}
