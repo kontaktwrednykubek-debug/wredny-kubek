@@ -188,7 +188,7 @@ export default async function HomePage() {
               </svg>
               <div>
                 <p className="text-sm font-extrabold uppercase tracking-wider">Jakość Premium</p>
-                <p className="mt-1 text-xs text-muted-foreground">Wyłącznie kubki JS Coating oraz SuperGlaze Premium</p>
+                <p className="mt-1 text-xs text-muted-foreground">Kubki JS Coating oraz SuperGlaze Premium</p>
               </div>
             </div>
 
