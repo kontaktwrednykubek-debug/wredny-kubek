@@ -169,7 +169,7 @@ export async function POST(req: Request) {
         userId: user?.id ?? "",
         discountCodeId: order.discount_code_id ?? "",
       },
-      success_url: `${origin}/sklep/${order.product_id.replace('shop:', '')}?payment=success`,
+      success_url: `${origin}/koszyk/sukces?session_id={CHECKOUT_SESSION_ID}&orderId=${order.id}`,
       cancel_url: `${origin}/koszyk/checkout?status=cancel&orderId=${order.id}`,
     });
   } catch (err) {
