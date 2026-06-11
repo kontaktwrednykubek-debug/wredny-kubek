@@ -33,6 +33,31 @@ export const useCart = create<CartState>()(
       items: [],
       add: (item) =>
         set((state) => {
+          const incomingQty = item.quantity ?? 1;
+
+          // Scal duplikaty: ten sam productId + ten sam wariant + ten sam designId
+          // = jeden wiersz w koszyku z sumowaną ilością. Zapobiega tworzeniu
+          // 2 osobnych zamówień w bazie gdy klient klika „Do koszyka" 2 razy.
+          const existingIdx = state.items.findIndex(
+            (i) =>
+              i.productId === item.productId &&
+              (i.designId ?? null) === (item.designId ?? null) &&
+              (i.variant?.color ?? null) === (item.variant?.color ?? null) &&
+              (i.variant?.size ?? null) === (item.variant?.size ?? null),
+          );
+
+          if (existingIdx >= 0) {
+            const existing = state.items[existingIdx];
+            const max = existing.maxQty ?? 999;
+            const merged = {
+              ...existing,
+              quantity: Math.min(max, existing.quantity + incomingQty),
+            };
+            const next = [...state.items];
+            next[existingIdx] = merged;
+            return { items: next };
+          }
+
           const id =
             typeof crypto !== "undefined" && crypto.randomUUID
               ? crypto.randomUUID()
@@ -40,7 +65,7 @@ export const useCart = create<CartState>()(
           return {
             items: [
               ...state.items,
-              { id, quantity: item.quantity ?? 1, ...item },
+              { id, ...item, quantity: incomingQty },
             ],
           };
         }),
