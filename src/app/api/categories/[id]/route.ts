@@ -4,9 +4,12 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const patchSchema = z.object({
   name: z.string().min(2).max(120).optional(),
+  slug: z.string().min(2).max(80).regex(/^[a-z0-9-]+$/).optional(),
   description: z.string().max(500).optional(),
+  longDescription: z.string().max(10000).optional(),
+  metaDescription: z.string().max(160).optional(),
   parentId: z.string().uuid().nullable().optional(),
-  imageUrl: z.string().url().nullable().optional(),
+  imageUrl: z.string().url("").or(z.literal("")).nullable().optional(),
   sortOrder: z.number().int().min(0).max(99999).optional(),
 });
 
@@ -46,9 +49,12 @@ export async function PATCH(
   const p = parsed.data;
   const update: Record<string, unknown> = {};
   if (p.name !== undefined) update.name = p.name;
+  if (p.slug !== undefined) update.slug = p.slug;
   if (p.description !== undefined) update.description = p.description;
+  if (p.longDescription !== undefined) update.long_description = p.longDescription;
+  if (p.metaDescription !== undefined) update.meta_description = p.metaDescription;
   if (p.parentId !== undefined) update.parent_id = p.parentId;
-  if (p.imageUrl !== undefined) update.image_url = p.imageUrl;
+  if (p.imageUrl !== undefined) update.image_url = p.imageUrl || null;
   if (p.sortOrder !== undefined) update.sort_order = p.sortOrder;
 
   const { error } = await auth.supabase

@@ -25,10 +25,12 @@ const createSchema = z.object({
     .regex(/^[a-z0-9-]+$/, "Slug: małe litery, cyfry, myślniki"),
   name: z.string().min(2).max(120),
   description: z.string().max(500).optional().default(""),
+  longDescription: z.string().max(10000).optional().default(""),
+  metaDescription: z.string().max(160).optional().default(""),
   parentId: z.string().uuid().nullable().optional(),
-  imageUrl: z.string().url().nullable().optional(),
+  imageUrl: z.string().url("").or(z.literal("")).nullable().optional(),
   sortOrder: z.number().int().min(0).max(99999).default(100),
-});
+})
 
 async function requireAdmin() {
   const supabase = createSupabaseServerClient();
@@ -67,6 +69,8 @@ export async function POST(req: Request) {
       slug: p.slug,
       name: p.name,
       description: p.description,
+      long_description: p.longDescription ?? null,
+      meta_description: p.metaDescription ?? null,
       parent_id: p.parentId ?? null,
       image_url: p.imageUrl ?? null,
       sort_order: p.sortOrder,

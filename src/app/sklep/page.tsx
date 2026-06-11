@@ -6,7 +6,31 @@ import { formatPrice } from "@/lib/utils";
 import { ShopFilters, type Category } from "./ShopFilters";
 import { WishlistButton } from "@/components/WishlistButton";
 
-export const metadata = { title: "Sklep" };
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams?: { category?: string };
+}): Promise<import("next").Metadata> {
+  if (!searchParams?.category) return { title: "Sklep" };
+  const supabase = createSupabaseServerClient();
+  const { data: cat } = await supabase
+    .from("categories")
+    .select("name, description, meta_description, image_url")
+    .eq("slug", searchParams.category)
+    .maybeSingle();
+  if (!cat) return { title: "Sklep" };
+  const desc = (cat.meta_description as string | null) || (cat.description as string | null) || undefined;
+  const imgUrl = cat.image_url as string | null;
+  return {
+    title: `${cat.name as string} | Sklep`,
+    description: desc,
+    openGraph: {
+      title: `${cat.name as string} | Sklep`,
+      description: desc,
+      images: imgUrl ? [imgUrl] : undefined,
+    },
+  };
+}
 
 export default async function ShopPage({
   searchParams,
@@ -15,13 +39,12 @@ export default async function ShopPage({
 }) {
   const supabase = createSupabaseServerClient();
 
-  // Pobierz kategorie i wszystkie opublikowane produkty równolegle.
   const { data: { user } } = await supabase.auth.getUser();
 
   const [categoriesRes, allRangeRes, productsRes, wishlistRes] = await Promise.all([
     supabase
       .from("categories")
-      .select("id, slug, name, parent_id, sort_order")
+      .select("id, slug, name, description, long_description, image_url, parent_id, sort_order")
       .order("sort_order", { ascending: true }),
     supabase
       .from("shop_products")
@@ -80,9 +103,13 @@ export default async function ShopPage({
     return true;
   });
 
-  const headerLabel = selectedCategory
-    ? categories.find((c) => c.slug === selectedCategory)?.name ?? "Sklep"
-    : "Sklep";
+  type CatWithDesc = Category & { description?: string | null; long_description?: string | null; image_url?: string | null };
+  const selectedCat = selectedCategory
+    ? (categories as CatWithDesc[]).find((c) => c.slug === selectedCategory) ?? null
+    : null;
+  const headerLabel = selectedCat?.name ?? (selectedCategory ? selectedCategory : "Sklep");
+  const shortDesc = selectedCat?.description ?? null;
+  const longDesc = selectedCat?.long_description ?? null;
 
   return (
     <>
@@ -90,9 +117,10 @@ export default async function ShopPage({
         <div className="container mx-auto px-5 py-10 sm:px-6 lg:px-10 xl:px-12">
           <h1 className="text-3xl font-bold tracking-tight">{headerLabel}</h1>
           <p className="mt-2 text-muted-foreground">
-            {selectedCategory
-              ? `Produkty w kategorii: ${headerLabel}`
-              : "Wszystkie produkty dostępne do personalizacji."}
+            {shortDesc ||
+              (selectedCategory
+                ? `Produkty w kategorii: ${headerLabel}`
+                : "Wszystkie produkty dostępne do personalizacji.")}
           </p>
         </div>
       </header>
@@ -168,6 +196,18 @@ export default async function ShopPage({
                   })}
                 </div>
               </>
+            )}
+
+            {longDesc && (
+              <div className="mt-12 border-t border-border pt-8">
+                <div className="prose prose-sm max-w-none text-muted-foreground dark:prose-invert">
+                  {longDesc.split("\n\n").map((para, i) => (
+                    <p key={i} className="mb-4 leading-relaxed">
+                      {para}
+                    </p>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
         </div>
