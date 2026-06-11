@@ -120,7 +120,7 @@ export async function POST(req: Request) {
       from,
       replyTo: from,
       to: resolveResendTo(userEmail),
-      subject: `${firstName}, Twój Wredny Kubek właśnie zwiał z magazynu! 🏃💨`,
+      subject: `Twoje wredne zamówienie #${order.id.slice(0, 8).toUpperCase()} wyruszyło w drogę`,
       html,
       text,
     });

@@ -1,11 +1,10 @@
 import * as React from "react";
 import {
   Body,
+  Button,
   Container,
   Head,
-  Hr,
   Html,
-  Link,
   Preview,
   Section,
   Text,
@@ -39,12 +38,21 @@ export function ShippingNotificationEmail({
 }: ShippingEmailProps) {
   const firstName = customerName.split(" ")[0];
   const orderShort = orderId.slice(0, 8).toUpperCase();
+  const trackUrl = `https://www.epaka.pl/sledzenie-przesylek?nr=${encodeURIComponent(
+    trackingNumber,
+  )}`;
 
   return (
     <Html>
-      <Head />
+      <Head>
+        <meta
+          name="format-detection"
+          content="telephone=no, date=no, address=no, email=no"
+        />
+        <meta name="x-apple-disable-message-reformatting" />
+      </Head>
       <Preview>
-        {firstName}, Twój Wredny Kubek właśnie zwiał z magazynu! 🏃💨
+        Twoje wredne zamówienie #{orderShort} wyruszyło w drogę. 📦
       </Preview>
       <Body
         style={{
@@ -57,89 +65,38 @@ export function ShippingNotificationEmail({
         }}
       >
         <Container
-          style={{ maxWidth: "580px", margin: "0 auto", padding: "32px 16px" }}
+          style={{ maxWidth: "560px", margin: "0 auto", padding: "24px 16px" }}
         >
-          {/* NAGŁÓWEK */}
-          <Section style={{ textAlign: "center", marginBottom: "32px" }}>
+          <Section>
             <Text
               style={{
-                color: C.seledyn,
-                fontSize: "32px",
-                fontWeight: "900",
-                margin: "0",
-                letterSpacing: "1px",
+                fontSize: "20px",
+                fontWeight: 700,
+                margin: "0 0 8px 0",
               }}
             >
-              WREDNY KUBEK
-            </Text>
-            <Text
-              style={{ color: C.muted, fontSize: "14px", margin: "4px 0 0 0" }}
-            >
-              Twoja paczka już leci!
-            </Text>
-          </Section>
-
-          {/* TREŚĆ */}
-          <Section style={{ lineHeight: "1.6", fontSize: "16px" }}>
-            <Text style={{ fontWeight: "600", fontSize: "18px" }}>
               Siema {firstName}!
             </Text>
 
-            <Text>
-              Szybka akcja — Twoje zamówienie <strong>#{orderShort}</strong>{" "}
-              oficjalnie nas opuściło. Wredny Kubek tak bardzo chciał Cię
-              poznać, że prawie sam się zapakował do kartonu.
-            </Text>
-
             <Text
               style={{
-                fontWeight: "bold",
-                fontSize: "17px",
-                marginTop: "24px",
+                fontSize: "15px",
+                lineHeight: "1.6",
+                margin: "0 0 20px 0",
               }}
             >
-              Plan wydarzeń:
+              Twoje zamówienie{" "}
+              <strong style={{ color: C.seledyn }}>#{orderShort}</strong>{" "}
+              właśnie opuściło nasz warsztat i jest już w drodze.
             </Text>
 
+            {/* Numer przesyłki */}
             <Section
               style={{
-                backgroundColor: C.seledynLight,
-                borderRadius: "8px",
-                padding: "16px",
-                margin: "12px 0 24px 0",
-              }}
-            >
-              <Text style={{ margin: "6px 0", fontSize: "15px" }}>
-                ✅ Paczka jest już w drodze (prawdopodobnie kłóci się z
-                kurierem o to, kto ma prowadzić).
-              </Text>
-              <Text style={{ margin: "6px 0", fontSize: "15px" }}>
-                👀 Wyglądaj przez okno — misja dostawy trwa.
-              </Text>
-              <Text style={{ margin: "6px 0", fontSize: "15px" }}>
-                ☕ Ty szykuj kawę/herbatę, a my trzymamy kciuki, żebyście się
-                polubili.
-              </Text>
-            </Section>
-
-            <Text style={{ fontWeight: "bold", margin: "0 0 8px 0" }}>
-              Twój numer przesyłki:
-            </Text>
-
-            {deliveryMethod && (
-              <Text style={{ margin: "0 0 8px 0", fontSize: "15px" }}>
-                Kurier: <strong>{deliveryMethod}</strong>
-              </Text>
-            )}
-
-            <Section
-              style={{
-                backgroundColor: C.seledynLight,
                 border: `1px solid ${C.border}`,
                 borderRadius: "8px",
-                padding: "20px 16px",
-                margin: "8px 0 24px 0",
-                textAlign: "center",
+                padding: "16px 18px",
+                margin: "0 0 20px 0",
               }}
             >
               <Text
@@ -148,83 +105,76 @@ export function ShippingNotificationEmail({
                   color: C.muted,
                   textTransform: "uppercase",
                   letterSpacing: "1px",
-                  margin: "0 0 8px 0",
+                  margin: "0 0 6px 0",
                 }}
               >
-                List przewozowy
+                Numer przesyłki
               </Text>
               <Text
                 style={{
-                  fontSize: "22px",
+                  fontSize: "18px",
                   fontFamily: "monospace",
+                  fontWeight: 700,
                   color: C.seledyn,
-                  fontWeight: "bold",
-                  letterSpacing: "1px",
-                  margin: 0,
+                  margin: "0 0 4px 0",
                   wordBreak: "break-all",
                 }}
               >
                 {trackingNumber}
               </Text>
-              <Text
-                style={{
-                  fontSize: "13px",
-                  color: C.muted,
-                  margin: "10px 0 0 0",
-                }}
-              >
-                Skopiuj numer i wklej go na stronie kuriera, aby sprawdzić
-                status paczki.
-              </Text>
+              {deliveryMethod && (
+                <Text
+                  style={{
+                    fontSize: "13px",
+                    color: C.muted,
+                    margin: 0,
+                  }}
+                >
+                  Kurier: {deliveryMethod}
+                </Text>
+              )}
             </Section>
 
-            <Text>
+            {/* Przycisk sprawdzenia przesyłki */}
+            <Section style={{ textAlign: "center", margin: "0 0 24px 0" }}>
+              <Button
+                href={trackUrl}
+                style={{
+                  backgroundColor: C.seledyn,
+                  color: "#ffffff",
+                  padding: "14px 28px",
+                  borderRadius: "8px",
+                  fontWeight: 700,
+                  fontSize: "15px",
+                  textDecoration: "none",
+                  display: "inline-block",
+                }}
+              >
+                Sprawdź przesyłkę
+              </Button>
+            </Section>
+
+            <Text
+              style={{
+                fontSize: "14px",
+                lineHeight: "1.6",
+                margin: "0 0 14px 0",
+              }}
+            >
               Dzięki za zakupy we Wrednym Kubku. Mamy nadzieję, że będzie Ci
               służył... godnie. 😉
             </Text>
 
-            <Text style={{ fontWeight: "bold", marginTop: "24px" }}>
-              Pozdro,
-              <br />
-              Ekipa Wrednego Kubka ☕🔥
-            </Text>
-          </Section>
-
-          <Hr
-            style={{ borderColor: C.border, margin: "32px 0 24px 0" }}
-          />
-
-          {/* STOPKA */}
-          <Section style={{ textAlign: "center" }}>
             <Text
               style={{
-                color: C.muted,
-                fontSize: "12px",
-                lineHeight: "1.6",
+                fontSize: "14px",
+                fontWeight: 700,
                 margin: "0",
               }}
             >
-              <strong>Wredny Kubek — Milena Bujniak</strong>
+              Pozdro,
               <br />
-              Świdnik 25, 58-410 Marciszów
-              <br />
-              Infolinia: +48 789 111 041
-            </Text>
-            <Text
-              style={{ color: C.muted, fontSize: "12px", margin: "8px 0 4px 0" }}
-            >
-              <Link
-                href="https://wrednykubek.pl"
-                style={{ color: C.seledyn, textDecoration: "none" }}
-              >
-                wrednykubek.pl
-              </Link>
-            </Text>
-            <Text
-              style={{ color: C.muted, fontSize: "11px", marginTop: "4px" }}
-            >
-              © {new Date().getFullYear()} Wredny Kubek. Wszystkie prawa
-              zastrzeżone.
+              Ekipa Wrednego Kubka ☕🔥
             </Text>
           </Section>
         </Container>

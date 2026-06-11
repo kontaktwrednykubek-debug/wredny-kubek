@@ -137,7 +137,7 @@ export async function sendOrderConfirmationEmail(params: {
     replyTo: from,
     to: resolveResendTo(params.to),
     bcc: adminEmail ? [adminEmail] : undefined,
-    subject: `Zamówienie #${params.orderId.slice(0, 8).toUpperCase()} przyjęte — Wredny Kubek`,
+    subject: `Twoje wredne zamówienie #${params.orderId.slice(0, 8).toUpperCase()} przyjęte`,
     html,
     text,
     headers: {

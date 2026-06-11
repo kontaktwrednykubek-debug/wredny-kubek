@@ -3,9 +3,7 @@ import {
   Body,
   Container,
   Head,
-  Hr,
   Html,
-  Link,
   Preview,
   Section,
   Text,
@@ -41,14 +39,10 @@ export type OrderEmailProps = {
     methodName?: string;
     parcelCode?: string;
   };
-  /** Suma KOŃCOWA do zapłaty (po rabatach). */
   totalGr: number;
   shippingPriceGr: number;
-  /** Kod rabatowy zastosowany do tego zamówienia (opcjonalnie). */
   discountCode?: string | null;
-  /** Wartość rabatu w groszach (opcjonalnie). */
   discountGrosze?: number;
-  /** Czy rabat to darmowa dostawa — wtedy linijka dostawy pokazuje „Gratis". */
   freeShipping?: boolean;
   /** @deprecated unused — kept for backward compat */
   trackingUrl?: string;
@@ -58,6 +52,26 @@ export type OrderEmailProps = {
 
 function formatPrice(gr: number) {
   return `${(gr / 100).toFixed(2).replace(".", ",")} zł`;
+}
+
+/**
+ * NoLink: renderuje tekst jako zwykly tekst, niemożliwy do auto-linkowania
+ * przez Gmail/iOS Mail (telefon, adres). Pusty `<a>` bez href + inline style
+ * blokuje auto-detect i kliknięcie.
+ */
+function NoLink({ children }: { children: React.ReactNode }) {
+  return (
+    <a
+      style={{
+        color: "inherit",
+        textDecoration: "none",
+        cursor: "default",
+        pointerEvents: "none",
+      }}
+    >
+      {children}
+    </a>
+  );
 }
 
 export function OrderConfirmationEmail({
@@ -76,10 +90,15 @@ export function OrderConfirmationEmail({
 
   return (
     <Html>
-      <Head />
+      <Head>
+        <meta
+          name="format-detection"
+          content="telephone=no, date=no, address=no, email=no"
+        />
+        <meta name="x-apple-disable-message-reformatting" />
+      </Head>
       <Preview>
-        Potwierdzenie zamówienia #{orderShort} — {firstName}, zamówienie
-        zostało przyjęte do realizacji.
+        Twoje wredne zamówienie #{orderShort} zostało przyjęte do realizacji.
       </Preview>
       <Body
         style={{
@@ -92,48 +111,32 @@ export function OrderConfirmationEmail({
         }}
       >
         <Container
-          style={{ maxWidth: "580px", margin: "0 auto", padding: "32px 16px" }}
+          style={{ maxWidth: "560px", margin: "0 auto", padding: "24px 16px" }}
         >
-          {/* NAGŁÓWEK */}
-          <Section style={{ textAlign: "center", marginBottom: "32px" }}>
+          <Section>
             <Text
               style={{
-                color: C.seledyn,
-                fontSize: "32px",
-                fontWeight: "900",
-                margin: "0",
-                letterSpacing: "1px",
+                fontSize: "20px",
+                fontWeight: 700,
+                margin: "0 0 8px 0",
               }}
             >
-              WREDNY KUBEK
-            </Text>
-            <Text
-              style={{ color: C.muted, fontSize: "14px", margin: "4px 0 0 0" }}
-            >
-              Odnotowaliśmy Twoją wpłatę!
-            </Text>
-          </Section>
-
-          {/* TREŚĆ */}
-          <Section style={{ lineHeight: "1.6", fontSize: "16px" }}>
-            <Text style={{ fontWeight: "600", fontSize: "18px" }}>
               Siema {firstName}!
             </Text>
 
-            <Text>
-              No i cyk — hajs doleciał bezpiecznie, więc odwrotu już nie ma.
-              Twój Wredny Kubek właśnie wskoczył na produkcję, a nasze drukarki
-              już szykują się do popełnienia czegoś totalnie bezczelnego. ☕😈
+            <Text style={{ fontSize: "15px", margin: "0 0 20px 0", lineHeight: "1.6" }}>
+              Hajs doleciał — Twoje zamówienie{" "}
+              <strong style={{ color: C.seledyn }}>#{orderShort}</strong>{" "}
+              właśnie wskoczyło na produkcję.
             </Text>
 
-            {/* Numer zamówienia */}
+            {/* Podsumowanie */}
             <Section
               style={{
-                backgroundColor: C.seledynLight,
                 border: `1px solid ${C.border}`,
                 borderRadius: "8px",
-                padding: "14px 16px",
-                margin: "16px 0",
+                padding: "16px 18px",
+                margin: "0 0 20px 0",
               }}
             >
               <Text
@@ -142,212 +145,191 @@ export function OrderConfirmationEmail({
                   color: C.muted,
                   textTransform: "uppercase",
                   letterSpacing: "1px",
-                  margin: "0 0 4px 0",
+                  margin: "0 0 12px 0",
                 }}
               >
-                Numer zamówienia
+                Podsumowanie
               </Text>
-              <Text
-                style={{
-                  fontSize: "18px",
-                  fontFamily: "monospace",
-                  color: C.seledyn,
-                  fontWeight: "bold",
-                  margin: 0,
-                }}
-              >
-                #{orderShort}
-              </Text>
-            </Section>
 
-            <Text style={{ fontWeight: "bold", fontSize: "17px", marginTop: "24px" }}>
-              Co się teraz dzieje w kwaterze głównej?
-            </Text>
-
-            <Section
-              style={{
-                backgroundColor: C.seledynLight,
-                borderRadius: "8px",
-                padding: "16px",
-                margin: "12px 0 24px 0",
-              }}
-            >
-              <Text style={{ margin: "6px 0", fontSize: "15px" }}>
-                🎯 <strong>Wybieramy ideał:</strong> Szukamy najładniejszego
-                kubka, który godnie zniesie Twój ulubiony napój.
-              </Text>
-              <Text style={{ margin: "6px 0", fontSize: "15px" }}>
-                🎨 <strong>Personalizacja:</strong> Nasi spece od „wredności"
-                zaczynają nanosić Twój wzór. Robimy to z chirurgiczną precyzją.
-              </Text>
-              <Text style={{ margin: "6px 0", fontSize: "15px" }}>
-                📦 <strong>Pakowanie:</strong> Owijamy go tak mocno, żeby
-                przetrwał nawet spotkanie z najbardziej niezdarnym kurierem
-                świata.
-              </Text>
-            </Section>
-
-            {/* Twoje łupy */}
-            <Text style={{ fontWeight: "bold", fontSize: "17px" }}>
-              Twoje łupy:
-            </Text>
-
-            <Section
-              style={{
-                backgroundColor: C.seledynLight,
-                border: `1px solid ${C.border}`,
-                borderRadius: "8px",
-                padding: "16px",
-                margin: "12px 0",
-              }}
-            >
               {items.map((item, idx) => (
-                <Text
+                <table
                   key={idx}
                   style={{
-                    fontSize: "15px",
-                    margin: "4px 0",
-                    borderBottom:
-                      idx < items.length - 1
-                        ? `1px solid ${C.border}`
-                        : "none",
-                    paddingBottom: idx < items.length - 1 ? "8px" : "0",
+                    width: "100%",
+                    borderCollapse: "collapse",
+                    marginBottom: "6px",
                   }}
                 >
-                  {item.quantity}× {item.label} —{" "}
-                  <strong>{formatPrice(item.unitPriceGr * item.quantity)}</strong>
-                </Text>
+                  <tbody>
+                    <tr>
+                      <td style={{ fontSize: "14px", padding: "2px 0" }}>
+                        {item.quantity}× {item.label}
+                      </td>
+                      <td
+                        style={{
+                          fontSize: "14px",
+                          padding: "2px 0",
+                          textAlign: "right",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {formatPrice(item.unitPriceGr * item.quantity)}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               ))}
 
-              <Text
+              <table
                 style={{
-                  fontSize: "13px",
-                  color: C.muted,
-                  margin: "12px 0 4px 0",
+                  width: "100%",
+                  borderCollapse: "collapse",
                   borderTop: `1px solid ${C.border}`,
-                  paddingTop: "10px",
+                  marginTop: "8px",
+                  paddingTop: "8px",
                 }}
               >
-                Dostawa{shipping.methodName ? ` (${shipping.methodName})` : ""}:{" "}
-                {freeShipping || shippingPriceGr === 0
-                  ? "Gratis"
-                  : formatPrice(shippingPriceGr)}
-              </Text>
+                <tbody>
+                  <tr>
+                    <td style={{ fontSize: "13px", color: C.muted, padding: "4px 0" }}>
+                      Dostawa
+                      {shipping.methodName ? ` (${shipping.methodName})` : ""}
+                    </td>
+                    <td
+                      style={{
+                        fontSize: "13px",
+                        color: C.muted,
+                        padding: "4px 0",
+                        textAlign: "right",
+                      }}
+                    >
+                      {freeShipping || shippingPriceGr === 0
+                        ? "Gratis"
+                        : formatPrice(shippingPriceGr)}
+                    </td>
+                  </tr>
+                  {discountCode &&
+                    discountGrosze &&
+                    discountGrosze > 0 &&
+                    !freeShipping && (
+                      <tr>
+                        <td
+                          style={{
+                            fontSize: "13px",
+                            color: C.seledyn,
+                            padding: "4px 0",
+                          }}
+                        >
+                          Rabat ({discountCode})
+                        </td>
+                        <td
+                          style={{
+                            fontSize: "13px",
+                            color: C.seledyn,
+                            padding: "4px 0",
+                            textAlign: "right",
+                          }}
+                        >
+                          − {formatPrice(discountGrosze)}
+                        </td>
+                      </tr>
+                    )}
+                </tbody>
+              </table>
 
-              {discountCode && discountGrosze && discountGrosze > 0 && !freeShipping && (
-                <Text style={{ fontSize: "13px", color: C.seledyn, margin: "4px 0" }}>
-                  Rabat ({discountCode}): − {formatPrice(discountGrosze)}
-                </Text>
-              )}
-              {discountCode && freeShipping && (
-                <Text style={{ fontSize: "13px", color: C.seledyn, margin: "4px 0" }}>
-                  Kod ({discountCode}): darmowa dostawa
-                </Text>
-              )}
-
-              <Text
+              <table
                 style={{
-                  fontSize: "17px",
-                  fontWeight: "bold",
-                  color: C.seledyn,
-                  margin: "10px 0 0 0",
-                  borderTop: `2px solid ${C.seledyn}`,
+                  width: "100%",
+                  borderCollapse: "collapse",
+                  borderTop: `2px solid ${C.text}`,
+                  marginTop: "8px",
                   paddingTop: "10px",
                 }}
               >
-                Razem: {formatPrice(totalGr)}
-              </Text>
+                <tbody>
+                  <tr>
+                    <td
+                      style={{ fontSize: "16px", fontWeight: 700, padding: "2px 0" }}
+                    >
+                      Razem
+                    </td>
+                    <td
+                      style={{
+                        fontSize: "18px",
+                        fontWeight: 700,
+                        color: C.seledyn,
+                        padding: "2px 0",
+                        textAlign: "right",
+                      }}
+                    >
+                      {formatPrice(totalGr)}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </Section>
 
-            {/* Adres dostawy */}
-            <Text style={{ fontWeight: "bold", fontSize: "17px", marginTop: "24px" }}>
-              Gdzie to wyślemy?
-            </Text>
-
+            {/* Adres dostawy — nieklikalne */}
             <Section
               style={{
-                backgroundColor: C.seledynLight,
                 border: `1px solid ${C.border}`,
                 borderRadius: "8px",
-                padding: "16px",
-                margin: "12px 0 24px 0",
+                padding: "16px 18px",
+                margin: "0 0 20px 0",
               }}
             >
-              <Text style={{ fontSize: "14px", lineHeight: "1.7", margin: 0 }}>
-                <strong>{shipping.fullName}</strong>
-                <br />
-                {shipping.address}
-                <br />
-                {shipping.zip} {shipping.city}
-                <br />
-                📞 {shipping.phone}
+              <Text
+                style={{
+                  fontSize: "11px",
+                  color: C.muted,
+                  textTransform: "uppercase",
+                  letterSpacing: "1px",
+                  margin: "0 0 10px 0",
+                }}
+              >
+                Adres dostawy
+              </Text>
+              <Text
+                style={{
+                  fontSize: "14px",
+                  lineHeight: "1.6",
+                  margin: 0,
+                  color: C.text,
+                }}
+              >
+                <NoLink>
+                  <strong>{shipping.fullName}</strong>
+                  <br />
+                  {shipping.address}
+                  <br />
+                  {shipping.zip} {shipping.city}
+                  <br />
+                  Tel.: {shipping.phone}
+                </NoLink>
               </Text>
               {shipping.parcelCode && (
-                <Text
-                  style={{
-                    marginTop: "10px",
-                    fontSize: "13px",
-                    color: C.text,
-                  }}
-                >
-                  📍 Paczkomat:{" "}
-                  <strong style={{ fontFamily: "monospace", color: C.seledyn }}>
-                    {shipping.parcelCode}
-                  </strong>
+                <Text style={{ fontSize: "13px", margin: "10px 0 0 0" }}>
+                  <NoLink>
+                    Paczkomat: <strong>{shipping.parcelCode}</strong>
+                  </NoLink>
                 </Text>
               )}
             </Section>
 
-            <Text>
-              Damy Ci znać, jak tylko paczka nabierze mocy prawnej i ruszy w
-              drogę. Na razie możesz spokojnie zaplanować, co do niego wlejesz
-              jako pierwsze. 😉
+            <Text style={{ fontSize: "14px", lineHeight: "1.6", margin: "0 0 14px 0" }}>
+              Damy znać, jak tylko paczka ruszy w drogę. Dzięki za zaufanie! 🙏
             </Text>
 
-            <Text>
-              Dzięki za zaufanie! 🙏
-            </Text>
-
-            <Text style={{ fontWeight: "bold", marginTop: "24px" }}>
-              Pozdro,
-              <br />
-              Ekipa Wrednego Kubka ☕🔥
-            </Text>
-          </Section>
-
-          <Hr style={{ borderColor: C.border, margin: "32px 0 24px 0" }} />
-
-          {/* STOPKA */}
-          <Section style={{ textAlign: "center" }}>
             <Text
               style={{
-                color: C.muted,
-                fontSize: "12px",
-                lineHeight: "1.6",
+                fontSize: "14px",
+                fontWeight: 700,
                 margin: "0",
               }}
             >
-              <strong>Wredny Kubek — Milena Bujniak</strong>
+              Pozdro,
               <br />
-              Świdnik 25, 58-410 Marciszów
-              <br />
-              Infolinia: +48 789 111 041
-            </Text>
-            <Text
-              style={{ color: C.muted, fontSize: "12px", margin: "8px 0 4px 0" }}
-            >
-              <Link
-                href="https://wrednykubek.pl"
-                style={{ color: C.seledyn, textDecoration: "none" }}
-              >
-                wrednykubek.pl
-              </Link>
-            </Text>
-            <Text
-              style={{ color: C.muted, fontSize: "11px", marginTop: "4px" }}
-            >
-              © {new Date().getFullYear()} Wredny Kubek. Wszystkie prawa
-              zastrzeżone.
+              Ekipa Wrednego Kubka ☕🔥
             </Text>
           </Section>
         </Container>

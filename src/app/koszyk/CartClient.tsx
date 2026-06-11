@@ -217,7 +217,7 @@ export function CartClient() {
             href="/edytor"
             className="mt-3 block text-center text-sm text-muted-foreground hover:text-foreground"
           >
-            ← Dodaj kolejny projekt
+            ← Dodaj kolejny produkt
           </Link>
         </aside>
       </div>
