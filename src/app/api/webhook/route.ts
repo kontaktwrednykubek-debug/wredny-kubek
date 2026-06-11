@@ -77,8 +77,19 @@ export async function POST(req: Request) {
     return NextResponse.json({ received: true });
   }
 
-  // Oznacz jako PAID
-  await supabase.from("orders").update({ status: "PAID" }).eq("id", orderId);
+  // Atomowy update — tylko jeśli PENDING. Zapobiega duplikatowi z /verify.
+  const { data: justUpdated } = await supabase
+    .from("orders")
+    .update({ status: "PAID" })
+    .eq("id", orderId)
+    .eq("status", "PENDING")
+    .select("id")
+    .maybeSingle();
+
+  if (!justUpdated) {
+    console.log("[stripe-webhook] Order already PAID (verify was first), skipping email", orderId);
+    return NextResponse.json({ received: true });
+  }
   
   // Stan magazynowy został już zdekrementowany atomowo w /api/orders przy tworzeniu zamówienia
 

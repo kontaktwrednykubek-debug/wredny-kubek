@@ -55,13 +55,20 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Order not found" }, { status: 404 });
   }
 
-  // Jeśli webhook już zaktualizował — po prostu zwróć sukces
-  if (existing.status !== "PENDING") {
+  // Atomowy update — tylko jeśli status === PENDING.
+  // Zapobiega wyścigu z webhook: ten kto pierwszy zaktualizuje wysyła mail.
+  const { data: justUpdated } = await supabase
+    .from("orders")
+    .update({ status: "PAID" })
+    .eq("id", orderId)
+    .eq("status", "PENDING")
+    .select("id")
+    .maybeSingle();
+
+  if (!justUpdated) {
+    // Webhook już oznaczył jako PAID — nie wysyłaj maila ponownie
     return NextResponse.json({ paid: true, alreadyUpdated: true });
   }
-
-  // Zaktualizuj status na PAID
-  await supabase.from("orders").update({ status: "PAID" }).eq("id", orderId);
 
   // Zapisz użycie kodu rabatowego jeśli był użyty
   if (existing.discount_code_id) {

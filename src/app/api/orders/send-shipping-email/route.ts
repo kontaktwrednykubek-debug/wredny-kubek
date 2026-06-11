@@ -107,8 +107,7 @@ export async function POST(req: Request) {
       customerName,
       orderId: order.id,
       trackingNumber: cleanTrackingNumber,
-      logoUrl,
-      orderUrl,
+      deliveryMethod: shipping.shippingMethodName ?? undefined,
     });
 
     const [html, text] = await Promise.all([
