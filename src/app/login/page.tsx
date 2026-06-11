@@ -76,9 +76,19 @@ function LoginInner() {
     });
     setLoading(false);
     if (error) return setError(translate(error.message));
+
+    // Supabase obfuscation: gdy email już istnieje, zwraca usera z pustą
+    // tablicą `identities` zamiast błędu (żeby nie ujawniać istnienia konta).
+    // Wykrywamy to i informujemy użytkownika konkretnie.
+    if (data.user && (data.user.identities?.length ?? 0) === 0) {
+      return setError(
+        "Konto z tym adresem email już istnieje. Zaloguj się lub zresetuj hasło.",
+      );
+    }
+
     if (data.user && !data.session) {
       setInfo(
-        "Konto utworzone! Sprawdź email i kliknij link potwierdzający, potem zaloguj się.",
+        "Konto utworzone! Sprawdź email (także folder Spam/Oferty) i kliknij link potwierdzający, potem zaloguj się.",
       );
       setMode("signin");
     } else {
@@ -156,11 +166,19 @@ function LoginInner() {
                 setError(null);
                 setInfo(null);
               }}
-              className="w-full text-center text-sm text-muted-foreground hover:text-foreground"
+              className="w-full text-center text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
-              {mode === "signin"
-                ? "Nie masz konta? Załóż nowe"
-                : "Masz już konto? Zaloguj się"}
+              {mode === "signin" ? (
+                <>
+                  Nie masz konta?{" "}
+                  <span className="font-bold text-[#14b8a6]">Załóż nowe</span>
+                </>
+              ) : (
+                <>
+                  Masz już konto?{" "}
+                  <span className="font-bold text-[#14b8a6]">Zaloguj się</span>
+                </>
+              )}
             </button>
           </form>
         </CardContent>
