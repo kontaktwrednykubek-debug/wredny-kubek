@@ -171,7 +171,7 @@ export async function POST(req: Request) {
     await sendOrderConfirmationEmail({
       to,
       orderId: primaryOrder.id,
-      customerName: shipping.fullName ?? profile?.full_name ?? "Kliencie",
+      customerName: shipping.fullName?.trim() || profile?.full_name?.trim() || "Kliencie",
       items: allOrderRows.map((o) => ({
         productId: o.product_id,
         label: (o.label as string | null) ?? o.product_id,
