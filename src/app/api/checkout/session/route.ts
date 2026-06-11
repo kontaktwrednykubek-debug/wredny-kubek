@@ -9,6 +9,7 @@ export const runtime = "nodejs";
 
 const bodySchema = z.object({
   orderId: z.string().uuid(),
+  orderIds: z.array(z.string().uuid()).min(1).max(50).optional(),
 });
 
 /**
@@ -40,55 +41,54 @@ export async function POST(req: Request) {
       { status: 400 },
     );
   }
-  const { orderId } = parsed.data;
+  const { orderId, orderIds: rawOrderIds } = parsed.data;
+  // Wszystkie ID z koszyka (min. [orderId] gdy klient nie przekazał listy)
+  const allOrderIds = rawOrderIds && rawOrderIds.length > 0 ? rawOrderIds : [orderId];
 
-  // Pobierz zamówienie. Dla gości używamy service clienta (RLS zablokuje anon).
+  // Pobierz WSZYSTKIE zamówienia z tego batcha. Dla gości: service client (RLS blokuje anon).
   const orderClient = user ? supabase : createSupabaseServiceClient();
-  const { data: order, error: orderErr } = await orderClient
+  const { data: allOrders, error: orderErr } = await orderClient
     .from("orders")
     .select(
       "id, user_id, product_id, label, quantity, amount_grosze, preview_url, shipping_info, status, discount_code_id, discount_grosze",
     )
-    .eq("id", orderId)
-    .maybeSingle();
+    .in("id", allOrderIds);
 
-  if (orderErr || !order) {
-    return NextResponse.json({ error: "Order not found" }, { status: 404 });
-  }
-  // Walidacja własności: zalogowany user musi być właścicielem,
-  // gość może tworzyć sesję tylko dla zamówienia bez user_id.
-  if (user && order.user_id && order.user_id !== user.id) {
-    return NextResponse.json({ error: "forbidden" }, { status: 403 });
-  }
-  if (!user && order.user_id) {
-    return NextResponse.json({ error: "forbidden" }, { status: 403 });
-  }
-  if (order.status !== "PENDING") {
-    return NextResponse.json(
-      { error: `Order already ${order.status}` },
-      { status: 409 },
-    );
+  if (orderErr || !allOrders || allOrders.length === 0) {
+    return NextResponse.json({ error: "Orders not found" }, { status: 404 });
   }
 
-  const shipping = (order.shipping_info ?? {}) as Record<string, any>;
-  const unitPriceGr =
-    (order.amount_grosze ?? 0) / Math.max(1, order.quantity ?? 1);
+  // Pierwsze zamówienie = nośnik shipping_info i ewentualnego rabatu.
+  const primaryOrder = allOrders.find((o) => o.id === orderId) ?? allOrders[0];
+
+  // Walidacja własności: zalogowany user musi być właścicielem.
+  for (const o of allOrders) {
+    if (user && o.user_id && o.user_id !== user.id) {
+      return NextResponse.json({ error: "forbidden" }, { status: 403 });
+    }
+    if (!user && o.user_id) {
+      return NextResponse.json({ error: "forbidden" }, { status: 403 });
+    }
+    if (o.status !== "PENDING") {
+      return NextResponse.json({ error: `Order ${o.id} already ${o.status}` }, { status: 409 });
+    }
+  }
+
+  const shipping = (primaryOrder.shipping_info ?? {}) as Record<string, any>;
   const shippingPriceGr = Number(shipping.shippingPriceGr ?? 0);
 
-  // Dociągamy informacje o kodzie rabatowym (jeśli użyty) — potrzebujemy typu
-  // i stripe_promotion_code_id.
+  // Dociągamy informacje o kodzie rabatowym z głównego zamówienia.
   type DiscountRow = {
     type: "percent" | "fixed" | "free_shipping";
     stripe_promotion_code_id: string | null;
   };
   let discountCodeRow: DiscountRow | null = null;
-  if (order.discount_code_id) {
-    // UWAGA: discount_codes ma RLS “tylko admin” — musimy użyć service clienta.
+  if (primaryOrder.discount_code_id) {
     const service = createSupabaseServiceClient();
     const { data: dc, error: dcErr } = await service
       .from("discount_codes")
       .select("type, stripe_promotion_code_id")
-      .eq("id", order.discount_code_id)
+      .eq("id", primaryOrder.discount_code_id)
       .maybeSingle();
     if (dcErr) {
       console.error("[checkout/session] discount_codes read error:", dcErr);
@@ -97,33 +97,30 @@ export async function POST(req: Request) {
   }
 
   const stripe = new Stripe(env.STRIPE_SECRET_KEY);
+  const freeShipping = discountCodeRow?.type === "free_shipping";
 
-  // Stripe wymaga URL <= 2048 znakow i tylko http(s) (nie akceptuje data: URI).
-  const previewUrl = order.preview_url ?? null;
-  const validImage =
-    previewUrl &&
-    previewUrl.length <= 2048 &&
-    /^https?:\/\//i.test(previewUrl)
-      ? previewUrl
-      : null;
-
-  const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = [
-    {
-      quantity: order.quantity ?? 1,
+  // Buduj line_items dla WSZYSTKICH zamówień z koszyka.
+  const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = allOrders.map((o) => {
+    const unitPriceGr = (o.amount_grosze ?? 0) / Math.max(1, o.quantity ?? 1);
+    const previewUrl = o.preview_url ?? null;
+    const validImage =
+      previewUrl && previewUrl.length <= 2048 && /^https?:\/\//i.test(previewUrl)
+        ? previewUrl
+        : null;
+    return {
+      quantity: o.quantity ?? 1,
       price_data: {
         currency: "pln",
         unit_amount: Math.round(unitPriceGr),
         product_data: {
-          name: (order.label as string | null) ?? order.product_id,
+          name: (o.label as string | null) ?? o.product_id,
           images: validImage ? [validImage] : undefined,
         },
       },
-    },
-  ];
+    };
+  });
 
-  // Dostawa jako osobna pozycja (jeśli > 0). Jeśli kod rabatowy to free_shipping —
-  // pomijamy pozycję dostawy (darmowa dostawa).
-  const freeShipping = discountCodeRow?.type === "free_shipping";
+  // Dostawa jako osobna pozycja (raz, na całe zamówienie).
   if (shippingPriceGr > 0 && !freeShipping) {
     line_items.push({
       quantity: 1,
@@ -137,7 +134,7 @@ export async function POST(req: Request) {
     });
   }
 
-  // Rabat percent/fixed: przekazujemy Stripe PromotionCode — Stripe pokaże i zastosuje.
+  // Rabat percent/fixed: Stripe PromotionCode.
   const discounts: Stripe.Checkout.SessionCreateParams.Discount[] = [];
   if (
     discountCodeRow &&
@@ -147,35 +144,36 @@ export async function POST(req: Request) {
     discounts.push({ promotion_code: discountCodeRow.stripe_promotion_code_id });
   }
 
-  // Origin z requestu — żeby redirect zawsze wracał na tę domenę co klient (np. wrednykubek.pl, nie vercel)
+  // Origin z requestu — żeby redirect zawsze wracał na tę domenę co klient.
   const origin =
     req.headers.get("origin") ||
     (req.headers.get("host") ? `https://${req.headers.get("host")}` : null) ||
     env.NEXT_PUBLIC_APP_URL;
+
+  // Zapisujemy WSZYSTKIE IDs w metadata (max 500 znaków; ~13 UUID-ów).
+  const orderIdsStr = allOrders.map((o) => o.id).join(",");
 
   let session: Stripe.Checkout.Session;
   try {
     session = await stripe.checkout.sessions.create({
       mode: "payment",
       line_items,
-      // Metody płatności: pomijamy `payment_method_types` celowo — Stripe Checkout
-      // automatycznie wyświetli wszystkie metody włączone w Dashboard (karta, BLIK,
-      // Przelewy24, Link itd.).
-      // UWAGA: Stripe wymaga allow_promotion_codes: false gdy przekazujemy discounts[]
       ...(discounts.length > 0 ? { discounts } : { allow_promotion_codes: true }),
       customer_email: user?.email ?? shipping.email ?? undefined,
       metadata: {
-        orderId: order.id,
+        orderId: primaryOrder.id,
+        orderIds: orderIdsStr,
         userId: user?.id ?? "",
-        discountCodeId: order.discount_code_id ?? "",
+        discountCodeId: primaryOrder.discount_code_id ?? "",
       },
-      success_url: `${origin}/koszyk/sukces?session_id={CHECKOUT_SESSION_ID}&orderId=${order.id}`,
-      cancel_url: `${origin}/koszyk/checkout?status=cancel&orderId=${order.id}`,
+      success_url: `${origin}/koszyk/sukces?session_id={CHECKOUT_SESSION_ID}&orderId=${primaryOrder.id}`,
+      cancel_url: `${origin}/koszyk/checkout?status=cancel&orderId=${primaryOrder.id}`,
     });
   } catch (err) {
     console.error("[checkout/session] Stripe.checkout.sessions.create failed:", {
       err,
-      orderId: order.id,
+      orderId: primaryOrder.id,
+      allOrderIds,
       hasDiscounts: discounts.length > 0,
       discountType: discountCodeRow?.type,
       promoCodeId: discountCodeRow?.stripe_promotion_code_id,

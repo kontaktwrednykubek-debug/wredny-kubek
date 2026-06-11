@@ -251,13 +251,13 @@ export function CheckoutClient({
         }
         return;
       }
-      const { orderId } = body;
+      const { orderId, orderIds } = body;
 
       // Utwórz sesję Stripe Checkout i przekieruj na stronę płatności
       const sessionRes = await fetch("/api/checkout/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId }),
+        body: JSON.stringify({ orderId, orderIds: orderIds ?? [orderId] }),
       });
       if (!sessionRes.ok) {
         const err = await sessionRes.json().catch(() => ({}));

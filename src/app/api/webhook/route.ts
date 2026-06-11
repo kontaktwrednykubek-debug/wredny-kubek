@@ -52,67 +52,71 @@ export async function POST(req: Request) {
 
   const session = event.data.object as Stripe.Checkout.Session;
   const orderId = session.metadata?.orderId;
+  // Wszystkie ID z jednego koszyka (zapisane przy tworzeniu sesji).
+  const orderIdsRaw = session.metadata?.orderIds ?? orderId ?? "";
+  const allOrderIds = orderIdsRaw.split(",").map((s) => s.trim()).filter(Boolean);
   const customerEmail =
     session.customer_details?.email ?? session.customer_email ?? null;
 
-  if (!orderId) {
+  if (!orderId || allOrderIds.length === 0) {
     console.warn("[stripe-webhook] No orderId in session metadata");
     return NextResponse.json({ received: true });
   }
 
   const supabase = createSupabaseServiceClient();
 
-  // Pobierz zamówienia (jedna sesja Stripe = jedno orderId, ale w bazie może być
-  // wiele wierszy w `orders` ze wspólnym shipping_info — bierzemy wszystkie z user_id).
-  const { data: orderRow, error: orderErr } = await supabase
+  // Pobierz WSZYSTKIE zamówienia z batcha.
+  const { data: allOrderRows, error: orderErr } = await supabase
     .from("orders")
     .select(
       "id, user_id, product_id, label, variant_color, quantity, amount_grosze, shipping_info, preview_url, discount_code_id, discount_grosze",
     )
-    .eq("id", orderId)
-    .maybeSingle();
+    .in("id", allOrderIds);
 
-  if (orderErr || !orderRow) {
-    console.error("[stripe-webhook] Order not found", orderId, orderErr);
+  if (orderErr || !allOrderRows || allOrderRows.length === 0) {
+    console.error("[stripe-webhook] Orders not found", allOrderIds, orderErr);
     return NextResponse.json({ received: true });
   }
 
-  // Atomowy update — tylko jeśli PENDING. Zapobiega duplikatowi z /verify.
-  const { data: justUpdated } = await supabase
+  const primaryOrder = allOrderRows.find((o) => o.id === orderId) ?? allOrderRows[0];
+
+  // Atomowy update WSZYSTKICH zamówień z batcha — tylko jeśli PENDING.
+  // Zapobiega duplikatowi z /verify: zwracamy ile wierszy faktycznie zaktualizowaliśmy.
+  const { data: updatedRows } = await supabase
     .from("orders")
     .update({ status: "PAID" })
-    .eq("id", orderId)
+    .in("id", allOrderIds)
     .eq("status", "PENDING")
-    .select("id")
-    .maybeSingle();
+    .select("id");
 
-  if (!justUpdated) {
-    console.log("[stripe-webhook] Order already PAID (verify was first), skipping email", orderId);
+  if (!updatedRows || updatedRows.length === 0) {
+    console.log("[stripe-webhook] All orders already PAID (verify was first), skipping email", allOrderIds);
     return NextResponse.json({ received: true });
   }
+
+  console.log("[stripe-webhook] Marked PAID:", updatedRows.map((r) => r.id));
   
   // Stan magazynowy został już zdekrementowany atomowo w /api/orders przy tworzeniu zamówienia
 
   // Jeśli użyto kodu rabatowego — zapisz użycie i zainkrementuj licznik.
-  if (orderRow.discount_code_id) {
+  if (primaryOrder.discount_code_id) {
     try {
       await supabase.from("discount_code_uses").insert({
-        discount_code_id: orderRow.discount_code_id,
-        user_id: orderRow.user_id,
-        order_id: orderRow.id,
-        discount_grosze: orderRow.discount_grosze ?? 0,
+        discount_code_id: primaryOrder.discount_code_id,
+        user_id: primaryOrder.user_id,
+        order_id: primaryOrder.id,
+        discount_grosze: primaryOrder.discount_grosze ?? 0,
       });
-      // Inkrement times_used (atomowo via RPC lub prosty update z odczytem)
       const { data: dc } = await supabase
         .from("discount_codes")
         .select("times_used")
-        .eq("id", orderRow.discount_code_id)
+        .eq("id", primaryOrder.discount_code_id)
         .maybeSingle();
       if (dc) {
         await supabase
           .from("discount_codes")
           .update({ times_used: (dc.times_used ?? 0) + 1 })
-          .eq("id", orderRow.discount_code_id);
+          .eq("id", primaryOrder.discount_code_id);
       }
     } catch (err) {
       console.error("[stripe-webhook] discount code usage tracking failed:", err);
@@ -120,13 +124,13 @@ export async function POST(req: Request) {
   }
 
   // Pobierz email klienta z profilu (tylko gdy zalogowany), inaczej z shipping_info / Stripe.
-  const shippingInfoEarly = (orderRow.shipping_info ?? {}) as Record<string, string>;
-  const profile = orderRow.user_id
+  const shippingInfoEarly = (primaryOrder.shipping_info ?? {}) as Record<string, string>;
+  const profile = primaryOrder.user_id
     ? (
         await supabase
           .from("profiles")
           .select("email, full_name")
-          .eq("id", orderRow.user_id)
+          .eq("id", primaryOrder.user_id)
           .maybeSingle()
       ).data
     : null;
@@ -137,16 +141,16 @@ export async function POST(req: Request) {
     return NextResponse.json({ received: true });
   }
 
-  const shipping = (orderRow.shipping_info ?? {}) as Record<string, string>;
+  const shipping = (primaryOrder.shipping_info ?? {}) as Record<string, string>;
 
-  // Pobierz kod rabatowy (jeśli był użyty) — by pokazać go w mailu i obsłużyć free_shipping.
+  // Pobierz kod rabatowy z głównego zamówienia.
   let appliedDiscountCode: string | null = null;
   let appliedDiscountType: "percent" | "fixed" | "free_shipping" | null = null;
-  if (orderRow.discount_code_id) {
+  if (primaryOrder.discount_code_id) {
     const { data: dc } = await supabase
       .from("discount_codes")
       .select("code, type")
-      .eq("id", orderRow.discount_code_id)
+      .eq("id", primaryOrder.discount_code_id)
       .maybeSingle();
     if (dc) {
       appliedDiscountCode = (dc as { code: string }).code;
@@ -154,35 +158,27 @@ export async function POST(req: Request) {
     }
   }
 
-  // Poprawne wyliczenie totalGr (po rabacie):
-  //  - rabat percent/fixed: amount - discount + shipping
-  //  - rabat free_shipping: amount + 0 (dostawa gratis, NIE odejmujemy od produktow)
-  //  - bez rabatu: amount + shipping
-  const itemsAmount = orderRow.amount_grosze ?? 0;
+  // Suma wszystkich pozycji z koszyka.
+  const itemsAmount = allOrderRows.reduce((s, o) => s + (o.amount_grosze ?? 0), 0);
   const fullShipping = Number(shipping.shippingPriceGr ?? 0);
-  const rawDiscount = orderRow.discount_grosze ?? 0;
+  const rawDiscount = primaryOrder.discount_grosze ?? 0;
   const freeShipping = appliedDiscountType === "free_shipping";
   const effectiveShipping = freeShipping ? 0 : fullShipping;
-  // Dla free_shipping discount_grosze symbolicznie przechowuje wartosc zaoszczedzonej
-  // dostawy — NIE odejmujemy go od produktow.
   const itemsDiscount = freeShipping ? 0 : rawDiscount;
   const totalGr = Math.max(0, itemsAmount - itemsDiscount) + effectiveShipping;
 
   try {
     await sendOrderConfirmationEmail({
       to,
-      orderId: orderRow.id,
+      orderId: primaryOrder.id,
       customerName: shipping.fullName ?? profile?.full_name ?? "Kliencie",
-      items: [
-        {
-          productId: orderRow.product_id,
-          label: (orderRow.label as string | null) ?? orderRow.product_id,
-          quantity: orderRow.quantity ?? 1,
-          unitPriceGr:
-            (orderRow.amount_grosze ?? 0) / (orderRow.quantity ?? 1),
-          previewUrl: orderRow.preview_url,
-        },
-      ],
+      items: allOrderRows.map((o) => ({
+        productId: o.product_id,
+        label: (o.label as string | null) ?? o.product_id,
+        quantity: o.quantity ?? 1,
+        unitPriceGr: (o.amount_grosze ?? 0) / Math.max(1, o.quantity ?? 1),
+        previewUrl: o.preview_url,
+      })),
       shipping: {
         fullName: shipping.fullName ?? "",
         address: shipping.address ?? "",
@@ -205,15 +201,15 @@ export async function POST(req: Request) {
   // Powiadomienie dla admina
   try {
     await sendAdminNotificationEmail({
-      orderId: orderRow.id,
+      orderId: primaryOrder.id,
       customerName: shipping.fullName ?? profile?.full_name ?? "Klient",
       customerEmail: to ?? "",
       customerPhone: shipping.phone,
       totalGr,
-      items: [{
-        name: (orderRow.label as string | null) ?? orderRow.product_id ?? "",
-        quantity: orderRow.quantity ?? 1,
-      }],
+      items: allOrderRows.map((o) => ({
+        name: (o.label as string | null) ?? o.product_id ?? "",
+        quantity: o.quantity ?? 1,
+      })),
       deliveryMethod: shipping.shippingMethodName ?? "Nieznana",
       shippingAddress: {
         street: shipping.address ?? "",

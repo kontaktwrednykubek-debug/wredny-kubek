@@ -248,5 +248,6 @@ export async function POST(req: Request) {
 
   // UWAGA: email potwierdzający NIE jest wysyłany tutaj — dopiero po
   // potwierdzeniu płatności przez Stripe webhook (checkout.session.completed).
-  return NextResponse.json({ orderId: firstOrderId, count: data?.length ?? 0 });
+  const orderIds = (data ?? []).map((d) => d.id as string);
+  return NextResponse.json({ orderId: firstOrderId, orderIds, count: orderIds.length });
 }
