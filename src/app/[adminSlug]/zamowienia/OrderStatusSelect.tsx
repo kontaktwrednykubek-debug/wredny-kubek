@@ -23,26 +23,33 @@ const colors: Record<string, string> = {
 
 export function OrderStatusSelect({
   id,
+  ids,
   status,
 }: {
   id: string;
+  ids?: string[];
   status: string;
 }) {
   const router = useRouter();
   const [value, setValue] = React.useState(status);
   const [pending, setPending] = React.useState(false);
+  const allIds = ids && ids.length > 0 ? ids : [id];
 
   async function updateStatus(next: string) {
     const prev = value;
     setValue(next);
     setPending(true);
     try {
-      const res = await fetch(`/api/admin/orders/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: next }),
-      });
-      if (!res.ok) {
+      const results = await Promise.all(
+        allIds.map((oid) =>
+          fetch(`/api/admin/orders/${oid}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status: next }),
+          }),
+        ),
+      );
+      if (results.some((r) => !r.ok)) {
         setValue(prev);
         return;
       }

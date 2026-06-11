@@ -20,16 +20,31 @@ export default async function AdminOrdersPage() {
   const { data: rawOrders } = await supabase
     .from("orders")
     .select(
-      "id, user_id, product_id, label, amount_grosze, quantity, status, shipping_info, created_at, preview_url",
+      "id, user_id, group_id, product_id, label, amount_grosze, quantity, status, shipping_info, created_at, preview_url",
     )
     .order("created_at", { ascending: false })
     .limit(200);
 
   const orders = await backfillOrderPreviews(supabase, rawOrders ?? []);
   const list = orders;
-  const paid = list.filter((o) => PAID_STATUSES.includes(o.status));
-  const pending = list.filter((o) => o.status === "PENDING");
-  const paidRevenue = paid.reduce((s, o) => s + (o.amount_grosze ?? 0), 0);
+
+  // Grupuj pozycje z jednego koszyka (wspólny group_id) w jedno zamówienie.
+  type OrderRow = (typeof list)[number] & { group_id?: string | null };
+  const groupMap = new Map<string, OrderRow[]>();
+  for (const o of list as OrderRow[]) {
+    const key = o.group_id ?? o.id;
+    const arr = groupMap.get(key);
+    if (arr) arr.push(o);
+    else groupMap.set(key, [o]);
+  }
+  const groups = Array.from(groupMap.values());
+
+  const paid = groups.filter((g) => PAID_STATUSES.includes(g[0].status));
+  const pending = groups.filter((g) => g[0].status === "PENDING");
+  const paidRevenue = paid.reduce(
+    (s, g) => s + g.reduce((x, o) => x + (o.amount_grosze ?? 0), 0),
+    0,
+  );
   const avgPaid = paid.length ? Math.round(paidRevenue / paid.length) : 0;
 
   return (
@@ -49,7 +64,7 @@ export default async function AdminOrdersPage() {
         <StatCard
           icon={<Package className="h-5 w-5" />}
           label="Wszystkie zamówienia"
-          value={list.length.toString()}
+          value={groups.length.toString()}
         />
         <StatCard
           icon={<Clock className="h-5 w-5 text-amber-500" />}
@@ -69,36 +84,57 @@ export default async function AdminOrdersPage() {
         />
       </div>
 
-      {list.length === 0 ? (
+      {groups.length === 0 ? (
         <p className="text-muted-foreground">Brak zamówień.</p>
       ) : (
         <div className="space-y-3">
-          {list.map((o) => {
-            const ship = (o.shipping_info ?? {}) as Record<
+          {groups.map((group) => {
+            const primary = group[0];
+            const ids = group.map((o) => o.id);
+            const totalGr = group.reduce(
+              (s, o) => s + (o.amount_grosze ?? 0),
+              0,
+            );
+            const ship = (primary.shipping_info ?? {}) as Record<
               string,
               string | undefined
             >;
             return (
               <article
-                key={o.id}
+                key={primary.id}
                 className="rounded-2xl border border-border bg-card p-4"
               >
                 <div className="flex flex-wrap items-start gap-3">
-                  <OrderThumbnail
-                    src={o.preview_url}
-                    alt={o.product_id ?? ""}
-                  />
-                  <div className="min-w-0 flex-1">
+                  <div className="min-w-0 flex-1 space-y-2">
+                    {group.map((o) => (
+                      <div key={o.id} className="flex items-center gap-3">
+                        <OrderThumbnail
+                          src={o.preview_url}
+                          alt={o.product_id ?? ""}
+                        />
+                        <div className="min-w-0">
+                          <p className="font-semibold">
+                            {(o.label as string | null) ?? o.product_id} ×
+                            {o.quantity ?? 1}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatPrice(o.amount_grosze)}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
                     <div className="flex flex-wrap items-baseline gap-x-2">
-                      <p className="font-semibold">
-                        {(o.label as string | null) ?? o.product_id} ×{o.quantity ?? 1}
-                      </p>
                       <code className="font-mono text-xs text-muted-foreground">
-                        #{o.id.slice(0, 8)}
+                        #{primary.id.slice(0, 8)}
                       </code>
+                      {group.length > 1 && (
+                        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+                          {group.length} pozycje
+                        </span>
+                      )}
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      {new Date(o.created_at).toLocaleString("pl-PL")}
+                      {new Date(primary.created_at).toLocaleString("pl-PL")}
                     </p>
                     <p className="mt-1 text-sm">
                       <span className="font-medium">
@@ -128,23 +164,34 @@ export default async function AdminOrdersPage() {
 
                   <div className="text-right">
                     <p className="text-lg font-bold text-primary">
-                      {formatPrice(o.amount_grosze)}
+                      {formatPrice(totalGr)}
                     </p>
                     <div className="mt-1">
-                      <OrderStatusSelect id={o.id} status={o.status} />
+                      <OrderStatusSelect
+                        id={primary.id}
+                        ids={ids}
+                        status={primary.status}
+                      />
                     </div>
                   </div>
                 </div>
 
                 <div className="mt-3 flex items-center justify-between border-t border-border/50 pt-3">
                   <OrderShippingActions
-                    orderId={o.id}
-                    shipping={(o.shipping_info ?? null) as never}
-                    status={o.status}
+                    orderId={primary.id}
+                    shipping={(primary.shipping_info ?? null) as never}
+                    status={primary.status}
                   />
                   <DeleteOrderButton
-                    orderId={o.id}
-                    orderLabel={(o.label as string | null) ?? o.product_id ?? "Zamówienie"}
+                    orderId={primary.id}
+                    orderIds={ids}
+                    orderLabel={
+                      group.length > 1
+                        ? `${(primary.label as string | null) ?? primary.product_id} +${group.length - 1} inne`
+                        : ((primary.label as string | null) ??
+                          primary.product_id ??
+                          "Zamówienie")
+                    }
                   />
                 </div>
               </article>

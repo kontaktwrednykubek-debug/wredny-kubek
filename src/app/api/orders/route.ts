@@ -215,8 +215,13 @@ export async function POST(req: Request) {
     discountGrosze = v.discountGrosze;
   }
 
+  // Wspólny group_id dla wszystkich pozycji z jednego koszyka — panel admina
+  // wyświetla je jako JEDNO zamówienie z wieloma pozycjami.
+  const groupId = crypto.randomUUID();
+
   const rows = items.map((it, idx) => ({
     user_id: user?.id ?? null,
+    group_id: groupId,
     design_id: it.designId,
     product_id: it.productId,
     label: it.label ?? null,

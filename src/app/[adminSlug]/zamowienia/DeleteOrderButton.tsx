@@ -6,25 +6,31 @@ import { useRouter } from "next/navigation";
 
 export function DeleteOrderButton({
   orderId,
+  orderIds,
   orderLabel,
 }: {
   orderId: string;
+  orderIds?: string[];
   orderLabel: string;
 }) {
   const router = useRouter();
   const [open, setOpen] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const allIds = orderIds && orderIds.length > 0 ? orderIds : [orderId];
 
   async function handleDelete() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/admin/orders/${orderId}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
+      const results = await Promise.all(
+        allIds.map((oid) =>
+          fetch(`/api/admin/orders/${oid}`, { method: "DELETE" }),
+        ),
+      );
+      const failed = results.find((r) => !r.ok);
+      if (failed) {
+        const data = await failed.json().catch(() => ({}));
         throw new Error(data.error ?? "Błąd usuwania");
       }
       setOpen(false);
