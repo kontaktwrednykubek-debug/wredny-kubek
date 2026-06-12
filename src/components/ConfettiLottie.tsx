@@ -16,14 +16,21 @@ export function ConfettiLottie() {
         inset: 0,
         pointerEvents: "none",
         zIndex: 9999,
+        overflow: "hidden",
       }}
     >
       <Lottie
         animationData={confettiData}
         loop={false}
         autoplay
+        speed={0.75}
         onComplete={() => setVisible(false)}
-        style={{ width: "100%", height: "100%" }}
+        style={{
+          width: "150%",
+          height: "150%",
+          marginLeft: "-25%",
+          marginTop: "-25%",
+        }}
       />
     </div>
   );
