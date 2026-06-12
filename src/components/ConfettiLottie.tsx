@@ -1,37 +1,87 @@
 "use client";
 
 import * as React from "react";
-import Lottie from "lottie-react";
+import Lottie, { type LottieRefCurrentProps } from "lottie-react";
 import confettiData from "../../public/konfeti.json";
+import thankYouData from "../../public/thank-you-lottie.json";
 
-export function ConfettiLottie() {
-  const [visible, setVisible] = React.useState(true);
-
-  if (!visible) return null;
+function LottieWithSpeed({
+  animationData,
+  onComplete,
+  style,
+}: {
+  animationData: unknown;
+  onComplete: () => void;
+  style?: React.CSSProperties;
+}) {
+  const ref = React.useRef<LottieRefCurrentProps>(null);
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        pointerEvents: "none",
-        zIndex: 9999,
-        overflow: "hidden",
-      }}
-    >
-      <Lottie
-        animationData={confettiData}
-        loop={false}
-        autoplay
-        speed={0.75}
-        onComplete={() => setVisible(false)}
-        style={{
-          width: "150%",
-          height: "150%",
-          marginLeft: "-25%",
-          marginTop: "-25%",
-        }}
-      />
-    </div>
+    <Lottie
+      lottieRef={ref}
+      animationData={animationData}
+      loop={false}
+      autoplay
+      onDOMLoaded={() => ref.current?.setSpeed(0.75)}
+      onComplete={onComplete}
+      style={style}
+    />
+  );
+}
+
+export function ConfettiLottie() {
+  const [confettiVisible, setConfettiVisible] = React.useState(true);
+  const [thankYouVisible, setThankYouVisible] = React.useState(false);
+
+  React.useEffect(() => {
+    const t = setTimeout(() => setThankYouVisible(true), 500);
+    return () => clearTimeout(t);
+  }, []);
+
+  return (
+    <>
+      {confettiVisible && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            pointerEvents: "none",
+            zIndex: 9999,
+            overflow: "hidden",
+          }}
+        >
+          <LottieWithSpeed
+            animationData={confettiData}
+            onComplete={() => setConfettiVisible(false)}
+            style={{
+              width: "150%",
+              height: "150%",
+              marginLeft: "-25%",
+              marginTop: "-25%",
+            }}
+          />
+        </div>
+      )}
+
+      {thankYouVisible && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            pointerEvents: "none",
+            zIndex: 10000,
+          }}
+        >
+          <LottieWithSpeed
+            animationData={thankYouData}
+            onComplete={() => setThankYouVisible(false)}
+            style={{ width: "min(480px, 90vw)", height: "auto" }}
+          />
+        </div>
+      )}
+    </>
   );
 }
