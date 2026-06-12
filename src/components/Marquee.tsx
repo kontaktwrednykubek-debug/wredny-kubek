@@ -1,3 +1,5 @@
+"use client";
+
 export default function Marquee() {
   const texts = [
     { text: "PANIE GORZEJ BYŁO I BRAWO BILI", sep: "teal" },
