@@ -15,6 +15,7 @@ import {
   type CategoryCard,
 } from "@/features/catalog/CategoryCarousel";
 import { BannerSlider } from "@/components/BannerSlider";
+import Marquee from "@/components/Marquee";
 
 export default async function HomePage() {
   const supabase = createSupabaseServerClient();
@@ -208,6 +209,11 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* MARQUEE — ruchomy pasek tekstowy */}
+      <div className="overflow-hidden">
+        <Marquee />
+      </div>
 
       {/* WREDNE HITY — polecane przez admina */}
       {featuredProducts.length > 0 && (
