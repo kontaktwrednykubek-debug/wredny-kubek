@@ -68,17 +68,20 @@ export function ConfettiLottie() {
           style={{
             position: "fixed",
             inset: 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
             pointerEvents: "none",
             zIndex: 10000,
+            overflow: "hidden",
           }}
         >
           <LottieWithSpeed
             animationData={thankYouData}
             onComplete={() => setThankYouVisible(false)}
-            style={{ width: "min(480px, 90vw)", height: "auto" }}
+            style={{
+              width: "150%",
+              height: "150%",
+              marginLeft: "-25%",
+              marginTop: "-25%",
+            }}
           />
         </div>
       )}
