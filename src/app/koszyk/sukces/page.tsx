@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle2, Loader2, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ConfettiLottie } from "@/components/ConfettiLottie";
 
 export default function SukcesPage() {
   return (
@@ -73,6 +74,7 @@ function SukcesContent() {
 
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center gap-6 px-4 text-center">
+      <ConfettiLottie />
       <div className="flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500/10">
         <CheckCircle2 className="h-10 w-10 text-emerald-500" />
       </div>
