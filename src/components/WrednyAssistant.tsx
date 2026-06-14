@@ -94,13 +94,10 @@ export function WrednyAssistant() {
   const { isOpen, close, open } = useAssistantStore();
 
   React.useEffect(() => {
-    const KEY = "wk_assistant_auto_ts";
-    const last = Number(localStorage.getItem(KEY) ?? 0);
-    const ONE_DAY = 24 * 60 * 60 * 1000;
-    if (Date.now() - last < ONE_DAY) return;
+    if (sessionStorage.getItem("wk_advisor_shown")) return;
     const t = setTimeout(() => {
       open();
-      localStorage.setItem(KEY, String(Date.now()));
+      sessionStorage.setItem("wk_advisor_shown", "1");
     }, 20000);
     return () => clearTimeout(t);
   }, [open]);

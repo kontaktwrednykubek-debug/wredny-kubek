@@ -73,8 +73,8 @@ export function BottomNav() {
   }, []);
 
   React.useEffect(() => {
-    const show = setTimeout(() => setShowBubble(true), 120000);
-    const hide = setTimeout(() => setShowBubble(false), 160000);
+    const show = setTimeout(() => setShowBubble(true), 25000);
+    const hide = setTimeout(() => setShowBubble(false), 35000);
     return () => { clearTimeout(show); clearTimeout(hide); };
   }, []);
 
