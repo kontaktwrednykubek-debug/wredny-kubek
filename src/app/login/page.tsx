@@ -6,6 +6,7 @@ import { Loader2, Mail, Lock, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { GoogleLoginButton } from "@/components/GoogleLoginButton";
 
 type Mode = "signin" | "signup";
 
@@ -105,6 +106,14 @@ function LoginInner() {
           </CardTitle>
         </CardHeader>
         <CardContent>
+          <div className="mb-4 space-y-3">
+            <GoogleLoginButton next={next} />
+            <div className="relative flex items-center gap-3">
+              <div className="h-px flex-1 bg-border" />
+              <span className="text-xs text-muted-foreground">lub</span>
+              <div className="h-px flex-1 bg-border" />
+            </div>
+          </div>
           <form onSubmit={onSubmit} className="space-y-3">
             {mode === "signup" && (
               <div className="relative">
