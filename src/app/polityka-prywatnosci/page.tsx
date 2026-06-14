@@ -39,8 +39,9 @@ export default function PolitykaPrywatnosci() {
             1. Kto tu rządzi? (Informacje ogólne)
           </h2>
           <p>
-            Administratorem Twoich danych osobowych jest: <strong>Milena Bujniak</strong>, prowadząca
-            działalność pod firmą <strong>Wredny Kubek — Milena Bujniak</strong>, Świdnik 25, 58-410
+            Administratorem Twoich danych osobowych jest:{" "}
+            <strong>Milena Bujniak</strong>, prowadząca działalność pod firmą{" "}
+            <strong>Wredny Kubek — Milena Bujniak</strong>, Świdnik 25, 58-410
             Marciszów, NIP: <strong>6141615267</strong>.
           </p>
           <p className="mt-2">
@@ -60,7 +61,10 @@ export default function PolitykaPrywatnosci() {
           <ul className="mt-2 list-disc pl-5 space-y-1">
             <li>Realizacji Twojego zamówienia (wysyłka kubka).</li>
             <li>Obsługi płatności.</li>
-            <li>Wysyłania Ci newslettera (tylko z konkretami, zero spamu o niczym).</li>
+            <li>
+              Wysyłania Ci newslettera (tylko z konkretami, zero spamu o
+              niczym).
+            </li>
             <li>Obsługi Twoich komentarzy i opinii.</li>
           </ul>
         </section>
@@ -78,11 +82,13 @@ export default function PolitykaPrywatnosci() {
               <strong>Hosting:</strong> Vercel.com (tam mieszka nasza strona).
             </li>
             <li>
-              <strong>Dostawa:</strong> InPost Sp. z o.o. (oni wsadzają paczkę do Paczkomatu).
+              <strong>Dostawa:</strong> InPost Sp. z o.o. (oni wsadzają paczkę
+              do Paczkomatu).
             </li>
             <li>
-              <strong>Płatności:</strong> Stripe (Stripe Payments Europe, Ltd.) oraz Przelewy24
-              (PayPro S.A.) – to im przekazujesz dane karty lub BLIKa, żeby bezpiecznie zapłacić.
+              <strong>Płatności:</strong> Stripe (Stripe Payments Europe, Ltd.)
+              oraz Przelewy24 (PayPro S.A.) – to im przekazujesz dane karty lub
+              BLIKa, żeby bezpiecznie zapłacić.
             </li>
           </ul>
         </section>
@@ -120,10 +126,10 @@ export default function PolitykaPrywatnosci() {
           <p>
             Nasz serwis używa ciasteczek, żeby strona działała szybko i żebyś
             nie musiał wpisywać wszystkiego od nowa. Twoje ciasteczka mogą też
-            podglądać nasi kumple z Google czy Meta/Facebooka (żebyśmy wiedzieli,
-            jakie wredne kubki pokazać Ci w reklamach). Możesz je wyłączyć w
-            ustawieniach przeglądarki, ale wtedy strona może działać… no, tak
-            sobie.
+            podglądać nasi kumple z Google czy Meta/Facebooka (żebyśmy
+            wiedzieli, jakie wredne kubki pokazać Ci w reklamach). Możesz je
+            wyłączyć w ustawieniach przeglądarki, ale wtedy strona może działać…
+            no, tak sobie.
           </p>
         </section>
       </div>
@@ -132,8 +138,8 @@ export default function PolitykaPrywatnosci() {
       <div className="mt-12 rounded-2xl border border-border bg-muted/40 p-5">
         <p className="text-sm text-muted-foreground">
           Jesteś ciekaw pełnej, mniej humorystycznej wersji?{" "}
-          <span className="text-foreground font-medium">Kliknij poniżej</span>{" "}
-          i przygotuj kawę — będzie trochę czytania.
+          <span className="text-foreground font-medium">Kliknij poniżej</span> i
+          przygotuj kawę — będzie trochę czytania.
         </p>
         <FullPrivacyPolicy />
       </div>

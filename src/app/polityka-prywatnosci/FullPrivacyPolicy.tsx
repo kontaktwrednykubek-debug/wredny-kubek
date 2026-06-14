@@ -34,13 +34,14 @@ export function FullPrivacyPolicy() {
             </h3>
             <p>
               Niniejsza polityka dotyczy Serwisu www, funkcjonującego pod
-              adresem url: <strong className="text-foreground">wrednykubek.pl</strong>
+              adresem url:{" "}
+              <strong className="text-foreground">wrednykubek.pl</strong>
             </p>
             <p className="mt-1">
               Operatorem serwisu oraz Administratorem danych osobowych jest:{" "}
               <strong className="text-foreground">
-                Milena Bujniak, prowadząca działalność pod firmą Wredny Kubek — Milena Bujniak,
-                Świdnik 25, 58-410 Marciszów, NIP: 6141615267
+                Milena Bujniak, prowadząca działalność pod firmą Wredny Kubek —
+                Milena Bujniak, Świdnik 25, 58-410 Marciszów, NIP: 6141615267
               </strong>
             </p>
             <p className="mt-1">
@@ -53,13 +54,13 @@ export function FullPrivacyPolicy() {
               </a>
             </p>
             <p className="mt-2">
-              Operator jest Administratorem Twoich danych osobowych w odniesieniu
-              do danych podanych dobrowolnie w Serwisie.
+              Operator jest Administratorem Twoich danych osobowych w
+              odniesieniu do danych podanych dobrowolnie w Serwisie.
             </p>
             <p className="mt-2">
-              Serwis wykorzystuje dane osobowe w następujących celach: realizacja
-              zamówień, obsługa płatności, prowadzenie newslettera, prowadzenie
-              systemu komentarzy i opinii.
+              Serwis wykorzystuje dane osobowe w następujących celach:
+              realizacja zamówień, obsługa płatności, prowadzenie newslettera,
+              prowadzenie systemu komentarzy i opinii.
             </p>
             <p className="mt-2">
               Serwis realizuje funkcje pozyskiwania informacji o użytkownikach i
@@ -78,18 +79,19 @@ export function FullPrivacyPolicy() {
             </p>
             <ul className="mt-1 list-disc pl-5 space-y-0.5">
               <li>
-                <strong>Vercel.com</strong> – firma hostingowa, na której serwerach
-                działa Serwis.
+                <strong>Vercel.com</strong> – firma hostingowa, na której
+                serwerach działa Serwis.
               </li>
               <li>
                 <strong>InPost Sp. z o.o.</strong> – realizacja dostaw zamówień.
               </li>
               <li>
-                <strong>Stripe (Stripe Payments Europe, Ltd.)</strong> – obsługa płatności
-                kartą i BLIKiem.
+                <strong>Stripe (Stripe Payments Europe, Ltd.)</strong> – obsługa
+                płatności kartą i BLIKiem.
               </li>
               <li>
-                <strong>Przelewy24 (PayPro S.A.)</strong> – alternatywny operator płatności.
+                <strong>Przelewy24 (PayPro S.A.)</strong> – alternatywny
+                operator płatności.
               </li>
             </ul>
             <p className="mt-2">
@@ -106,8 +108,9 @@ export function FullPrivacyPolicy() {
             <p>
               Miejsca logowania i wprowadzania danych osobowych są chronione w
               warstwie transmisji (certyfikat SSL). Hasła użytkowników są
-              przechowywane w postaci hashowanej. Operator regularnie aktualizuje
-              oprogramowanie wykorzystywane do przetwarzania danych osobowych.
+              przechowywane w postaci hashowanej. Operator regularnie
+              aktualizuje oprogramowanie wykorzystywane do przetwarzania danych
+              osobowych.
             </p>
           </section>
 
@@ -116,10 +119,11 @@ export function FullPrivacyPolicy() {
               4. Hosting
             </h3>
             <p>
-              Serwis jest hostowany na serwerze operatora: <strong className="text-foreground">Vercel.com</strong>.
-              Firma hostingowa prowadzi logi na poziomie serwera, w tym: adresy
-              URL żądanych zasobów, czas nadejścia i wysłania odpowiedzi, adres
-              IP, informacje o przeglądarce użytkownika oraz informacje
+              Serwis jest hostowany na serwerze operatora:{" "}
+              <strong className="text-foreground">Vercel.com</strong>. Firma
+              hostingowa prowadzi logi na poziomie serwera, w tym: adresy URL
+              żądanych zasobów, czas nadejścia i wysłania odpowiedzi, adres IP,
+              informacje o przeglądarce użytkownika oraz informacje
               diagnostyczne.
             </p>
           </section>
@@ -129,12 +133,14 @@ export function FullPrivacyPolicy() {
               5. Twoje prawa i dodatkowe informacje
             </h3>
             <p>
-              Twoje dane osobowe przetwarzane są przez Administratora nie dłużej,
-              niż jest to konieczne do wykonania związanych z nimi czynności.
-              W odniesieniu do danych marketingowych dane nie będą przetwarzane
-              dłużej niż przez 3 lata.
+              Twoje dane osobowe przetwarzane są przez Administratora nie
+              dłużej, niż jest to konieczne do wykonania związanych z nimi
+              czynności. W odniesieniu do danych marketingowych dane nie będą
+              przetwarzane dłużej niż przez 3 lata.
             </p>
-            <p className="mt-2">Przysługuje Ci prawo żądania od Administratora:</p>
+            <p className="mt-2">
+              Przysługuje Ci prawo żądania od Administratora:
+            </p>
             <ul className="mt-1 list-disc pl-5 space-y-0.5">
               <li>dostępu do danych osobowych Ciebie dotyczących,</li>
               <li>ich sprostowania,</li>
@@ -144,15 +150,15 @@ export function FullPrivacyPolicy() {
             </ul>
             <p className="mt-2">
               Na działania Administratora przysługuje skarga do Prezesa Urzędu
-              Ochrony Danych Osobowych, ul. Stawki 2, 00-193 Warszawa.
-              Podanie danych osobowych jest dobrowolne, lecz niezbędne do obsługi
+              Ochrony Danych Osobowych, ul. Stawki 2, 00-193 Warszawa. Podanie
+              danych osobowych jest dobrowolne, lecz niezbędne do obsługi
               Serwisu (w szczególności do realizacji zamówień i płatności).
             </p>
             <p className="mt-2">
               Dane osobowe mogą być przekazywane do krajów trzecich w rozumieniu
-              przepisów o ochronie danych osobowych (poza teren Unii Europejskiej),
-              w szczególności w związku z wykorzystaniem usług Stripe oraz
-              infrastruktury Vercel.
+              przepisów o ochronie danych osobowych (poza teren Unii
+              Europejskiej), w szczególności w związku z wykorzystaniem usług
+              Stripe oraz infrastruktury Vercel.
             </p>
           </section>
 
@@ -162,10 +168,10 @@ export function FullPrivacyPolicy() {
             </h3>
             <p>
               Serwis zbiera informacje podane dobrowolnie przez użytkownika.
-              Serwis może zapisać informacje o parametrach połączenia (oznaczenie
-              czasu, adres IP). Dane podane w formularzu są przetwarzane w celu
-              wynikającym z funkcji konkretnego formularza (np. składanie
-              zamówienia, kontakt).
+              Serwis może zapisać informacje o parametrach połączenia
+              (oznaczenie czasu, adres IP). Dane podane w formularzu są
+              przetwarzane w celu wynikającym z funkcji konkretnego formularza
+              (np. składanie zamówienia, kontakt).
             </p>
           </section>
 
@@ -187,14 +193,17 @@ export function FullPrivacyPolicy() {
             <p>
               Serwis korzysta z plików cookies. Pliki cookies stanowią dane
               informatyczne przechowywane w urządzeniu końcowym Użytkownika.
-              Stosowane są dwa rodzaje: <strong className="text-foreground">sesyjne</strong> (usuwane po
-              zamknięciu przeglądarki) oraz <strong className="text-foreground">stałe</strong> (przechowywane
+              Stosowane są dwa rodzaje:{" "}
+              <strong className="text-foreground">sesyjne</strong> (usuwane po
+              zamknięciu przeglądarki) oraz{" "}
+              <strong className="text-foreground">stałe</strong> (przechowywane
               przez czas określony w parametrach lub do usunięcia przez
               Użytkownika).
             </p>
             <p className="mt-2">
               Pliki cookies mogą być zamieszczane przez współpracujące podmioty,
-              w szczególności: Google LLC (USA), Meta Platforms, Inc. (Facebook, USA).
+              w szczególności: Google LLC (USA), Meta Platforms, Inc. (Facebook,
+              USA).
             </p>
           </section>
 
@@ -204,11 +213,11 @@ export function FullPrivacyPolicy() {
             </h3>
             <p>
               Użytkownik może zmienić ustawienia przeglądarki dotyczące plików
-              cookies. Wyłączenie obsługi plików cookies niezbędnych dla procesów
-              uwierzytelniania może utrudnić korzystanie ze stron www.
-              Zarządzanie cookies możliwe jest w ustawieniach przeglądarek: Edge,
-              Chrome, Safari, Firefox, Opera oraz urządzeń mobilnych (Android,
-              iOS, Windows Phone).
+              cookies. Wyłączenie obsługi plików cookies niezbędnych dla
+              procesów uwierzytelniania może utrudnić korzystanie ze stron www.
+              Zarządzanie cookies możliwe jest w ustawieniach przeglądarek:
+              Edge, Chrome, Safari, Firefox, Opera oraz urządzeń mobilnych
+              (Android, iOS, Windows Phone).
             </p>
           </section>
         </div>
