@@ -39,35 +39,57 @@ export default function PolitykaPrywatnosci() {
             1. Kto tu rządzi? (Informacje ogólne)
           </h2>
           <p>
-            Administratorem Twoich danych jest <strong>Milena Bujniak</strong>{" "}
-            (Świdnik 25, 58-410 Marciszów). Jeśli masz sprawę, pisz na:{" "}
+            Administratorem Twoich danych osobowych jest: <strong>Milena Bujniak</strong>, prowadząca
+            działalność pod firmą <strong>Wredny Kubek — Milena Bujniak</strong>, Świdnik 25, 58-410
+            Marciszów, NIP: <strong>6141615267</strong>.
+          </p>
+          <p className="mt-2">
+            Jeśli masz sprawę, pisz na nasz oficjalny adres:{" "}
             <a
-              href="mailto:wrednykubek@gmail.com"
+              href="mailto:czegoznowu@wrednykubek.pl"
               className="text-primary underline underline-offset-4"
             >
-              wrednykubek@gmail.com
+              czegoznowu@wrednykubek.pl
             </a>
             .
           </p>
           <p className="mt-2">
-            Twoje dane zbieramy tylko wtedy, gdy nam je dobrowolnie podasz (np.
-            żebyśmy wiedzieli, gdzie wysłać Twój kubek z Avadą). Wykorzystujemy
-            je do:
+            Twoje dane zbieramy tylko wtedy, gdy nam je dobrowolnie podasz.
+            Wykorzystujemy je do:
+          </p>
+          <ul className="mt-2 list-disc pl-5 space-y-1">
+            <li>Realizacji Twojego zamówienia (wysyłka kubka).</li>
+            <li>Obsługi płatności.</li>
+            <li>Wysyłania Ci newslettera (tylko z konkretami, zero spamu o niczym).</li>
+            <li>Obsługi Twoich komentarzy i opinii.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2 className="text-xl font-bold mb-3">
+            2. Komu przekazujemy dane? (Bo sami kubków nie nosimy)
+          </h2>
+          <p>
+            Żeby Twój kubek dojechał, a kasa się zgadzała, współpracujemy z
+            zaufanymi partnerami:
           </p>
           <ul className="mt-2 list-disc pl-5 space-y-1">
             <li>
-              Wysyłania Ci newslettera (tylko z konkretami, zero spamu o
-              niczym).
+              <strong>Hosting:</strong> Vercel.com (tam mieszka nasza strona).
             </li>
             <li>
-              Obsługi Twoich komentarzy (żebyś mógł wyrazić swoje zdanie).
+              <strong>Dostawa:</strong> InPost Sp. z o.o. (oni wsadzają paczkę do Paczkomatu).
+            </li>
+            <li>
+              <strong>Płatności:</strong> Stripe (Stripe Payments Europe, Ltd.) oraz Przelewy24
+              (PayPro S.A.) – to im przekazujesz dane karty lub BLIKa, żeby bezpiecznie zapłacić.
             </li>
           </ul>
         </section>
 
         <section>
           <h2 className="text-xl font-bold mb-3">
-            2. Twoje hasło jest bezpieczniejsze niż Ty w poniedziałek rano
+            3. Twoje hasło jest bezpieczniejsze niż Ty w poniedziałek rano
           </h2>
           <p>
             Stosujemy certyfikat SSL, co oznacza, że Twoje dane są szyfrowane,
@@ -79,37 +101,16 @@ export default function PolitykaPrywatnosci() {
 
         <section>
           <h2 className="text-xl font-bold mb-3">
-            3. Hosting (Gdzie mieszkają Twoje dane?)
-          </h2>
-          <p>
-            Nasza strona mieszka na serwerach{" "}
-            <strong>Vercel.com</strong>. Jak każdy porządny gospodarz, serwer
-            zapisuje logi (adres IP, czas zapytania, info o przeglądarce). Robi
-            to po to, żeby strona działała szybko i bezawaryjnie, a nie żeby Cię
-            śledzić, kiedy jesz płatki.
-          </p>
-        </section>
-
-        <section>
-          <h2 className="text-xl font-bold mb-3">
             4. Twoje prawa (Masz głos!)
           </h2>
-          <p>Nie jesteśmy dyktaturą. Masz prawo do:</p>
-          <ul className="mt-2 list-disc pl-5 space-y-1">
-            <li>Wglądu w swoje dane (zobacz, co o Tobie wiemy).</li>
-            <li>
-              Poprawienia ich (jeśli np. zmieniłeś adres na taki, gdzie nie ma
-              cyrku).
-            </li>
-            <li>
-              Usunięcia ich (zapomnimy o Tobie szybciej niż o postanowieniach
-              noworocznych).
-            </li>
-            <li>
-              Złożenia skargi do Prezesa UODO (ale mamy nadzieję, że dogadamy
-              się przy kawie).
-            </li>
-          </ul>
+          <p>
+            Nie jesteśmy dyktaturą. W każdej chwili masz prawo do: wglądu w
+            swoje dane, ich sprostowania, ograniczenia przetwarzania,
+            przeniesienia oraz całkowitego usunięcia (zapomnimy o Tobie szybciej
+            niż o postanowieniach noworocznych). Masz też prawo złożyć skargę do
+            Prezesa UODO (ul. Stawki 2, 00-193 Warszawa), ale mamy nadzieję, że
+            dogadamy się przy kawie.
+          </p>
         </section>
 
         <section>
@@ -117,34 +118,12 @@ export default function PolitykaPrywatnosci() {
             5. Ciasteczka (Cookies) – Te, których nie zjesz
           </h2>
           <p>
-            Nasz serwis używa ciasteczek, żebyś nie musiał się logować co pięć
-            sekund. Są dwa rodzaje:
-          </p>
-          <ul className="mt-2 list-disc pl-5 space-y-1">
-            <li>
-              <strong>Sesyjne:</strong> Znikają, gdy zamkniesz przeglądarkę.
-            </li>
-            <li>
-              <strong>Stałe:</strong> Zostają na dłużej, żebyśmy Cię rozpoznali,
-              jak wrócisz po kolejny kubek.
-            </li>
-          </ul>
-          <p className="mt-2">
-            Możesz je wyłączyć w ustawieniach przeglądarki, ale wtedy strona
-            może działać… no, tak sobie. Twoje ciasteczka mogą też podglądać
-            nasi kumple z Google czy Facebooka (żebyśmy wiedzieli, jakie kubki
-            pokazać Ci w reklamach).
-          </p>
-        </section>
-
-        <section>
-          <h2 className="text-xl font-bold mb-3">
-            6. Formularze (Dajesz nam info, my dajemy kubek)
-          </h2>
-          <p>
-            Jeśli wypełniasz formularz, robisz to dobrowolnie. My te dane
-            szanujemy i używamy ich tylko do tego, do czego służy dany formularz
-            (np. do kontaktu z Tobą).
+            Nasz serwis używa ciasteczek, żeby strona działała szybko i żebyś
+            nie musiał wpisywać wszystkiego od nowa. Twoje ciasteczka mogą też
+            podglądać nasi kumple z Google czy Meta/Facebooka (żebyśmy wiedzieli,
+            jakie wredne kubki pokazać Ci w reklamach). Możesz je wyłączyć w
+            ustawieniach przeglądarki, ale wtedy strona może działać… no, tak
+            sobie.
           </p>
         </section>
       </div>

@@ -39,16 +39,17 @@ export function FullPrivacyPolicy() {
             <p className="mt-1">
               Operatorem serwisu oraz Administratorem danych osobowych jest:{" "}
               <strong className="text-foreground">
-                Milena Bujniak, Świdnik 25, 58-410 Marciszów
+                Milena Bujniak, prowadząca działalność pod firmą Wredny Kubek — Milena Bujniak,
+                Świdnik 25, 58-410 Marciszów, NIP: 6141615267
               </strong>
             </p>
             <p className="mt-1">
               Adres kontaktowy poczty elektronicznej operatora:{" "}
               <a
-                href="mailto:wrednykubek@gmail.com"
+                href="mailto:czegoznowu@wrednykubek.pl"
                 className="text-primary underline underline-offset-4"
               >
-                wrednykubek@gmail.com
+                czegoznowu@wrednykubek.pl
               </a>
             </p>
             <p className="mt-2">
@@ -56,8 +57,9 @@ export function FullPrivacyPolicy() {
               do danych podanych dobrowolnie w Serwisie.
             </p>
             <p className="mt-2">
-              Serwis wykorzystuje dane osobowe w następujących celach: prowadzenie
-              newslettera, prowadzenie systemu komentarzy.
+              Serwis wykorzystuje dane osobowe w następujących celach: realizacja
+              zamówień, obsługa płatności, prowadzenie newslettera, prowadzenie
+              systemu komentarzy i opinii.
             </p>
             <p className="mt-2">
               Serwis realizuje funkcje pozyskiwania informacji o użytkownikach i
@@ -68,7 +70,38 @@ export function FullPrivacyPolicy() {
 
           <section>
             <h3 className="mb-2 text-base font-semibold text-foreground">
-              2. Wybrane metody ochrony danych stosowane przez Operatora
+              2. Odbiorcy danych osobowych
+            </h3>
+            <p>
+              W celu realizacji usług, dane osobowe mogą być przekazywane
+              zaufanym partnerom:
+            </p>
+            <ul className="mt-1 list-disc pl-5 space-y-0.5">
+              <li>
+                <strong>Vercel.com</strong> – firma hostingowa, na której serwerach
+                działa Serwis.
+              </li>
+              <li>
+                <strong>InPost Sp. z o.o.</strong> – realizacja dostaw zamówień.
+              </li>
+              <li>
+                <strong>Stripe (Stripe Payments Europe, Ltd.)</strong> – obsługa płatności
+                kartą i BLIKiem.
+              </li>
+              <li>
+                <strong>Przelewy24 (PayPro S.A.)</strong> – alternatywny operator płatności.
+              </li>
+            </ul>
+            <p className="mt-2">
+              Partnerzy płatnościowi przetwarzają dane płatności (numer karty,
+              dane BLIK) bezpośrednio we własnych systemach. Operator nie
+              przechowuje pełnych danych kart płatniczych.
+            </p>
+          </section>
+
+          <section>
+            <h3 className="mb-2 text-base font-semibold text-foreground">
+              3. Metody ochrony danych
             </h3>
             <p>
               Miejsca logowania i wprowadzania danych osobowych są chronione w
@@ -80,7 +113,7 @@ export function FullPrivacyPolicy() {
 
           <section>
             <h3 className="mb-2 text-base font-semibold text-foreground">
-              3. Hosting
+              4. Hosting
             </h3>
             <p>
               Serwis jest hostowany na serwerze operatora: <strong className="text-foreground">Vercel.com</strong>.
@@ -93,7 +126,7 @@ export function FullPrivacyPolicy() {
 
           <section>
             <h3 className="mb-2 text-base font-semibold text-foreground">
-              4. Twoje prawa i dodatkowe informacje o sposobie wykorzystania danych
+              5. Twoje prawa i dodatkowe informacje
             </h3>
             <p>
               Twoje dane osobowe przetwarzane są przez Administratora nie dłużej,
@@ -113,34 +146,37 @@ export function FullPrivacyPolicy() {
               Na działania Administratora przysługuje skarga do Prezesa Urzędu
               Ochrony Danych Osobowych, ul. Stawki 2, 00-193 Warszawa.
               Podanie danych osobowych jest dobrowolne, lecz niezbędne do obsługi
-              Serwisu.
+              Serwisu (w szczególności do realizacji zamówień i płatności).
             </p>
             <p className="mt-2">
-              Dane osobowe są przekazywane do krajów trzecich w rozumieniu
-              przepisów o ochronie danych osobowych (poza teren Unii Europejskiej).
+              Dane osobowe mogą być przekazywane do krajów trzecich w rozumieniu
+              przepisów o ochronie danych osobowych (poza teren Unii Europejskiej),
+              w szczególności w związku z wykorzystaniem usług Stripe oraz
+              infrastruktury Vercel.
             </p>
           </section>
 
           <section>
             <h3 className="mb-2 text-base font-semibold text-foreground">
-              5. Informacje w formularzach
+              6. Informacje w formularzach
             </h3>
             <p>
               Serwis zbiera informacje podane dobrowolnie przez użytkownika.
               Serwis może zapisać informacje o parametrach połączenia (oznaczenie
               czasu, adres IP). Dane podane w formularzu są przetwarzane w celu
-              wynikającym z funkcji konkretnego formularza.
+              wynikającym z funkcji konkretnego formularza (np. składanie
+              zamówienia, kontakt).
             </p>
           </section>
 
           <section>
             <h3 className="mb-2 text-base font-semibold text-foreground">
-              6. Logi Administratora
+              7. Logi Administratora
             </h3>
             <p>
               Informacje o zachowaniu użytkowników w serwisie mogą podlegać
               logowaniu. Dane te są wykorzystywane w celu administrowania
-              serwisem.
+              serwisem oraz rozwiązywania problemów technicznych.
             </p>
           </section>
 
@@ -158,8 +194,7 @@ export function FullPrivacyPolicy() {
             </p>
             <p className="mt-2">
               Pliki cookies mogą być zamieszczane przez współpracujące podmioty,
-              w szczególności: Google (Google Inc., USA), Facebook (Facebook Inc.,
-              USA), Twitter (Twitter Inc., USA).
+              w szczególności: Google LLC (USA), Meta Platforms, Inc. (Facebook, USA).
             </p>
           </section>
 
@@ -174,10 +209,6 @@ export function FullPrivacyPolicy() {
               Zarządzanie cookies możliwe jest w ustawieniach przeglądarek: Edge,
               Chrome, Safari, Firefox, Opera oraz urządzeń mobilnych (Android,
               iOS, Windows Phone).
-            </p>
-            <p className="mt-3 text-xs">
-              Niniejszy wzór polityki został wygenerowany bezpłatnie w oparciu o
-              przepisy prawa obowiązujące na dzień 2018-08-14.
             </p>
           </section>
         </div>
