@@ -7,6 +7,15 @@ import { useAssistantStore } from "@/features/assistant/useAssistantStore";
 export function FABWidget() {
   const open = useAssistantStore((s) => s.open);
 
+  React.useEffect(() => {
+    if (sessionStorage.getItem("assistant_auto_shown")) return;
+    const t = setTimeout(() => {
+      open();
+      sessionStorage.setItem("assistant_auto_shown", "1");
+    }, 20000);
+    return () => clearTimeout(t);
+  }, [open]);
+
   return (
     <button
       onClick={open}
