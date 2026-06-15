@@ -274,7 +274,15 @@ export function CheckoutClient({
 
       // Czyścimy koszyk PRZED redirectem — zamówienie jest już w bazie jako PENDING
       clear();
-      window.location.href = url;
+
+      // Safari na iOS blokuje window.location.href po wielu await (traci kontekst
+      // gestu użytkownika). Form submit jest zawsze dozwolony przez Safari.
+      const stripeForm = document.createElement("form");
+      stripeForm.method = "GET";
+      stripeForm.action = url;
+      stripeForm.style.display = "none";
+      document.body.appendChild(stripeForm);
+      stripeForm.submit();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Błąd zamówienia");
     } finally {

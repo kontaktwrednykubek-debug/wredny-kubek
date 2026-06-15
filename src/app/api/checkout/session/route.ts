@@ -100,7 +100,20 @@ export async function POST(req: Request) {
   const freeShipping = discountCodeRow?.type === "free_shipping";
 
   // Buduj line_items dla WSZYSTKICH zamówień z koszyka.
-  const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = allOrders.map((o) => {
+  // Pozycje gratis (amount_grosze = 0) pomijamy w Stripe — są w bazie do produkcji,
+  // ale nie trafiają jako line_item (Stripe nie akceptuje unit_amount: 0 w PLN).
+  const paidOrders = allOrders.filter((o) => (o.amount_grosze ?? 0) > 0);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _gratisOrders = allOrders.filter((o) => (o.amount_grosze ?? 0) === 0);
+
+  if (paidOrders.length === 0) {
+    return NextResponse.json(
+      { error: "Brak płatnych pozycji w zamówieniu." },
+      { status: 400 },
+    );
+  }
+
+  const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = paidOrders.map((o) => {
     const unitPriceGr = (o.amount_grosze ?? 0) / Math.max(1, o.quantity ?? 1);
     const previewUrl = o.preview_url ?? null;
     const validImage =
@@ -119,6 +132,9 @@ export async function POST(req: Request) {
       },
     };
   });
+
+  // gratisOrders są zapisane w bazie (do produkcji) ale nie trafiają do Stripe —
+  // klient widzi je w mailu potwierdzającym i w panelu zamówień.
 
   // Dostawa jako osobna pozycja (raz, na całe zamówienie).
   if (shippingPriceGr > 0 && !freeShipping) {
