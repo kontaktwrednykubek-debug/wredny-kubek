@@ -52,43 +52,31 @@ function syncGratis(items: CartItem[], promo: Promotion | null): CartItem[] {
 
   if (!promo || !promo.active) return paid;
 
-  // Grupuj płatne pozycje wg klucza produktu
-  const groups = new Map<string, CartItem[]>();
-  for (const item of paid) {
-    const key = [
-      item.productId,
-      item.designId ?? "",
-      item.variant?.color ?? "",
-      item.variant?.size ?? "",
-    ].join("|");
-    const g = groups.get(key) ?? [];
-    g.push(item);
-    groups.set(key, g);
-  }
+  // Liczymy ŁĄCZNĄ ilość wszystkich płatnych sztuk (nie per-produkt)
+  const totalQty = paid.reduce((s, i) => s + i.quantity, 0);
+  const gratisCount = Math.floor(totalQty / promo.buy_qty) * promo.get_qty;
 
-  const gratisToAdd: CartItem[] = [];
+  if (gratisCount <= 0) return paid;
 
-  for (const [, groupItems] of groups) {
-    const totalQty = groupItems.reduce((s, i) => s + i.quantity, 0);
-    const gratisCount = Math.floor(totalQty / promo.buy_qty) * promo.get_qty;
-    if (gratisCount <= 0) continue;
+  // Gratis = najtańszy produkt z koszyka (lub pierwszy jeśli ceny równe)
+  const cheapest = paid.reduce((min, i) =>
+    i.unitPriceGr < min.unitPriceGr ? i : min,
+  );
 
-    const template = groupItems[0];
-    gratisToAdd.push({
-      id: makeId(),
-      designId: template.designId,
-      productId: template.productId,
-      quantity: gratisCount,
-      unitPriceGr: 0,
-      previewUrl: template.previewUrl,
-      label: template.label,
-      variant: template.variant,
-      isGratis: true,
-      promoId: promo.id,
-    });
-  }
+  const gratisItem: CartItem = {
+    id: makeId(),
+    designId: cheapest.designId,
+    productId: cheapest.productId,
+    quantity: gratisCount,
+    unitPriceGr: 0,
+    previewUrl: cheapest.previewUrl,
+    label: cheapest.label,
+    variant: cheapest.variant,
+    isGratis: true,
+    promoId: promo.id,
+  };
 
-  return [...paid, ...gratisToAdd];
+  return [...paid, gratisItem];
 }
 
 /** Pobiera aktywną promocję ze store (działa poza hookami React) */

@@ -78,53 +78,24 @@ export function CartClient() {
     return stockMap[key] ?? 999;
   };
 
-  // Progress bar: dla każdej grupy płatnych itemów oblicz jak blisko do progu
+  // JEDEN łączny progress bar dla całego koszyka
   const promoProgress = React.useMemo(() => {
     if (!promo?.active) return null;
 
-    // Grupuj płatne itemy
-    const groups = new Map<string, CartItem[]>();
-    for (const item of items.filter((i) => !i.isGratis)) {
-      const key = [
-        item.productId,
-        item.designId ?? "",
-        item.variant?.color ?? "",
-        item.variant?.size ?? "",
-      ].join("|");
-      const g = groups.get(key) ?? [];
-      g.push(item);
-      groups.set(key, g);
-    }
+    const totalQty = items
+      .filter((i) => !i.isGratis)
+      .reduce((s, i) => s + i.quantity, 0);
 
-    const results: Array<{
-      label: string;
-      currentQty: number;
-      neededQty: number;
-      nextThreshold: number;
-      progressPct: number;
-    }> = [];
+    const completedSets = Math.floor(totalQty / promo.buy_qty);
+    const nextThreshold = (completedSets + 1) * promo.buy_qty;
+    const inCurrentSet = totalQty - completedSets * promo.buy_qty;
+    const needed = nextThreshold - totalQty;
+    const progressPct = Math.round((inCurrentSet / promo.buy_qty) * 100);
 
-    for (const [, groupItems] of groups) {
-      const totalQty = groupItems.reduce((s, i) => s + i.quantity, 0);
-      const completedSets = Math.floor(totalQty / promo.buy_qty);
-      const nextThreshold = (completedSets + 1) * promo.buy_qty;
-      const inCurrentSet = totalQty - completedSets * promo.buy_qty;
-      const progressPct = Math.round((inCurrentSet / promo.buy_qty) * 100);
-      const needed = nextThreshold - totalQty;
+    // Pokaż tylko gdy brakuje produktów do kolejnego progu (nie gdy już osiągnięty)
+    if (needed <= 0 || needed >= promo.buy_qty) return null;
 
-      // Pokaż pasek tylko gdy brakuje < buy_qty sztuk do progu
-      if (needed > 0 && needed < promo.buy_qty) {
-        results.push({
-          label: groupItems[0].label,
-          currentQty: totalQty,
-          neededQty: needed,
-          nextThreshold,
-          progressPct,
-        });
-      }
-    }
-
-    return results.length > 0 ? results : null;
+    return { totalQty, needed, nextThreshold, progressPct };
   }, [items, promo]);
 
   return (
@@ -167,41 +138,32 @@ export function CartClient() {
             </div>
           )}
 
-          {/* Progress bar — "dobierz jeszcze X" */}
-          {promoProgress?.map((p) => (
-            <div
-              key={p.label}
-              className="rounded-2xl border border-emerald-500/30 bg-emerald-50 p-4 dark:bg-emerald-950/20"
-            >
+          {/* JEDEN łączny progress bar */}
+          {promoProgress && (
+            <div className="rounded-2xl border border-emerald-500/30 bg-emerald-50 p-4 dark:bg-emerald-950/20">
               <div className="flex items-center justify-between text-sm font-medium text-emerald-700 dark:text-emerald-300">
                 <span className="flex items-center gap-2">
-                  <Gift className="h-4 w-4" />
+                  <Gift className="h-4 w-4 shrink-0" />
                   Dobierz jeszcze{" "}
-                  <strong>
-                    {p.neededQty} {p.neededQty === 1 ? "szt." : "szt."}
-                  </strong>{" "}
-                  i{" "}
-                  {promo!.get_qty === 1 ? "dostaniesz" : `dostaniesz ${promo!.get_qty}`}{" "}
-                  <strong>
-                    {promo!.get_qty === 1 ? "1 sztukę" : `${promo!.get_qty} sztuki`} gratis!
-                  </strong>
+                  <strong>{promoProgress.needed} szt.</strong>
+                  {" "}i dostaniesz{" "}
+                  <strong>{promo!.get_qty === 1 ? "1 sztukę" : `${promo!.get_qty} sztuki`} gratis!</strong>
                 </span>
-                <Link href="/sklep" className="flex items-center gap-1 text-xs hover:underline">
+                <Link href="/sklep" className="flex shrink-0 items-center gap-1 text-xs hover:underline">
                   Do sklepu <ChevronRight className="h-3 w-3" />
                 </Link>
               </div>
-              {/* Pasek postępu */}
               <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-emerald-200 dark:bg-emerald-900">
                 <div
                   className="h-full rounded-full bg-emerald-500 transition-all duration-500"
-                  style={{ width: `${p.progressPct}%` }}
+                  style={{ width: `${promoProgress.progressPct}%` }}
                 />
               </div>
               <p className="mt-1.5 text-right text-xs text-emerald-600/70 dark:text-emerald-400/70">
-                {p.currentQty} / {p.nextThreshold} szt.
+                {promoProgress.totalQty} / {promoProgress.nextThreshold} szt.
               </p>
             </div>
-          ))}
+          )}
 
           {items.map((item) => {
             const isGratis = !!item.isGratis;
