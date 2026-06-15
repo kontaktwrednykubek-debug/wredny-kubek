@@ -96,8 +96,8 @@ export function TikTokSection() {
                 onClick={() => setActive(t)}
                 className="group relative flex w-[75%] shrink-0 snap-start flex-col overflow-hidden rounded-2xl border border-border bg-card text-left transition hover:border-primary hover:shadow-lg sm:w-[45%] lg:w-[31%] xl:w-[23%]"
               >
-                {/* TikTok = pionowy format 9:16 */}
-                <div className="relative aspect-[9/16] overflow-hidden bg-muted">
+                {/* Kafelek kwadratowy — jak w pozostałych karuzelach (szeroki, niski) */}
+                <div className="relative aspect-square overflow-hidden bg-muted">
                   {t.thumbnailUrl ? (
                     <Image
                       src={t.thumbnailUrl}
@@ -160,13 +160,13 @@ function TikTokModal({ item, onClose }: { item: TikTokItem; onClose: () => void 
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-0 backdrop-blur-sm sm:p-4"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-0 backdrop-blur-sm sm:p-3"
       role="dialog"
       aria-modal="true"
       onClick={onClose}
     >
       <div
-        className="relative flex h-full w-full flex-col overflow-hidden bg-card shadow-2xl sm:h-[90vh] sm:w-auto sm:max-w-[min(450px,95vw)] sm:rounded-3xl"
+        className="relative flex h-full w-full flex-col overflow-hidden bg-card shadow-2xl sm:h-[98vh] sm:w-auto sm:max-w-[min(520px,95vw)] sm:rounded-3xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Pasek górny z zamknięciem */}
