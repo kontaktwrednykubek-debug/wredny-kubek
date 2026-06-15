@@ -95,7 +95,7 @@ export function CartClient() {
     // Pokaż tylko gdy brakuje produktów do kolejnego progu (nie gdy już osiągnięty)
     if (needed <= 0 || needed >= promo.buy_qty) return null;
 
-    return { totalQty, needed, nextThreshold, progressPct };
+    return { totalQty, needed, nextThreshold, progressPct, completedSets };
   }, [items, promo]);
 
   return (
@@ -147,7 +147,12 @@ export function CartClient() {
                   Dobierz jeszcze{" "}
                   <strong>{promoProgress.needed} szt.</strong>
                   {" "}i dostaniesz{" "}
-                  <strong>{promo!.get_qty === 1 ? "1 sztukę" : `${promo!.get_qty} sztuki`} gratis!</strong>
+                  <strong>
+                    {promoProgress.completedSets === 0
+                      ? promo!.get_qty === 1 ? "1 kubek" : `${promo!.get_qty} kubki`
+                      : promo!.get_qty === 1 ? `${promoProgress.completedSets + 1}. kubek` : `kolejne ${promo!.get_qty} kubki`}{" "}
+                    gratis!
+                  </strong>
                 </span>
                 <Link href="/sklep" className="flex shrink-0 items-center gap-1 text-xs hover:underline">
                   Do sklepu <ChevronRight className="h-3 w-3" />
