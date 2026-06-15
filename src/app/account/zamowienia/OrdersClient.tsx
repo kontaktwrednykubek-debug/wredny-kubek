@@ -25,22 +25,29 @@ const statusBadge: Record<string, string> = {
   CANCELLED: "bg-red-100 text-red-700",
 };
 
-type OrderRow = {
+type OrderItem = {
   id: string;
   product_id: string;
   label: string | null;
-  amount_grosze: number;
   quantity: number;
-  status: string;
-  created_at: string;
+  amount_grosze: number;
   preview_url: string | null;
 };
 
-export function OrdersClient({ orders }: { orders: OrderRow[] }) {
+type GroupedOrder = {
+  id: string;
+  status: string;
+  created_at: string;
+  totalGrosze: number;
+  ids: string[];
+  items: OrderItem[];
+};
+
+export function OrdersClient({ orders }: { orders: GroupedOrder[] }) {
   const router = useRouter();
   const [pending, setPending] = React.useState<string | null>(null);
 
-  async function handleDelete(e: React.MouseEvent, id: string) {
+  async function handleDelete(e: React.MouseEvent, ids: string[], groupId: string) {
     e.preventDefault();
     e.stopPropagation();
     if (
@@ -49,10 +56,11 @@ export function OrdersClient({ orders }: { orders: OrderRow[] }) {
       )
     )
       return;
-    setPending(id);
+    setPending(groupId);
     try {
-      const res = await fetch(`/api/orders/${id}`, { method: "DELETE" });
-      if (res.ok) router.refresh();
+      // Usuń wszystkie pozycje z tego zamówienia (wspólny koszyk)
+      await Promise.all(ids.map((id) => fetch(`/api/orders/${id}`, { method: "DELETE" })));
+      router.refresh();
     } finally {
       setPending(null);
     }
@@ -66,71 +74,90 @@ export function OrdersClient({ orders }: { orders: OrderRow[] }) {
     );
   }
 
+  const labelFor = (item: OrderItem) => {
+    try {
+      return item.label ?? getProduct(item.product_id as never)?.name ?? item.product_id;
+    } catch {
+      return item.label ?? item.product_id;
+    }
+  };
+
   return (
     <div className="space-y-3">
       {orders.map((o) => {
-        const product = (() => {
-          try {
-            return getProduct(o.product_id as never);
-          } catch {
-            return null;
-          }
-        })();
+        const itemCount = o.items.reduce((s, i) => s + (i.quantity ?? 1), 0);
         return (
           <Link
             key={o.id}
             href={`/account/zamowienia/${o.id}`}
-            className="group flex items-center gap-4 rounded-2xl border border-border bg-card p-4 transition hover:border-primary hover:shadow-sm"
+            className="group block rounded-2xl border border-border bg-card p-4 transition hover:border-primary hover:shadow-sm"
           >
-            <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-border bg-muted">
-              {o.preview_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={o.preview_url}
-                  alt={product?.name ?? o.product_id}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <div className="grid h-full w-full place-items-center text-muted-foreground">
-                  <ImageOff className="h-6 w-6" />
+            {/* Nagłówek zamówienia */}
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs text-muted-foreground">
+                  {new Date(o.created_at).toLocaleString("pl-PL")} · #{o.id.slice(0, 8)}
+                </p>
+                <span
+                  className={`mt-1.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${
+                    statusBadge[o.status] ?? "bg-muted text-foreground"
+                  }`}
+                >
+                  {statusLabels[o.status] ?? o.status}
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={(e) => handleDelete(e, o.ids, o.id)}
+                  disabled={pending === o.id}
+                  aria-label="Usuń zamówienie"
+                  className="rounded-full p-2 text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+                <ChevronRight className="h-5 w-5 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-primary" />
+              </div>
+            </div>
+
+            {/* Pozycje — jedna pod drugą */}
+            <div className="mt-3 space-y-2 border-t border-border pt-3">
+              {o.items.map((item) => (
+                <div key={item.id} className="flex items-center gap-3">
+                  <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-border bg-muted">
+                    {item.preview_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={item.preview_url}
+                        alt={labelFor(item)}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="grid h-full w-full place-items-center text-muted-foreground">
+                        <ImageOff className="h-5 w-5" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">
+                      {labelFor(item)}{" "}
+                      <span className="text-muted-foreground">×{item.quantity ?? 1}</span>
+                    </p>
+                  </div>
+                  <p className="shrink-0 text-sm font-semibold">
+                    {formatPrice(item.amount_grosze)}
+                  </p>
                 </div>
-              )}
+              ))}
             </div>
 
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-semibold">
-                {o.label ?? product?.name ?? o.product_id}{" "}
-                <span className="text-muted-foreground">×{o.quantity ?? 1}</span>
-              </p>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                {new Date(o.created_at).toLocaleString("pl-PL")} · #
-                {o.id.slice(0, 8)}
-              </p>
-              <span
-                className={`mt-2 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${
-                  statusBadge[o.status] ?? "bg-muted text-foreground"
-                }`}
-              >
-                {statusLabels[o.status] ?? o.status}
+            {/* Suma całego zamówienia */}
+            <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
+              <span className="text-sm text-muted-foreground">
+                Razem ({itemCount} {itemCount === 1 ? "szt." : "szt."})
               </span>
-            </div>
-
-            <div className="text-right">
-              <p className="font-bold text-primary">
-                {formatPrice(o.amount_grosze)}
-              </p>
-            </div>
-
-            <div className="flex items-center gap-1">
-              <button
-                onClick={(e) => handleDelete(e, o.id)}
-                disabled={pending === o.id}
-                aria-label="Usuń zamówienie"
-                className="rounded-full p-2 text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-              <ChevronRight className="h-5 w-5 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-primary" />
+              <span className="text-lg font-bold text-primary">
+                {formatPrice(o.totalGrosze)}
+              </span>
             </div>
           </Link>
         );

@@ -54,7 +54,7 @@ export default async function OrderDetailsPage({
   const { data: order } = await supabase
     .from("orders")
     .select(
-      "id, product_id, label, amount_grosze, quantity, status, created_at, preview_url, shipping_info, design_id",
+      "id, group_id, product_id, label, amount_grosze, quantity, status, created_at, preview_url, shipping_info, design_id",
     )
     .eq("id", params.id)
     .eq("user_id", user.id)
@@ -62,22 +62,27 @@ export default async function OrderDetailsPage({
 
   if (!order) notFound();
 
-  const [filled] = await backfillOrderPreviews(supabase, [order]);
-  Object.assign(order, filled);
+  // Pobierz wszystkie pozycje z tego samego koszyka (wspólny group_id)
+  const groupId = (order as { group_id?: string | null }).group_id;
+  let rows = [order];
+  if (groupId) {
+    const { data: siblings } = await supabase
+      .from("orders")
+      .select(
+        "id, group_id, product_id, label, amount_grosze, quantity, status, created_at, preview_url, shipping_info, design_id",
+      )
+      .eq("group_id", groupId)
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: true });
+    if (siblings && siblings.length > 0) rows = siblings;
+  }
 
-  const product = (() => {
-    try {
-      return getProduct(order.product_id as never);
-    } catch {
-      return null;
-    }
-  })();
+  rows = await backfillOrderPreviews(supabase, rows);
 
   const shipping = (order.shipping_info as Shipping) ?? {};
-  const itemsTotal = order.amount_grosze;
+  const itemsTotal = rows.reduce((s, r) => s + (r.amount_grosze ?? 0), 0);
   const shippingPrice = shipping.shippingPriceGr ?? 0;
   const total = itemsTotal + shippingPrice;
-  const unitPrice = order.quantity > 0 ? itemsTotal / order.quantity : 0;
 
   return (
     <section className="container mx-auto max-w-4xl px-4 py-8">
@@ -103,39 +108,54 @@ export default async function OrderDetailsPage({
       </div>
 
       <div className="grid gap-4 md:grid-cols-[2fr_1fr]">
-        {/* Produkt */}
+        {/* Produkty — wszystkie pozycje z tego zamówienia */}
         <article className="rounded-2xl border border-border bg-card p-5">
           <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
             <Package className="h-4 w-4" />
-            Produkt
+            {rows.length === 1 ? "Produkt" : `Produkty (${rows.length})`}
           </h2>
-          <div className="flex gap-4">
-            <div className="relative h-32 w-32 shrink-0 overflow-hidden rounded-xl border border-border bg-muted">
-              {order.preview_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={order.preview_url}
-                  alt={product?.name ?? order.product_id}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <div className="grid h-full w-full place-items-center text-muted-foreground">
-                  <ImageOff className="h-8 w-8" />
+          <div className="space-y-4">
+            {rows.map((r) => {
+              const prod = (() => {
+                try {
+                  return getProduct(r.product_id as never);
+                } catch {
+                  return null;
+                }
+              })();
+              const unitPrice = r.quantity > 0 ? (r.amount_grosze ?? 0) / r.quantity : 0;
+              return (
+                <div key={r.id} className="flex gap-4 border-b border-border pb-4 last:border-0 last:pb-0">
+                  <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl border border-border bg-muted">
+                    {r.preview_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={r.preview_url}
+                        alt={prod?.name ?? r.product_id}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="grid h-full w-full place-items-center text-muted-foreground">
+                        <ImageOff className="h-8 w-8" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold">
+                      {(r.label as string | null) ?? prod?.name ?? r.product_id}
+                    </p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Ilość: <span className="font-medium">{r.quantity}</span>
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Cena jednostkowa:{" "}
+                      <span className="font-medium">{formatPrice(unitPrice)}</span>
+                    </p>
+                  </div>
+                  <p className="shrink-0 font-bold">{formatPrice(r.amount_grosze ?? 0)}</p>
                 </div>
-              )}
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-lg font-semibold">
-                {(order.label as string | null) ?? product?.name ?? order.product_id}
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Ilość: <span className="font-medium">{order.quantity}</span>
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Cena jednostkowa:{" "}
-                <span className="font-medium">{formatPrice(unitPrice)}</span>
-              </p>
-            </div>
+              );
+            })}
           </div>
         </article>
 
