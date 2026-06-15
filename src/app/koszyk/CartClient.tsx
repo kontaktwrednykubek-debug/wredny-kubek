@@ -378,7 +378,7 @@ export function CartClient() {
             Podsumowanie
           </h2>
           <div className="mt-3 flex justify-between text-sm">
-            <span>Produkty ({items.filter((i) => !i.isGratis).length} szt.)</span>
+            <span>Produkty ({items.filter((i) => !i.isGratis).reduce((s, i) => s + i.quantity, 0)} szt.)</span>
             <span>{formatPrice(total)}</span>
           </div>
           {gratisDiscount > 0 && (
