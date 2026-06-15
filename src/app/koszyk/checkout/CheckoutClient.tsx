@@ -66,7 +66,8 @@ export function CheckoutClient({
   const [discountChecking, setDiscountChecking] = React.useState(false);
 
   const [form, setForm] = React.useState({
-    fullName: "",
+    firstName: "",
+    lastName: "",
     email: userEmail ?? "",
     phone: "",
     street: "",
@@ -178,7 +179,8 @@ export function CheckoutClient({
 
     // Walidacja wszystkich pól
     const errs: Record<string, string> = {};
-    if (!form.fullName.trim()) errs.fullName = "Imię i nazwisko jest wymagane";
+    if (!form.firstName.trim()) errs.firstName = "Imię jest wymagane";
+    if (!form.lastName.trim()) errs.lastName = "Nazwisko jest wymagane";
     if (!form.email.trim()) errs.email = "Adres e-mail jest wymagany";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errs.email = "Nieprawidłowy adres e-mail";
     if (!form.phone.trim()) errs.phone = "Numer telefonu jest wymagany";
@@ -206,7 +208,7 @@ export function CheckoutClient({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           shipping: {
-            fullName: form.fullName,
+            fullName: `${form.firstName.trim()} ${form.lastName.trim()}`.trim(),
             email: form.email || undefined,
             phone: form.phone,
             address: `${form.street.trim()} ${form.houseNumber.trim()}`.trim(),
@@ -334,21 +336,36 @@ export function CheckoutClient({
               <CardTitle>Dane do wysyłki</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <label className="block">
-                <span className="mb-1 block text-sm font-medium">
-                  Imię i nazwisko
-                </span>
-                <input
-                  required
-                  value={form.fullName}
-                  onChange={(e) => {
-                    setForm((f) => ({ ...f, fullName: e.target.value }));
-                    if (fieldErrors.fullName) setFieldErrors((fe) => ({ ...fe, fullName: "" }));
-                  }}
-                  className={fieldCls("fullName")}
-                />
-                <FieldError name="fullName" />
-              </label>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="block">
+                  <span className="mb-1 block text-sm font-medium">Imię</span>
+                  <input
+                    required
+                    autoComplete="given-name"
+                    value={form.firstName}
+                    onChange={(e) => {
+                      setForm((f) => ({ ...f, firstName: e.target.value }));
+                      if (fieldErrors.firstName) setFieldErrors((fe) => ({ ...fe, firstName: "" }));
+                    }}
+                    className={fieldCls("firstName")}
+                  />
+                  <FieldError name="firstName" />
+                </label>
+                <label className="block">
+                  <span className="mb-1 block text-sm font-medium">Nazwisko</span>
+                  <input
+                    required
+                    autoComplete="family-name"
+                    value={form.lastName}
+                    onChange={(e) => {
+                      setForm((f) => ({ ...f, lastName: e.target.value }));
+                      if (fieldErrors.lastName) setFieldErrors((fe) => ({ ...fe, lastName: "" }));
+                    }}
+                    className={fieldCls("lastName")}
+                  />
+                  <FieldError name="lastName" />
+                </label>
+              </div>
 
               <label className="block">
                 <span className="mb-1 block text-sm font-medium">
