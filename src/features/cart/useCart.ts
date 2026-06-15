@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { ProductId } from "@/config/products";
+import { usePromoStore, type Promotion } from "@/features/promo/usePromoStore";
 import { useEffect } from "react";
 
 export type CartItem = {
@@ -17,6 +18,10 @@ export type CartItem = {
   variant?: { color?: string; size?: string };
   // maxQty is NOT persisted - always fetched from database
   maxQty?: number;
+  /** Pozycja dodana automatycznie przez promocję "kup X dostaniesz Y gratis" */
+  isGratis?: boolean;
+  /** ID promocji która wygenerowała tę pozycję */
+  promoId?: string;
 };
 
 type CartState = {
@@ -25,26 +30,90 @@ type CartState = {
   setQuantity: (id: string, quantity: number) => void;
   remove: (id: string) => void;
   clear: () => void;
+  /** Wywoływany gdy promo zmienia się z zewnątrz (np. admin włączył/wyłączył) */
+  resync: () => void;
 };
+
+function makeId(): string {
+  return typeof crypto !== "undefined" && crypto.randomUUID
+    ? crypto.randomUUID()
+    : Math.random().toString(36).slice(2);
+}
+
+/**
+ * Przelicza pozycje gratis na podstawie aktualnego stanu koszyka i aktywnej promocji.
+ * Dla każdej grupy (productId + designId + color + size) jeśli łączna ilość
+ * płatnych sztuk >= buy_qty, wstawia pozycję gratis.
+ * Usuwa gratis gdy ilość spada poniżej progu lub promocja jest nieaktywna.
+ */
+function syncGratis(items: CartItem[], promo: Promotion | null): CartItem[] {
+  // Usuń wszystkie stare gratis niezależnie od stanu promo
+  const paid = items.filter((i) => !i.isGratis);
+
+  if (!promo || !promo.active) return paid;
+
+  // Grupuj płatne pozycje wg klucza produktu
+  const groups = new Map<string, CartItem[]>();
+  for (const item of paid) {
+    const key = [
+      item.productId,
+      item.designId ?? "",
+      item.variant?.color ?? "",
+      item.variant?.size ?? "",
+    ].join("|");
+    const g = groups.get(key) ?? [];
+    g.push(item);
+    groups.set(key, g);
+  }
+
+  const gratisToAdd: CartItem[] = [];
+
+  for (const [, groupItems] of groups) {
+    const totalQty = groupItems.reduce((s, i) => s + i.quantity, 0);
+    const gratisCount = Math.floor(totalQty / promo.buy_qty) * promo.get_qty;
+    if (gratisCount <= 0) continue;
+
+    const template = groupItems[0];
+    gratisToAdd.push({
+      id: makeId(),
+      designId: template.designId,
+      productId: template.productId,
+      quantity: gratisCount,
+      unitPriceGr: 0,
+      previewUrl: template.previewUrl,
+      label: template.label,
+      variant: template.variant,
+      isGratis: true,
+      promoId: promo.id,
+    });
+  }
+
+  return [...paid, ...gratisToAdd];
+}
+
+/** Pobiera aktywną promocję ze store (działa poza hookami React) */
+function getCurrentPromo(): Promotion | null {
+  return usePromoStore.getState().promo;
+}
 
 export const useCart = create<CartState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       items: [],
       add: (item) =>
         set((state) => {
           const incomingQty = item.quantity ?? 1;
 
-          // Scal duplikaty: ten sam productId + ten sam wariant + ten sam designId
-          // = jeden wiersz w koszyku z sumowaną ilością. Zapobiega tworzeniu
-          // 2 osobnych zamówień w bazie gdy klient klika „Do koszyka" 2 razy.
           const existingIdx = state.items.findIndex(
             (i) =>
+              !i.isGratis &&
               i.productId === item.productId &&
               (i.designId ?? null) === (item.designId ?? null) &&
               (i.variant?.color ?? null) === (item.variant?.color ?? null) &&
               (i.variant?.size ?? null) === (item.variant?.size ?? null),
           );
+
+          let next: CartItem[];
 
           if (existingIdx >= 0) {
             const existing = state.items[existingIdx];
@@ -53,49 +122,45 @@ export const useCart = create<CartState>()(
               ...existing,
               quantity: Math.min(max, existing.quantity + incomingQty),
             };
-            const next = [...state.items];
+            next = [...state.items];
             next[existingIdx] = merged;
-            return { items: next };
+          } else {
+            next = [...state.items, { id: makeId(), ...item, quantity: incomingQty }];
           }
 
-          const id =
-            typeof crypto !== "undefined" && crypto.randomUUID
-              ? crypto.randomUUID()
-              : Math.random().toString(36).slice(2);
-          return {
-            items: [
-              ...state.items,
-              { id, ...item, quantity: incomingQty },
-            ],
-          };
+          return { items: syncGratis(next, getCurrentPromo()) };
         }),
       setQuantity: (id, quantity) =>
-        set((state) => ({
-          items: state.items.map((i) => {
+        set((state) => {
+          const next = state.items.map((i) => {
             if (i.id !== id) return i;
             const max = i.maxQty ?? 999;
             return { ...i, quantity: Math.min(max, Math.max(1, quantity)) };
-          }),
-        })),
+          });
+          return { items: syncGratis(next, getCurrentPromo()) };
+        }),
       remove: (id) =>
-        set((state) => ({ items: state.items.filter((i) => i.id !== id) })),
+        set((state) => {
+          const next = state.items.filter((i) => i.id !== id);
+          return { items: syncGratis(next, getCurrentPromo()) };
+        }),
       clear: () => set({ items: [] }),
+      resync: () =>
+        set((state) => ({
+          items: syncGratis(state.items, getCurrentPromo()),
+        })),
     }),
-    { 
+    {
       name: "kubkomania-cart",
       onRehydrateStorage: () => (state) => {
-        // Auto-clear shop items without variant on rehydration
-        // Also remove maxQty to force fresh fetch from database
         if (state) {
           const itemsWithVariant = state.items.filter(
-            item => !item.productId.startsWith("shop:") || item.variant?.color
+            (item) => !item.productId.startsWith("shop:") || item.variant?.color,
           );
           if (itemsWithVariant.length !== state.items.length) {
-            console.log("[useCart] Auto-cleared shop items without variant:", state.items.length - itemsWithVariant.length);
             state.items = itemsWithVariant;
           }
-          // Remove maxQty to force fresh fetch from database
-          state.items = state.items.map(item => ({ ...item, maxQty: undefined }));
+          state.items = state.items.map((item) => ({ ...item, maxQty: undefined }));
         }
       },
     },
@@ -104,22 +169,19 @@ export const useCart = create<CartState>()(
 
 // Hook to auto-clear on mount
 export function useAutoClearCart() {
-  const clear = useCart(state => state.clear);
-  const items = useCart(state => state.items);
-  
+  const clear = useCart((state) => state.clear);
+  const items = useCart((state) => state.items);
+
   useEffect(() => {
     const itemsWithoutVariant = items.filter(
-      item => item.productId.startsWith("shop:") && !item.variant?.color
+      (item) => item.productId.startsWith("shop:") && !item.variant?.color,
     );
     if (itemsWithoutVariant.length > 0) {
-      console.log("[useAutoClearCart] Clearing", itemsWithoutVariant.length, "shop items without variant");
-      // Remove only shop items without variant, keep others
       const itemsToKeep = items.filter(
-        item => !item.productId.startsWith("shop:") || item.variant?.color
+        (item) => !item.productId.startsWith("shop:") || item.variant?.color,
       );
       clear();
-      // Re-add valid items
-      itemsToKeep.forEach(item => {
+      itemsToKeep.forEach((item) => {
         useCart.getState().add(item);
       });
     }
@@ -128,4 +190,21 @@ export function useAutoClearCart() {
 
 export function cartTotalGr(items: CartItem[]): number {
   return items.reduce((sum, i) => sum + i.unitPriceGr * i.quantity, 0);
+}
+
+/** Wartość rabatu wynikającego z pozycji gratis (ile klient oszczędza). */
+export function cartGratisDiscountGr(items: CartItem[]): number {
+  return items
+    .filter((i) => i.isGratis)
+    .reduce((sum, gratis) => {
+      const paid = items.find(
+        (p) =>
+          !p.isGratis &&
+          p.productId === gratis.productId &&
+          (p.designId ?? null) === (gratis.designId ?? null) &&
+          (p.variant?.color ?? null) === (gratis.variant?.color ?? null),
+      );
+      const unitPrice = paid?.unitPriceGr ?? 0;
+      return sum + unitPrice * gratis.quantity;
+    }, 0);
 }
