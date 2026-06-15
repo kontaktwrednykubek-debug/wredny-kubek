@@ -6,6 +6,7 @@ import Image from "next/image";
 import { ChevronLeft, ChevronRight, Play, X, ShoppingBag, Music2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/lib/utils";
+import { tiktokEmbedUrl } from "@/lib/tiktok";
 
 type TikTokProduct = {
   slug: string;
@@ -93,17 +94,17 @@ export function TikTokSection() {
                 data-card
                 type="button"
                 onClick={() => setActive(t)}
-                className="group relative flex w-[60%] shrink-0 snap-start flex-col overflow-hidden rounded-2xl border border-border bg-card text-left transition hover:border-primary hover:shadow-lg sm:w-[38%] lg:w-[24%] xl:w-[19%]"
+                className="group relative flex w-[75%] shrink-0 snap-start flex-col overflow-hidden rounded-2xl border border-border bg-card text-left transition hover:border-primary hover:shadow-lg sm:w-[45%] lg:w-[31%] xl:w-[23%]"
               >
                 {/* TikTok = pionowy format 9:16 */}
-                <div className="relative aspect-[9/16] bg-muted">
+                <div className="relative aspect-[9/16] overflow-hidden bg-muted">
                   {t.thumbnailUrl ? (
                     <Image
                       src={t.thumbnailUrl}
                       alt={t.title ?? "TikTok"}
                       fill
-                      sizes="(min-width: 1280px) 19vw, (min-width: 1024px) 24vw, (min-width: 640px) 38vw, 60vw"
-                      className="object-cover transition group-hover:scale-105"
+                      sizes="(min-width: 1280px) 23vw, (min-width: 1024px) 31vw, (min-width: 640px) 45vw, 75vw"
+                      className="object-cover transition duration-300 group-hover:scale-105"
                       unoptimized
                     />
                   ) : (
@@ -111,10 +112,10 @@ export function TikTokSection() {
                       brak okładki
                     </div>
                   )}
-                  {/* Przyciemnienie + play */}
-                  <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-t from-black/50 via-transparent to-transparent transition group-hover:from-black/60">
-                    <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white/90 text-black shadow-lg transition group-hover:scale-110">
-                      <Play className="h-6 w-6 translate-x-0.5 fill-black" />
+                  {/* Przyciemnienie + play — nakładka zawsze pokrywa cały kafelek */}
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/20 transition-colors duration-300 group-hover:bg-black/35">
+                    <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white/90 text-black shadow-lg transition group-hover:scale-110">
+                      <Play className="h-7 w-7 translate-x-0.5 fill-black" />
                     </span>
                   </div>
                   {t.products.length > 0 && (
@@ -188,7 +189,7 @@ function TikTokModal({ item, onClose }: { item: TikTokItem; onClose: () => void 
         <div className="relative flex-1 overflow-y-auto">
           <div className="relative mx-auto aspect-[9/16] w-full bg-black">
             <iframe
-              src={`https://www.tiktok.com/embed/v2/${item.videoId}`}
+              src={tiktokEmbedUrl(item.videoId)}
               className="absolute inset-0 h-full w-full"
               allow="autoplay; encrypted-media; fullscreen"
               allowFullScreen

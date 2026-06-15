@@ -74,7 +74,23 @@ export async function fetchTikTokOembed(url: string): Promise<TikTokOembed> {
   };
 }
 
-/** URL odtwarzacza embed (gra wewnątrz iframe na naszej stronie). */
+/**
+ * URL odtwarzacza embed (gra wewnątrz iframe na naszej stronie).
+ * Używamy nowego Player v1 z parametrami:
+ *   loop=1  → film zapętla się (klient zostaje w sklepie)
+ *   rel=0   → po zakończeniu NIE pokazuje innych filmów / linków na TikToka
+ *   autoplay=1, controls=1 → standardowe sterowanie
+ *   music_info=1, description=1 → wygląd zbliżony do natywnego TikToka
+ */
 export function tiktokEmbedUrl(videoId: string): string {
-  return `https://www.tiktok.com/embed/v2/${videoId}`;
+  const params = new URLSearchParams({
+    loop: "1",
+    autoplay: "1",
+    controls: "1",
+    rel: "0",
+    music_info: "1",
+    description: "1",
+    native_context_menu: "0",
+  });
+  return `https://www.tiktok.com/player/v1/${videoId}?${params.toString()}`;
 }
