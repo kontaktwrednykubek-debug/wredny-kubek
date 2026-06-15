@@ -16,6 +16,7 @@ import {
 } from "@/features/catalog/CategoryCarousel";
 import { BannerSlider } from "@/components/BannerSlider";
 import Marquee from "@/components/Marquee";
+import { TikTokSection } from "@/features/tiktok/TikTokSection";
 
 export default async function HomePage() {
   const supabase = createSupabaseServerClient();
@@ -249,6 +250,9 @@ export default async function HomePage() {
           </div>
         </section>
       )}
+
+      {/* SEKCJA TIKTOK — karuzela filmów (renderuje się tylko gdy są aktywne filmy) */}
+      <TikTokSection />
 
       {/* BANER ALLEGRO */}
       <section className="bg-background pb-14 md:pb-20">

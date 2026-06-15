@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, LayoutDashboard, ShoppingCart, Package, Tags, Palette, Truck, Percent, Users, MessageSquare, ImageIcon } from "lucide-react";
+import { Menu, X, LayoutDashboard, ShoppingCart, Package, Tags, Palette, Truck, Percent, Users, MessageSquare, ImageIcon, Music2 } from "lucide-react";
 
 type Item = { href: string; label: string; icon: React.ReactNode };
 
@@ -22,6 +22,7 @@ export function AdminSidebar({ base }: { base: string }) {
     { href: `${base}/uzytkownicy`, label: "Użytkownicy", icon: <Users className="h-4 w-4" /> },
     { href: `${base}/opinie`, label: "Opinie", icon: <MessageSquare className="h-4 w-4" /> },
     { href: `${base}/banery`, label: "Banery / Promocje", icon: <ImageIcon className="h-4 w-4" /> },
+    { href: `${base}/social`, label: "TikTok / Social", icon: <Music2 className="h-4 w-4" /> },
   ];
 
   // Active match: exact for dashboard, startsWith for sub-routes
