@@ -1,5 +1,6 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { ShippingMethodsAdmin, type ShippingMethodRow } from "./ShippingMethodsAdmin";
+import { InternationalShippingAdmin } from "./InternationalShippingAdmin";
 
 export const metadata = { title: "Metody dostawy" };
 
@@ -39,6 +40,10 @@ export default async function ShippingAdminPage() {
         </p>
       </div>
       <ShippingMethodsAdmin methods={methods} />
+
+      <div className="border-t border-border" />
+
+      <InternationalShippingAdmin />
     </div>
   );
 }

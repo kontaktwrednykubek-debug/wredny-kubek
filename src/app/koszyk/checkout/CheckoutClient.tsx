@@ -25,6 +25,23 @@ export type CheckoutShippingMethod = {
   tiers: ShippingTier[];
 };
 
+export type ShippingCountryMethod = {
+  id: string;
+  name: string;
+  priceGrosze: number;
+  requiresParcelCode: boolean;
+};
+
+export type ShippingCountry = {
+  id: string;
+  code: string;
+  name: string;
+  methods: ShippingCountryMethod[];
+};
+
+/** Sentinel dla dostawy krajowej (Polska) w selektorze kraju. */
+const DOMESTIC = "PL";
+
 function calcShippingPrice(
   method: CheckoutShippingMethod | undefined,
   totalQty: number,
@@ -38,9 +55,11 @@ function calcShippingPrice(
 
 export function CheckoutClient({
   methods,
+  countries = [],
   userEmail,
 }: {
   methods: CheckoutShippingMethod[];
+  countries?: ShippingCountry[];
   userEmail?: string | null;
 }) {
   const router = useRouter();
@@ -77,23 +96,52 @@ export function CheckoutClient({
     parcelCode: "",
     note: "",
   });
+  // Wybór kraju: "PL" = dostawa krajowa (Polska), inaczej id kraju zagranicznego.
+  const [country, setCountry] = React.useState<string>(DOMESTIC);
+  const selectedCountry = countries.find((c) => c.id === country) ?? null;
+  const isInternational = country !== DOMESTIC;
+
+  // shippingMethod: kod metody krajowej LUB "intl:<methodId>".
   const [shippingMethod, setShippingMethod] = React.useState<string>(
     methods[0]?.code ?? "",
   );
 
+  // Przy zmianie kraju ustaw pierwszą dostępną metodę tego kraju.
+  const onCountryChange = (value: string) => {
+    setCountry(value);
+    if (value === DOMESTIC) {
+      setShippingMethod(methods[0]?.code ?? "");
+    } else {
+      const c = countries.find((x) => x.id === value);
+      setShippingMethod(c?.methods[0] ? `intl:${c.methods[0].id}` : "");
+    }
+  };
+
   const itemsTotal = cartTotalGr(items);
   const totalQty = items.reduce((s, i) => s + i.quantity, 0);
-  const method = methods.find((m) => m.code === shippingMethod);
-  const shippingPrice = calcShippingPrice(method, totalQty);
+
+  // Aktualnie wybrana metoda zagraniczna (gdy dotyczy)
+  const intlMethod = isInternational
+    ? selectedCountry?.methods.find((m) => `intl:${m.id}` === shippingMethod) ?? null
+    : null;
+
+  const method = isInternational ? undefined : methods.find((m) => m.code === shippingMethod);
+  const shippingPrice = isInternational
+    ? intlMethod?.priceGrosze ?? 0
+    : calcShippingPrice(method, totalQty);
   const isFreeShippingDiscount = discount?.type === "free_shipping";
+  // Próg darmowej dostawy obowiązuje tylko dla dostawy krajowej.
   const isFreeShippingThreshold =
+    !isInternational &&
     method?.freeShippingThresholdGrosze != null &&
     itemsTotal >= method.freeShippingThresholdGrosze;
   const isFreeShipping = isFreeShippingDiscount || isFreeShippingThreshold;
   const effectiveShipping = isFreeShipping ? 0 : shippingPrice;
   const discountGrosze = isFreeShipping ? 0 : (discount?.grosze ?? 0);
   const total = Math.max(0, itemsTotal - discountGrosze) + effectiveShipping;
-  const requiresParcelCode = method?.requiresParcelCode ?? false;
+  const requiresParcelCode = isInternational
+    ? intlMethod?.requiresParcelCode ?? false
+    : method?.requiresParcelCode ?? false;
 
   React.useEffect(() => {
     if (items.length === 0) {
@@ -189,7 +237,7 @@ export function CheckoutClient({
     if (!form.houseNumber.trim()) errs.houseNumber = "Nr domu jest wymagany";
     if (!form.city.trim()) errs.city = "Miasto jest wymagane";
     if (!form.zip.trim()) errs.zip = "Kod pocztowy jest wymagany";
-    else if (!/^\d{2}-\d{3}$/.test(form.zip) && !/^\d{3,6}$/.test(form.zip))
+    else if (!isInternational && !/^\d{2}-\d{3}$/.test(form.zip) && !/^\d{3,6}$/.test(form.zip))
       errs.zip = "Format: 00-000 (PL) lub 1234 (międzynarodowy)";
     if (requiresParcelCode && !form.parcelCode.trim())
       errs.parcelCode = "Wpisz kod paczkomatu (np. WAW123M)";
@@ -215,6 +263,7 @@ export function CheckoutClient({
             city: form.city,
             zip: form.zip,
             shippingMethod,
+            country: isInternational ? selectedCountry?.name : "Polska",
             parcelCode: form.parcelCode || undefined,
             note: form.note || undefined,
           },
@@ -511,46 +560,115 @@ export function CheckoutClient({
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              {methods.length === 0 && (
-                <p className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
-                  Brak dostępnych metod dostawy. Skontaktuj się z obsługą.
-                </p>
-              )}
-              {methods.map((m) => {
-                const checked = shippingMethod === m.code;
-                return (
-                  <label
-                    key={m.code}
-                    className={`flex cursor-pointer items-center justify-between gap-3 rounded-xl border p-3 transition ${
-                      checked
-                        ? "border-primary bg-primary/5 ring-2 ring-primary/20"
-                        : "border-border hover:border-primary/60"
-                    }`}
+              {/* Wybór kraju wysyłki — Polska (krajowa) lub kraj zagraniczny */}
+              {countries.length > 0 && (
+                <label className="block pb-1">
+                  <span className="mb-1 block text-sm font-medium">Kraj wysyłki</span>
+                  <select
+                    value={country}
+                    onChange={(e) => onCountryChange(e.target.value)}
+                    className={inputCls}
                   >
-                    <div className="flex items-start gap-3">
-                      <input
-                        type="radio"
-                        name="shippingMethod"
-                        value={m.code}
-                        checked={checked}
-                        onChange={() => setShippingMethod(m.code)}
-                        className="mt-1 h-4 w-4 accent-primary"
-                      />
-                      <div>
-                        <p className="text-sm font-semibold">{m.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {m.description}
-                        </p>
-                      </div>
-                    </div>
-                    <span className="shrink-0 text-sm font-bold text-primary">
-                      {(m.freeShippingThresholdGrosze != null && itemsTotal >= m.freeShippingThresholdGrosze) || calcShippingPrice(m, totalQty) === 0
-                        ? "Gratis"
-                        : formatPrice(calcShippingPrice(m, totalQty))}
-                    </span>
-                  </label>
-                );
-              })}
+                    <option value={DOMESTIC}>Polska (dostawa krajowa)</option>
+                    <optgroup label="Zagranica">
+                      {countries.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  </select>
+                </label>
+              )}
+
+              {/* DOSTAWA KRAJOWA */}
+              {!isInternational && (
+                <>
+                  {methods.length === 0 && (
+                    <p className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+                      Brak dostępnych metod dostawy. Skontaktuj się z obsługą.
+                    </p>
+                  )}
+                  {methods.map((m) => {
+                    const checked = shippingMethod === m.code;
+                    return (
+                      <label
+                        key={m.code}
+                        className={`flex cursor-pointer items-center justify-between gap-3 rounded-xl border p-3 transition ${
+                          checked
+                            ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                            : "border-border hover:border-primary/60"
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <input
+                            type="radio"
+                            name="shippingMethod"
+                            value={m.code}
+                            checked={checked}
+                            onChange={() => setShippingMethod(m.code)}
+                            className="mt-1 h-4 w-4 accent-primary"
+                          />
+                          <div>
+                            <p className="text-sm font-semibold">{m.name}</p>
+                            <p className="text-xs text-muted-foreground">{m.description}</p>
+                          </div>
+                        </div>
+                        <span className="shrink-0 text-sm font-bold text-primary">
+                          {(m.freeShippingThresholdGrosze != null && itemsTotal >= m.freeShippingThresholdGrosze) || calcShippingPrice(m, totalQty) === 0
+                            ? "Gratis"
+                            : formatPrice(calcShippingPrice(m, totalQty))}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </>
+              )}
+
+              {/* DOSTAWA ZAGRANICZNA — metody wybranego kraju */}
+              {isInternational && (
+                <>
+                  {(selectedCountry?.methods.length ?? 0) === 0 && (
+                    <p className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+                      Brak metod wysyłki do tego kraju.
+                    </p>
+                  )}
+                  {selectedCountry?.methods.map((m) => {
+                    const value = `intl:${m.id}`;
+                    const checked = shippingMethod === value;
+                    return (
+                      <label
+                        key={m.id}
+                        className={`flex cursor-pointer items-center justify-between gap-3 rounded-xl border p-3 transition ${
+                          checked
+                            ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                            : "border-border hover:border-primary/60"
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <input
+                            type="radio"
+                            name="shippingMethod"
+                            value={value}
+                            checked={checked}
+                            onChange={() => setShippingMethod(value)}
+                            className="mt-1 h-4 w-4 accent-primary"
+                          />
+                          <div>
+                            <p className="text-sm font-semibold">{m.name}</p>
+                            {m.requiresParcelCode && (
+                              <p className="text-xs text-muted-foreground">Wymaga kodu punktu odbioru</p>
+                            )}
+                          </div>
+                        </div>
+                        <span className="shrink-0 text-sm font-bold text-primary">
+                          {m.priceGrosze === 0 ? "Gratis" : formatPrice(m.priceGrosze)}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </>
+              )}
 
               {requiresParcelCode && (
                 <div className="block pt-2 space-y-3">
@@ -634,7 +752,7 @@ export function CheckoutClient({
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">
-              Dostawa ({method?.name})
+              Dostawa ({isInternational ? intlMethod?.name ?? selectedCountry?.name : method?.name})
             </span>
             <span className={isFreeShipping ? "line-through text-muted-foreground" : ""}>
               {shippingPrice === 0 ? "Gratis" : formatPrice(shippingPrice)}

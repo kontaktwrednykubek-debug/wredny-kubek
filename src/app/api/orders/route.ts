@@ -21,13 +21,15 @@ const bodySchema = z.object({
     zip: z
       .string()
       .min(3)
-      .max(10)
+      .max(12)
+      // PL: 00-000, lub kody zagraniczne (cyfry/litery/spacja/myślnik)
       .refine(
-        (val) => /^\d{2}-\d{3}$/.test(val) || /^\d{3,6}$/.test(val),
-        "Kod pocztowy w formacie 00-000 (PL) lub 1234 (międzynarodowy)"
+        (val) => /^[A-Za-z0-9][A-Za-z0-9 -]{1,10}$/.test(val),
+        "Nieprawidłowy kod pocztowy",
       ),
-    shippingMethod: z.string().min(2).max(50),
+    shippingMethod: z.string().min(2).max(80),
     parcelCode: z.string().max(40).optional(),
+    country: z.string().max(80).optional(),
     note: z.string().max(500).optional(),
   }),
   items: z
@@ -151,44 +153,78 @@ export async function POST(req: Request) {
     }
   }
 
-  // Walidacja metody dostawy z bazy (wraz z tierami cenowymi).
-  const { data: methodRow } = await supabase
-    .from("shipping_methods")
-    .select(
-      "id, code, name, price_grosze, requires_parcel_code, carrier, is_active, shipping_method_tiers(min_quantity, price_grosze)",
-    )
-    .eq("code", shipping.shippingMethod)
-    .maybeSingle();
+  const totalQty = items.reduce((s, it) => s + it.quantity, 0);
 
-  if (!methodRow || !methodRow.is_active) {
-    return NextResponse.json(
-      { error: "Nieznana lub nieaktywna metoda dostawy." },
-      { status: 400 },
-    );
+  let shippingMethodName: string;
+  let shippingPriceGr: number;
+  let shippingCarrier: string | null;
+  let requiresParcel: boolean;
+
+  if (shipping.shippingMethod.startsWith("intl:")) {
+    // ---- PRZESYŁKA ZAGRANICZNA ----
+    const methodId = shipping.shippingMethod.slice("intl:".length);
+    const { data: intlMethod } = await supabase
+      .from("shipping_country_methods")
+      .select("id, name, carrier, price_grosze, requires_parcel_code, is_active, shipping_countries(name)")
+      .eq("id", methodId)
+      .maybeSingle();
+
+    if (!intlMethod || !intlMethod.is_active) {
+      return NextResponse.json(
+        { error: "Nieznana lub nieaktywna metoda dostawy zagranicznej." },
+        { status: 400 },
+      );
+    }
+    const countryName =
+      (intlMethod.shipping_countries as { name?: string } | null)?.name ?? shipping.country ?? "";
+    shippingMethodName = countryName ? `${intlMethod.name} (${countryName})` : intlMethod.name;
+    shippingPriceGr = intlMethod.price_grosze ?? 0;
+    shippingCarrier = (intlMethod.carrier as string | null) ?? null;
+    requiresParcel = Boolean(intlMethod.requires_parcel_code);
+  } else {
+    // ---- DOSTAWA KRAJOWA (Polska) ----
+    const { data: methodRow } = await supabase
+      .from("shipping_methods")
+      .select(
+        "id, code, name, price_grosze, requires_parcel_code, carrier, is_active, shipping_method_tiers(min_quantity, price_grosze)",
+      )
+      .eq("code", shipping.shippingMethod)
+      .maybeSingle();
+
+    if (!methodRow || !methodRow.is_active) {
+      return NextResponse.json(
+        { error: "Nieznana lub nieaktywna metoda dostawy." },
+        { status: 400 },
+      );
+    }
+
+    // Cena wg tierów (lub płaska cena jako fallback).
+    const tiers = (methodRow.shipping_method_tiers as { min_quantity: number; price_grosze: number }[]) ?? [];
+    let price = methodRow.price_grosze;
+    if (tiers.length > 0) {
+      const sorted = [...tiers].sort((a, b) => b.min_quantity - a.min_quantity);
+      const tier = sorted.find((t) => t.min_quantity <= totalQty);
+      if (tier) price = tier.price_grosze;
+    }
+    shippingMethodName = methodRow.name;
+    shippingPriceGr = price;
+    shippingCarrier = (methodRow.carrier as string | null) ?? null;
+    requiresParcel = Boolean(methodRow.requires_parcel_code);
   }
-  if (methodRow.requires_parcel_code && !shipping.parcelCode?.trim()) {
+
+  if (requiresParcel && !shipping.parcelCode?.trim()) {
     return NextResponse.json(
       { error: "Wymagany kod paczkomatu / punktu odbioru." },
       { status: 400 },
     );
   }
 
-  // Oblicz cenę dostawy wg tierów (lub płaska cena jako fallback).
-  const totalQty = items.reduce((s, it) => s + it.quantity, 0);
-  const tiers = (methodRow.shipping_method_tiers as { min_quantity: number; price_grosze: number }[]) ?? [];
-  let shippingPriceGr = methodRow.price_grosze;
-  if (tiers.length > 0) {
-    const sorted = [...tiers].sort((a, b) => b.min_quantity - a.min_quantity);
-    const tier = sorted.find((t) => t.min_quantity <= totalQty);
-    if (tier) shippingPriceGr = tier.price_grosze;
-  }
-
   const normalizedShipping = {
     ...shipping,
     phone: normalizePhone(shipping.phone),
-    shippingMethodName: methodRow.name,
+    shippingMethodName,
     shippingPriceGr,
-    shippingCarrier: methodRow.carrier ?? null,
+    shippingCarrier,
   };
 
   // Walidacja kodu rabatowego (jeśli podany) — serwer musi ponownie go sprawdzić
@@ -203,7 +239,7 @@ export async function POST(req: Request) {
       code: discountCode,
       userId: user?.id ?? null,
       itemsTotalGrosze,
-      shippingGrosze: methodRow.price_grosze ?? 0,
+      shippingGrosze: shippingPriceGr,
     });
     if (!v.valid || !v.code) {
       return NextResponse.json(
@@ -230,7 +266,7 @@ export async function POST(req: Request) {
     quantity: it.quantity,
     preview_url: it.previewUrl ?? null,
     shipping_info: normalizedShipping,
-    shipping_carrier: methodRow.carrier ?? null,
+    shipping_carrier: shippingCarrier,
     status: "PENDING" as const,
     // Rabat zapisujemy tylko na pierwszym wierszu — będziemy go stosować do
     // całej sesji Stripe (jednej transakcji).
