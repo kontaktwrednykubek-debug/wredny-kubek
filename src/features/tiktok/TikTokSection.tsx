@@ -187,51 +187,49 @@ function TikTokModal({ item, onClose }: { item: TikTokItem; onClose: () => void 
 
         {/* Odtwarzacz — gra wewnątrz sklepu, klient nigdzie nie wychodzi */}
         <div className="relative flex-1 bg-black">
-          <div className="relative h-full w-full">
-            <iframe
-              src={tiktokEmbedUrl(item.videoId)}
-              className="absolute inset-0 h-full w-full"
-              allow="autoplay; encrypted-media; fullscreen"
-              allowFullScreen
-              title={item.title ?? "TikTok"}
-            />
-
-            {/* Nakładka z przyciskiem "Kup" — pływa na dole filmu */}
-            {item.products.length > 0 && (
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex flex-col gap-2 bg-gradient-to-t from-black/85 via-black/40 to-transparent p-3 pt-10">
-                {item.products.map((p) => {
-                  const cover = p.images?.[0];
-                  return (
-                    <Link
-                      key={p.slug}
-                      href={`/sklep/${p.slug}`}
-                      onClick={onClose}
-                      className="pointer-events-auto flex items-center gap-3 rounded-2xl bg-white/95 p-2 shadow-lg backdrop-blur transition hover:bg-white"
-                    >
-                      <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-muted">
-                        {cover ? (
-                          <Image src={cover} alt={p.title} fill className="object-cover" unoptimized />
-                        ) : (
-                          <div className="grid h-full place-items-center text-[10px] text-muted-foreground">
-                            brak
-                          </div>
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="line-clamp-1 text-sm font-semibold text-black">{p.title}</p>
-                        <p className="text-sm font-bold text-primary">{formatPrice(p.price_grosze)}</p>
-                      </div>
-                      <span className="flex shrink-0 items-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-sm font-bold text-primary-foreground">
-                        <ShoppingBag className="h-4 w-4" />
-                        Kup
-                      </span>
-                    </Link>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+          <iframe
+            src={tiktokEmbedUrl(item.videoId)}
+            className="absolute inset-0 h-full w-full"
+            allow="autoplay; encrypted-media; fullscreen"
+            allowFullScreen
+            title={item.title ?? "TikTok"}
+          />
         </div>
+
+        {/* Pasek "Kup" POD filmem — nie zasłania sterowania TikToka (głos itd.) */}
+        {item.products.length > 0 && (
+          <div className="flex flex-col gap-2 border-t border-border bg-card p-3">
+            {item.products.map((p) => {
+              const cover = p.images?.[0];
+              return (
+                <Link
+                  key={p.slug}
+                  href={`/sklep/${p.slug}`}
+                  onClick={onClose}
+                  className="flex items-center gap-3 rounded-2xl border border-border bg-background p-2 transition hover:border-primary"
+                >
+                  <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-muted">
+                    {cover ? (
+                      <Image src={cover} alt={p.title} fill className="object-cover" unoptimized />
+                    ) : (
+                      <div className="grid h-full place-items-center text-[10px] text-muted-foreground">
+                        brak
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="line-clamp-1 text-sm font-semibold">{p.title}</p>
+                    <p className="text-sm font-bold text-primary">{formatPrice(p.price_grosze)}</p>
+                  </div>
+                  <span className="flex shrink-0 items-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-sm font-bold text-primary-foreground">
+                    <ShoppingBag className="h-4 w-4" />
+                    Kup
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
