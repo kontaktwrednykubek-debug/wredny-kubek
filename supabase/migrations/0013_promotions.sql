@@ -9,9 +9,9 @@ create table if not exists promotions (
   updated_at  timestamptz not null default now()
 );
 
--- Tylko jeden rekord - wstawiamy domyślny
+-- Tylko jeden rekord - wstawiamy domyślny (active=true od razu)
 insert into promotions (active, buy_qty, get_qty, label)
-values (false, 3, 1, 'Kup 3, dostaniesz 4. gratis!');
+values (true, 3, 1, 'Kup 3, dostaniesz 4. gratis!');
 
 -- RLS: czytanie publiczne, zapis tylko service role
 alter table promotions enable row level security;

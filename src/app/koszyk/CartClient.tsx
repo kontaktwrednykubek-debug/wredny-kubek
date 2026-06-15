@@ -10,15 +10,11 @@ import { formatPrice } from "@/lib/utils";
 import * as React from "react";
 
 export function CartClient() {
-  const { items, setQuantity, remove, clear, resync } = useCart();
+  const { items, setQuantity, remove, clear } = useCart();
   useAutoClearCart();
 
-  // Załaduj promocję z API i zsynchronizuj koszyk
-  const { promo, fetch: fetchPromo } = usePromoStore();
-  React.useEffect(() => {
-    fetchPromo().then(() => resync());
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Promo jest ładowane globalnie przez PromoProvider w layout.tsx
+  const promo = usePromoStore((s) => s.promo);
 
   // Fetch real-time stock from database
   const [stockMap, setStockMap] = React.useState<Record<string, number>>({});

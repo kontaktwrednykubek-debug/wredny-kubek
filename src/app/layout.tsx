@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import { PromoProvider } from "@/components/providers/PromoProvider";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { brand } from "@/config/theme";
@@ -85,6 +86,7 @@ export default function RootLayout({
     <html lang="pl" suppressHydrationWarning className={cn("font-sans", inter.variable)}>
       <body className="min-h-screen flex flex-col font-sans" suppressHydrationWarning>
         <ThemeProvider>
+          <PromoProvider>
           <div className="flex flex-col min-h-screen overflow-x-hidden">
             <Navbar />
             <main className="flex-1 w-full max-w-full pt-20 pb-20 md:pb-0">{children}</main>
@@ -93,6 +95,7 @@ export default function RootLayout({
           <BottomNav />
           <FABWidget />
           <WrednyAssistant />
+          </PromoProvider>
         </ThemeProvider>
       </body>
     </html>
