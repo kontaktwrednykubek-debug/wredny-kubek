@@ -44,7 +44,7 @@ export function CheckoutClient({
   userEmail?: string | null;
 }) {
   const router = useRouter();
-  const { items, clear } = useCart();
+  const { items } = useCart();
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [stockError, setStockError] = React.useState<{ label: string; available: number; requested: number } | null>(null);
@@ -272,17 +272,13 @@ export function CheckoutClient({
         return;
       }
 
-      // Czyścimy koszyk PRZED redirectem — zamówienie jest już w bazie jako PENDING
-      clear();
-
-      // Safari na iOS blokuje window.location.href po wielu await (traci kontekst
-      // gestu użytkownika). Form submit jest zawsze dozwolony przez Safari.
-      const stripeForm = document.createElement("form");
-      stripeForm.method = "GET";
-      stripeForm.action = url;
-      stripeForm.style.display = "none";
-      document.body.appendChild(stripeForm);
-      stripeForm.submit();
+      // Przekierowanie na Stripe. UWAGA: używamy window.location.assign z PEŁNYM
+      // url-em (zawiera fragment #... ze stanem sesji). NIE używać form.submit()
+      // method=GET — gubi fragment i query, przez co Safari nie ładuje checkoutu.
+      // Koszyk czyścimy dopiero na stronie sukcesu (po potwierdzeniu płatności),
+      // żeby nie wyścigować z nawigacją i żeby po anulowaniu dało się ponowić.
+      window.location.assign(url);
+      return;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Błąd zamówienia");
     } finally {

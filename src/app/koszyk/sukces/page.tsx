@@ -6,6 +6,7 @@ import Link from "next/link";
 import { CheckCircle2, Loader2, ShoppingBag, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ConfettiLottie } from "@/components/ConfettiLottie";
+import { useCart } from "@/features/cart/useCart";
 
 export default function SukcesPage() {
   return (
@@ -84,8 +85,12 @@ function SukcesContent() {
 
     verifyWithRetry(sessionId, orderId, setAttempt).then((result) => {
       if (result.paid) {
+        // Płatność potwierdzona — dopiero teraz czyścimy koszyk
+        useCart.getState().clear();
         setStatus("success");
       } else if (result.timedOut) {
+        // Płatność prawdopodobnie przeszła (webhook dokończy) — też czyścimy
+        useCart.getState().clear();
         // Stripe może potwierdzić przez webhook za chwilę — pokaż
         // przyjazny komunikat zamiast "błąd"
         setStatus("timeout");
