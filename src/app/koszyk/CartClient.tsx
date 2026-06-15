@@ -4,17 +4,53 @@ import Link from "next/link";
 import Image from "next/image";
 import { Trash2, Minus, Plus, ShoppingBag, AlertTriangle, Gift, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useCart, cartTotalGr, cartGratisDiscountGr, useAutoClearCart, type CartItem } from "@/features/cart/useCart";
+import { useCart, cartTotalGr, cartGratisDiscountGr, useAutoClearCart, MYSTERY_MUG_ID, type CartItem } from "@/features/cart/useCart";
 import { usePromoStore } from "@/features/promo/usePromoStore";
 import { formatPrice } from "@/lib/utils";
 import * as React from "react";
 
+type MysteryMugConfig = {
+  enabled: boolean;
+  price_grosze: number;
+  label: string;
+  description: string;
+  image_url: string | null;
+};
+
 export function CartClient() {
   const { items, setQuantity, remove, clear } = useCart();
+  const add = useCart((s) => s.add);
   useAutoClearCart();
 
   // Promo jest ładowane globalnie przez PromoProvider w layout.tsx
   const promo = usePromoStore((s) => s.promo);
+
+  // Upsell "Kubek w ciemno" — konfiguracja z panelu admina
+  const [mysteryMug, setMysteryMug] = React.useState<MysteryMugConfig | null>(null);
+  React.useEffect(() => {
+    fetch("/api/mystery-mug", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => setMysteryMug(d.config ?? null))
+      .catch(() => setMysteryMug(null));
+  }, []);
+
+  const mysteryInCart = items.find((i) => i.productId === MYSTERY_MUG_ID);
+
+  const toggleMysteryMug = (checked: boolean) => {
+    if (!mysteryMug) return;
+    if (checked) {
+      add({
+        designId: null,
+        productId: MYSTERY_MUG_ID,
+        unitPriceGr: mysteryMug.price_grosze,
+        previewUrl: mysteryMug.image_url ?? undefined,
+        label: mysteryMug.label,
+        quantity: 1,
+      });
+    } else if (mysteryInCart) {
+      remove(mysteryInCart.id);
+    }
+  };
 
   // Fetch real-time stock from database
   const [stockMap, setStockMap] = React.useState<Record<string, number>>({});
@@ -290,6 +326,44 @@ export function CartClient() {
               </div>
             );
           })}
+
+          {/* UPSELL — Kubek w ciemno (losowy wzór) */}
+          {mysteryMug?.enabled && (
+            <label
+              className={`flex cursor-pointer items-center gap-4 rounded-2xl border-2 border-dashed p-4 transition ${
+                mysteryInCart
+                  ? "border-primary bg-primary/5"
+                  : "border-primary/40 bg-primary/[0.03] hover:border-primary/70"
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={Boolean(mysteryInCart)}
+                onChange={(e) => toggleMysteryMug(e.target.checked)}
+                className="h-5 w-5 shrink-0 accent-primary"
+              />
+              <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-muted">
+                {mysteryMug.image_url ? (
+                  <Image src={mysteryMug.image_url} alt={mysteryMug.label} fill className="object-cover" unoptimized />
+                ) : (
+                  <div className="grid h-full place-items-center text-2xl">🎁</div>
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="flex items-center gap-2 font-semibold">
+                  <Gift className="h-4 w-4 text-primary" />
+                  {mysteryMug.label}
+                </p>
+                <p className="mt-0.5 text-sm text-muted-foreground">{mysteryMug.description}</p>
+              </div>
+              <div className="shrink-0 text-right">
+                <p className="text-lg font-bold text-primary">{formatPrice(mysteryMug.price_grosze)}</p>
+                <p className="text-xs text-muted-foreground">
+                  {mysteryInCart ? "dodano ✓" : "dokup"}
+                </p>
+              </div>
+            </label>
+          )}
 
           <button
             onClick={clear}

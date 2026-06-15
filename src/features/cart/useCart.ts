@@ -34,6 +34,9 @@ type CartState = {
   resync: () => void;
 };
 
+/** Stały productId dla upsellu "Kubek w ciemno" (losowy wzór). */
+export const MYSTERY_MUG_ID = "mystery-mug";
+
 function makeId(): string {
   return typeof crypto !== "undefined" && crypto.randomUUID
     ? crypto.randomUUID()
@@ -52,14 +55,17 @@ function syncGratis(items: CartItem[], promo: Promotion | null): CartItem[] {
 
   if (!promo || !promo.active) return paid;
 
+  // Kubek w ciemno (upsell) NIE liczy się do promocji "kup X gratis"
+  const eligible = paid.filter((i) => i.productId !== MYSTERY_MUG_ID);
+
   // Liczymy ŁĄCZNĄ ilość wszystkich płatnych sztuk (nie per-produkt)
-  const totalQty = paid.reduce((s, i) => s + i.quantity, 0);
+  const totalQty = eligible.reduce((s, i) => s + i.quantity, 0);
   const gratisCount = Math.floor(totalQty / promo.buy_qty) * promo.get_qty;
 
   if (gratisCount <= 0) return paid;
 
   // Gratis = najtańszy produkt z koszyka (lub pierwszy jeśli ceny równe)
-  const cheapest = paid.reduce((min, i) =>
+  const cheapest = eligible.reduce((min, i) =>
     i.unitPriceGr < min.unitPriceGr ? i : min,
   );
 

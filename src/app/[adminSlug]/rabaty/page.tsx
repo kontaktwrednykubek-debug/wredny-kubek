@@ -2,6 +2,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import { DiscountCodesAdmin } from "./DiscountCodesAdmin";
 import { PromotionsAdmin, type Promotion } from "./PromotionsAdmin";
+import { MysteryMugAdmin, type MysteryMug } from "./MysteryMugAdmin";
 import type { DiscountCode } from "@/lib/discount/types";
 
 export const metadata = { title: "Rabaty / Zniżki" };
@@ -10,7 +11,7 @@ export default async function DiscountCodesAdminPage() {
   const supabase = createSupabaseServerClient();
   const serviceSupabase = createSupabaseServiceClient();
 
-  const [{ data: codes }, { data: promos }] = await Promise.all([
+  const [{ data: codes }, { data: promos }, { data: mysteryMug }] = await Promise.all([
     supabase
       .from("discount_codes")
       .select("*")
@@ -19,6 +20,12 @@ export default async function DiscountCodesAdminPage() {
       .from("promotions")
       .select("*")
       .order("created_at", { ascending: true }),
+    serviceSupabase
+      .from("mystery_mug_config")
+      .select("*")
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle(),
   ]);
 
   return (
@@ -32,6 +39,12 @@ export default async function DiscountCodesAdminPage() {
 
       {/* Sekcja promocji automatycznych */}
       <PromotionsAdmin initialPromotions={(promos ?? []) as Promotion[]} />
+
+      {/* Divider */}
+      <div className="border-t border-border" />
+
+      {/* Sekcja Kubek w ciemno (upsell) */}
+      <MysteryMugAdmin initial={(mysteryMug ?? null) as MysteryMug | null} />
 
       {/* Divider */}
       <div className="border-t border-border" />
