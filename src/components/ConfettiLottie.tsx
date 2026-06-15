@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Lottie, { type LottieRefCurrentProps } from "lottie-react";
-import confettiData from "../../public/konfeti.json";
+import confettiData from "../../public/conffeti.json";
 
 function LottiePlayer({
   animationData,
@@ -32,7 +32,7 @@ export function ConfettiLottie() {
 
   return (
     <>
-      {/* konfeti.json — pełny ekran */}
+      {/* conffeti.json — pełny ekran */}
       {confettiVisible && (
         <div
           style={{

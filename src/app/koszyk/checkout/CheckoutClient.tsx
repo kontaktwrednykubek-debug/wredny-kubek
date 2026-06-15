@@ -69,7 +69,8 @@ export function CheckoutClient({
     fullName: "",
     email: userEmail ?? "",
     phone: "",
-    address: "",
+    street: "",
+    houseNumber: "",
     city: "",
     zip: "",
     parcelCode: "",
@@ -182,7 +183,8 @@ export function CheckoutClient({
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errs.email = "Nieprawidłowy adres e-mail";
     if (!form.phone.trim()) errs.phone = "Numer telefonu jest wymagany";
     else if (!isValidPhone(form.phone)) errs.phone = "Nieprawidłowy numer. Przykład: 600 100 200 lub +48 600 100 200";
-    if (!form.address.trim()) errs.address = "Adres jest wymagany";
+    if (!form.street.trim()) errs.street = "Ulica jest wymagana";
+    if (!form.houseNumber.trim()) errs.houseNumber = "Nr domu jest wymagany";
     if (!form.city.trim()) errs.city = "Miasto jest wymagane";
     if (!form.zip.trim()) errs.zip = "Kod pocztowy jest wymagany";
     else if (!/^\d{2}-\d{3}$/.test(form.zip) && !/^\d{3,6}$/.test(form.zip))
@@ -207,7 +209,7 @@ export function CheckoutClient({
             fullName: form.fullName,
             email: form.email || undefined,
             phone: form.phone,
-            address: form.address,
+            address: `${form.street.trim()} ${form.houseNumber.trim()}`.trim(),
             city: form.city,
             zip: form.zip,
             shippingMethod,
@@ -398,21 +400,35 @@ export function CheckoutClient({
                 )}
               </label>
 
-              <label className="block">
-                <span className="mb-1 block text-sm font-medium">
-                  Adres (ulica, nr)
-                </span>
-                <input
-                  required
-                  value={form.address}
-                  onChange={(e) => {
-                    setForm((f) => ({ ...f, address: e.target.value }));
-                    if (fieldErrors.address) setFieldErrors((fe) => ({ ...fe, address: "" }));
-                  }}
-                  className={fieldCls("address")}
-                />
-                <FieldError name="address" />
-              </label>
+              <div className="grid grid-cols-[1fr_120px] gap-3">
+                <label className="block">
+                  <span className="mb-1 block text-sm font-medium">Ulica</span>
+                  <input
+                    required
+                    value={form.street}
+                    onChange={(e) => {
+                      setForm((f) => ({ ...f, street: e.target.value }));
+                      if (fieldErrors.street) setFieldErrors((fe) => ({ ...fe, street: "" }));
+                    }}
+                    className={fieldCls("street")}
+                  />
+                  <FieldError name="street" />
+                </label>
+                <label className="block">
+                  <span className="mb-1 block text-sm font-medium">Nr domu</span>
+                  <input
+                    required
+                    placeholder="np. 12/3"
+                    value={form.houseNumber}
+                    onChange={(e) => {
+                      setForm((f) => ({ ...f, houseNumber: e.target.value }));
+                      if (fieldErrors.houseNumber) setFieldErrors((fe) => ({ ...fe, houseNumber: "" }));
+                    }}
+                    className={fieldCls("houseNumber")}
+                  />
+                  <FieldError name="houseNumber" />
+                </label>
+              </div>
 
               <div className="grid grid-cols-[1fr_140px] gap-3">
                 <label className="block">
