@@ -44,7 +44,7 @@ const createSchema = z.object({
   description: z.string().max(5000).optional().default(""),
   body: z.string().max(20000).optional().default(""),
   category: z.string().max(50).default("merch"),
-  categories: z.array(z.string().max(50)).max(10).optional(),
+  categories: z.array(z.string().max(50)).max(60).optional(),
   priceGrosze: z.number().int().min(0),
   images: z.array(z.string().url()).max(10).default([]),
   specs: z.record(z.string()).default({}),

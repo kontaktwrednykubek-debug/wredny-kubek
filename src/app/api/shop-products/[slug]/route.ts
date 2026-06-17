@@ -97,7 +97,7 @@ const updateSchema = z.object({
   description: z.string().max(5000).optional(),
   body: z.string().max(20000).optional(),
   category: z.string().max(50).optional(),
-  categories: z.array(z.string().max(50)).max(10).optional(),
+  categories: z.array(z.string().max(50)).max(60).optional(),
   priceGrosze: z.number().int().min(0).optional(),
   images: z.array(z.string().url()).max(10).optional(),
   specs: z.record(z.string()).optional(),
