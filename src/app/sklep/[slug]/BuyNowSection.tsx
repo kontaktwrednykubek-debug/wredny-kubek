@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ShoppingCart, Check, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/features/cart/useCart";
+import { formatPrice } from "@/lib/utils";
 
 type Variant = {
   id: string;
@@ -13,6 +14,7 @@ type Variant = {
   imageUrl: string;
   sortOrder: number;
   stockCount: number;
+  priceGrosze?: number | null; // cena custom wariantu; null = cena bazowa
 };
 
 export function BuyNowSection({
@@ -81,8 +83,13 @@ export function BuyNowSection({
   }, [slug, fetchVariants]);
   
   // maxQty ZAWSZE limituje zakup do dostępnego stanu (showVariantStock kontroluje tylko wyświetlanie liczby)
-  const maxQty = color ? 
+  const maxQty = color ?
     (variants.find(v => v.id === color)?.stockCount ?? 999) : 999;
+
+  // Cena zależna od wybranego koloru — wariant może mieć cenę custom, inaczej cena bazowa.
+  const selectedVariant = variants.find((v) => v.id === color);
+  const effectivePriceGr =
+    selectedVariant?.priceGrosze != null ? selectedVariant.priceGrosze : priceGrosze;
 
   const buildLabel = () => {
     const variant = variants.find(v => v.id === color);
@@ -101,7 +108,7 @@ export function BuyNowSection({
     add({
       designId: null,
       productId: `shop:${slug}`,
-      unitPriceGr: priceGrosze,
+      unitPriceGr: effectivePriceGr,
       previewUrl: cover ?? undefined,
       label: buildLabel(),
       quantity: qty,
@@ -247,6 +254,18 @@ export function BuyNowSection({
             </span>
           )}
         </div>
+      </div>
+
+      {/* Cena (aktualizuje się przy wyborze koloru) */}
+      <div className="flex items-baseline gap-2">
+        <span className="text-3xl font-extrabold text-primary">
+          {formatPrice(effectivePriceGr)}
+        </span>
+        {selectedVariant?.priceGrosze != null && selectedVariant.priceGrosze !== priceGrosze && (
+          <span className="text-sm text-muted-foreground">
+            (kolor: {selectedVariant.name})
+          </span>
+        )}
       </div>
 
       {/* Przyciski */}

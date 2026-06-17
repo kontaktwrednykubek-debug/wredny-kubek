@@ -20,8 +20,13 @@ export async function GET(
   }
   
   // Extract selected cup color IDs from product.variants JSONB
-  const selectedCupColors = (product.variants as any)?.cupColors as Array<{ id: string }> | undefined;
+  const selectedCupColors = (product.variants as any)?.cupColors as
+    | Array<{ id: string; priceGrosze?: number | null }>
+    | undefined;
   const selectedIds = selectedCupColors?.map((c) => c.id) ?? [];
+  // Mapa cen custom per wariant (null = cena bazowa produktu)
+  const priceMap = new Map<string, number | null>();
+  selectedCupColors?.forEach((c) => priceMap.set(c.id, c.priceGrosze ?? null));
   
   // If admin didn't select any colors, return empty list
   if (selectedIds.length === 0) {
@@ -64,6 +69,7 @@ export async function GET(
       imageUrl: item.image_url,
       sortOrder: item.sort_order,
       stockCount: availableStock,
+      priceGrosze: priceMap.get(item.id) ?? null, // cena custom lub null = bazowa
       globalStock, // For admin reference
       productStock, // For admin reference
     };

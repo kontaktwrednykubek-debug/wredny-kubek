@@ -20,7 +20,7 @@ type CupColorVariant = {
 
 type Variants = {
   colors?: { name: string; hex: string }[];
-  cupColors?: { id: string; name: string; imageUrl: string }[];
+  cupColors?: { id: string; name: string; imageUrl: string; priceGrosze?: number | null }[];
   capacities?: string[];
   sizes?: string[];
 };
@@ -183,6 +183,16 @@ export function ProductForm({
   const [selectedCupColorIds, setSelectedCupColorIds] = React.useState<string[]>(
     initial?.variants?.cupColors?.map((c) => c.id) ?? [],
   );
+  // Cena custom per kolor (w zł, jako string). Puste = cena bazowa produktu.
+  const [cupColorPrices, setCupColorPrices] = React.useState<Record<string, string>>(
+    () => {
+      const map: Record<string, string> = {};
+      initial?.variants?.cupColors?.forEach((c) => {
+        if (c.priceGrosze != null) map[c.id] = (c.priceGrosze / 100).toFixed(2);
+      });
+      return map;
+    },
+  );
   const [cupColorVariants, setCupColorVariants] = React.useState<CupColorVariant[]>([]);
 
   React.useEffect(() => {
@@ -313,7 +323,12 @@ export function ProductForm({
     if (selectedCupColorIds.length > 0) {
       variants.cupColors = cupColorVariants
         .filter((v) => selectedCupColorIds.includes(v.id))
-        .map((v) => ({ id: v.id, name: v.name, imageUrl: v.image_url ?? "" }));
+        .map((v) => {
+          const raw = cupColorPrices[v.id]?.replace(",", ".").trim();
+          const parsed = raw ? parseFloat(raw) : NaN;
+          const priceGrosze = !isNaN(parsed) && parsed > 0 ? Math.round(parsed * 100) : null;
+          return { id: v.id, name: v.name, imageUrl: v.image_url ?? "", priceGrosze };
+        });
     }
 
     const payload = {
@@ -834,6 +849,53 @@ export function ProductForm({
                       <span className="text-xs text-muted-foreground">
                         / {v.stock_count} szt.
                       </span>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
+
+        {/* Cena custom per kolor */}
+        {selectedCupColorIds.length > 0 && (
+          <div className="rounded-2xl border-2 border-amber-400/50 bg-amber-50/50 p-4 dark:bg-amber-950/10">
+            <div className="mb-3">
+              <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">
+                💰 Cena dla każdego koloru (opcjonalnie)
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Zostaw puste = cena bazowa produktu. Wpisz kwotę, jeśli dany kolor
+                ma kosztować inaczej (np. biały 35 zł, różowy 37 zł).
+              </p>
+            </div>
+            <div className="space-y-2">
+              {cupColorVariants
+                .filter((v) => selectedCupColorIds.includes(v.id))
+                .map((v) => (
+                  <div
+                    key={v.id}
+                    className="flex items-center gap-3 rounded-xl border border-border bg-card px-3 py-2"
+                  >
+                    {v.image_url ? (
+                      <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg">
+                        <Image src={v.image_url} alt={v.name} fill className="object-cover" unoptimized />
+                      </div>
+                    ) : (
+                      <div className="h-10 w-10 shrink-0 rounded-lg bg-muted" />
+                    )}
+                    <span className="flex-1 text-sm font-medium">{v.name}</span>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={cupColorPrices[v.id] ?? ""}
+                        placeholder="bazowa"
+                        onChange={(e) =>
+                          setCupColorPrices((prev) => ({ ...prev, [v.id]: e.target.value }))
+                        }
+                        className="w-24 rounded-lg border-2 border-input bg-background px-3 py-1.5 text-sm font-semibold focus:border-primary focus:outline-none"
+                      />
+                      <span className="text-xs text-muted-foreground">zł</span>
                     </div>
                   </div>
                 ))}
