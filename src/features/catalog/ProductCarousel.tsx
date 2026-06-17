@@ -13,7 +13,20 @@ export type CarouselProduct = {
   images: string[] | null;
   rating?: number | null;
   reviews_count?: number | null;
+  variants?: unknown;
 };
+
+/** Zakres cen wariantów (np. "35 zł – 45 zł") lub jedna kwota. */
+function priceLabel(base: number, variants: unknown): string {
+  const cupColors = ((variants as { cupColors?: { priceGrosze?: number | null }[] } | null)
+    ?.cupColors) ?? [];
+  const prices = cupColors.length
+    ? cupColors.map((c) => (c.priceGrosze != null ? c.priceGrosze : base))
+    : [base];
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
+  return min === max ? formatPrice(min) : `${formatPrice(min)} – ${formatPrice(max)}`;
+}
 
 export function ProductCarousel({ products }: { products: CarouselProduct[] }) {
   const trackRef = React.useRef<HTMLDivElement>(null);
@@ -86,7 +99,7 @@ export function ProductCarousel({ products }: { products: CarouselProduct[] }) {
                 <p className="line-clamp-2 font-semibold">{p.title}</p>
                 <div className="mt-auto flex items-center justify-between pt-3">
                   <span className="text-lg font-bold text-primary">
-                    {formatPrice(p.price_grosze)}
+                    {priceLabel(p.price_grosze, p.variants)}
                   </span>
                   {p.rating != null && (
                     <span className="flex items-center gap-1 text-xs text-muted-foreground">

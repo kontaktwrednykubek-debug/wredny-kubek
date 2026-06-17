@@ -31,7 +31,7 @@ export default async function HomePage() {
   const [carouselRes, categoriesRes, productsForCoverRes, featuredRes] = await Promise.all([
     supabase
       .from("shop_products")
-      .select("slug, title, price_grosze, images, rating, reviews_count")
+      .select("slug, title, price_grosze, images, rating, reviews_count, variants")
       .eq("is_published", true)
       .neq("category", "merch")
       .order("created_at", { ascending: false })
@@ -48,7 +48,7 @@ export default async function HomePage() {
       .order("created_at", { ascending: false }),
     supabase
       .from("shop_products")
-      .select("slug, title, price_grosze, images, rating, reviews_count")
+      .select("slug, title, price_grosze, images, rating, reviews_count, variants")
       .eq("is_published", true)
       .eq("is_featured", true)
       .order("created_at", { ascending: false })

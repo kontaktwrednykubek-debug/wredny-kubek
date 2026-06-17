@@ -6,6 +6,21 @@ import { formatPrice } from "@/lib/utils";
 import { ShopFilters, type Category } from "./ShopFilters";
 import { WishlistButton } from "@/components/WishlistButton";
 
+/**
+ * Etykieta ceny na kafelku: zakres od najtańszego do najdroższego wariantu
+ * (np. "35 zł – 45 zł"). Gdy wszystkie ceny równe → jedna kwota.
+ */
+function priceLabel(base: number, variants: unknown): string {
+  const cupColors = ((variants as { cupColors?: { priceGrosze?: number | null }[] } | null)
+    ?.cupColors) ?? [];
+  const prices = cupColors.length
+    ? cupColors.map((c) => (c.priceGrosze != null ? c.priceGrosze : base))
+    : [base];
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
+  return min === max ? formatPrice(min) : `${formatPrice(min)} – ${formatPrice(max)}`;
+}
+
 export async function generateMetadata({
   searchParams,
 }: {
@@ -53,7 +68,7 @@ export default async function ShopPage({
     supabase
       .from("shop_products")
       .select(
-        "slug, title, price_grosze, images, rating, reviews_count, category",
+        "slug, title, price_grosze, images, rating, reviews_count, category, variants",
       )
       .eq("is_published", true)
       .order("created_at", { ascending: false }),
@@ -183,7 +198,7 @@ export default async function ShopPage({
                           </p>
                           <div className="mt-2 flex items-center justify-between">
                             <span className="text-lg font-bold text-primary">
-                              {formatPrice(p.price_grosze as number)}
+                              {priceLabel(p.price_grosze as number, p.variants)}
                             </span>
                             <span className="flex items-center gap-1 text-xs text-muted-foreground">
                               <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
