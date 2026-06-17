@@ -363,11 +363,71 @@ export function ProductForm({
 
   return (
     <form onSubmit={onSubmit} className="space-y-6">
+      {/* 1. Zdjęcia — na samej górze */}
+      <fieldset className="space-y-4 rounded-2xl border border-border bg-card p-4 sm:p-5">
+        <legend className="px-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+          Zdjęcia ({images.length}/{MAX_IMAGES})
+        </legend>
+
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {images.map((url, i) => (
+            <div
+              key={url}
+              className="group relative aspect-square overflow-hidden rounded-xl border border-border bg-muted"
+            >
+              <Image
+                src={url}
+                alt={`zdjęcie ${i + 1}`}
+                fill
+                className="object-cover"
+                unoptimized
+              />
+              <button
+                type="button"
+                onClick={() => removeImage(i)}
+                className="absolute right-1 top-1 rounded-full bg-background/80 p-1 opacity-0 transition group-hover:opacity-100"
+                aria-label="Usuń"
+              >
+                <X className="h-4 w-4" />
+              </button>
+              {i === 0 && (
+                <span className="absolute bottom-1 left-1 rounded bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground">
+                  okładka
+                </span>
+              )}
+            </div>
+          ))}
+          {images.length < MAX_IMAGES && (
+            <label className="flex aspect-square cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border bg-muted/40 text-sm text-muted-foreground transition hover:border-primary hover:text-foreground">
+              {uploading ? (
+                <Loader2 className="h-6 w-6 animate-spin" />
+              ) : (
+                <Upload className="h-6 w-6" />
+              )}
+              <span>{uploading ? "Wysyłanie..." : "Dodaj zdjęcie"}</span>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                multiple
+                disabled={uploading}
+                onChange={(e) => onUpload(e.target.files)}
+                className="hidden"
+              />
+            </label>
+          )}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          JPG / PNG / WebP / GIF, do 5 MB każde. Pierwsze zdjęcie to okładka.
+        </p>
+      </fieldset>
+
       {/* Podstawowe */}
       <fieldset className="space-y-4 rounded-2xl border border-border bg-card p-4 sm:p-5">
         <legend className="px-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
           Podstawowe
         </legend>
+        {/* 2. Tytuł */}
         <Field label="Tytuł" required>
           <input
             type="text"
@@ -376,6 +436,29 @@ export function ProductForm({
             className={inputCls}
             placeholder="Np. Kubek ceramiczny 330 ml"
             required
+          />
+        </Field>
+        {/* 3. Krótki opis */}
+        <Field label="Krótki opis">
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={3}
+            className={inputCls}
+            placeholder="Krótki opis widoczny obok ceny..."
+          />
+        </Field>
+        {/* 4. Długi opis */}
+        <Field
+          label="Długi opis (pod zdjęciami)"
+          hint="Pełny opis produktu wyświetlany pod galerią zdjęć na stronie produktu."
+        >
+          <textarea
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            rows={8}
+            className={inputCls}
+            placeholder="Szczegółowy opis produktu, historia, zastosowanie, pielęgnacja..."
           />
         </Field>
         <Field
@@ -469,27 +552,6 @@ export function ProductForm({
           {selectedCategories.length === 0 && (
             <p className="mt-1 text-xs text-destructive">Wybierz co najmniej jedną kategorię.</p>
           )}
-        </Field>
-        <Field label="Krótki opis">
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            rows={3}
-            className={inputCls}
-            placeholder="Krótki opis widoczny obok ceny..."
-          />
-        </Field>
-        <Field
-          label="Długi opis (pod zdjęciami)"
-          hint="Pełny opis produktu wyświetlany pod galerią zdjęć na stronie produktu."
-        >
-          <textarea
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            rows={8}
-            className={inputCls}
-            placeholder="Szczegółowy opis produktu, historia, zastosowanie, pielęgnacja..."
-          />
         </Field>
         {/* Etykiety / Badges */}
         <div className="rounded-2xl border border-border bg-muted/50 p-4 sm:p-5 space-y-3">
@@ -596,65 +658,6 @@ export function ProductForm({
             </span>
           </div>
         </Field>
-      </fieldset>
-
-      {/* Zdjęcia */}
-      <fieldset className="space-y-4 rounded-2xl border border-border bg-card p-4 sm:p-5">
-        <legend className="px-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-          Zdjęcia ({images.length}/{MAX_IMAGES})
-        </legend>
-
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {images.map((url, i) => (
-            <div
-              key={url}
-              className="group relative aspect-square overflow-hidden rounded-xl border border-border bg-muted"
-            >
-              <Image
-                src={url}
-                alt={`zdjęcie ${i + 1}`}
-                fill
-                className="object-cover"
-                unoptimized
-              />
-              <button
-                type="button"
-                onClick={() => removeImage(i)}
-                className="absolute right-1 top-1 rounded-full bg-background/80 p-1 opacity-0 transition group-hover:opacity-100"
-                aria-label="Usuń"
-              >
-                <X className="h-4 w-4" />
-              </button>
-              {i === 0 && (
-                <span className="absolute bottom-1 left-1 rounded bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground">
-                  okładka
-                </span>
-              )}
-            </div>
-          ))}
-          {images.length < MAX_IMAGES && (
-            <label className="flex aspect-square cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border bg-muted/40 text-sm text-muted-foreground transition hover:border-primary hover:text-foreground">
-              {uploading ? (
-                <Loader2 className="h-6 w-6 animate-spin" />
-              ) : (
-                <Upload className="h-6 w-6" />
-              )}
-              <span>{uploading ? "Wysyłanie..." : "Dodaj zdjęcie"}</span>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp,image/gif"
-                multiple
-                disabled={uploading}
-                onChange={(e) => onUpload(e.target.files)}
-                className="hidden"
-              />
-            </label>
-          )}
-        </div>
-        <p className="text-xs text-muted-foreground">
-          JPG / PNG / WebP / GIF, do 5 MB każde. Pierwsze zdjęcie to okładka.
-        </p>
       </fieldset>
 
       {/* Warianty */}

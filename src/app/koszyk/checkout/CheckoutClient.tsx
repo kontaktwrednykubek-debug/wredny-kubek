@@ -696,11 +696,12 @@ export function CheckoutClient({
                     )}
                   </label>
                   
-                  {(() => {
-                    const nm = (isInternational ? intlMethod?.name : method?.name)?.toLowerCase() ?? "";
+                  {/* Mapy punktów TYLKO dla dostawy krajowej (Polska).
+                      Za granicą klient wpisuje sam kod punktu (pole wyżej). */}
+                  {!isInternational && (() => {
+                    const nm = (method?.name)?.toLowerCase() ?? "";
                     const isDpd = nm.includes("dpd");
                     const isInpost = nm.includes("paczkomat") || nm.includes("inpost");
-                    // gdy nie rozpoznano przewoźnika — pokaż obie mapy
                     const showInpost = isInpost || (!isDpd && !isInpost);
                     const showDpd = isDpd || (!isDpd && !isInpost);
                     return (
@@ -725,9 +726,9 @@ export function CheckoutClient({
                             variant="outline"
                             size="sm"
                             className="w-full border-primary text-primary hover:bg-primary hover:text-primary-foreground"
-                            onClick={() => window.open("https://www.dpd.com.pl/dla-ciebie/znajdz-punkt-dpd-pickup", "_blank", "noopener,noreferrer")}
+                            onClick={() => window.open("https://www.dpd.com/pl/pl/znajd-automat-paczkowy-dpd-pickup/", "_blank", "noopener,noreferrer")}
                           >
-                            Otwórz mapę punktów DPD Pickup
+                            Otwórz mapę automatów DPD Pickup
                           </Button>
                         )}
                       </div>
