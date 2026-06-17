@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDown, ChevronRight, Loader2, Pencil, Plus, Save, Trash2, X } from "lucide-react";
+import { ChevronDown, ChevronRight, Loader2, Pencil, Plus, Save, Trash2, X, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export type CategoryRow = {
@@ -15,6 +15,7 @@ export type CategoryRow = {
   image_url: string | null;
   parent_id: string | null;
   sort_order: number;
+  is_visible?: boolean;
 };
 
 function slugify(s: string): string {
@@ -160,16 +161,50 @@ function CategoryRowEdit({
   onSaved: () => void;
 }) {
   const [open, setOpen] = React.useState(false);
+  const [visToggling, setVisToggling] = React.useState(false);
+  const visible = cat.is_visible !== false;
+
+  async function toggleVisible() {
+    setVisToggling(true);
+    try {
+      await fetch(`/api/categories/${cat.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isVisible: !visible }),
+      });
+      onSaved();
+    } finally {
+      setVisToggling(false);
+    }
+  }
 
   return (
     <div className="flex flex-1 items-center gap-2 min-w-0">
       <div className="min-w-0">
-        <p className="truncate text-sm font-semibold">{cat.name}</p>
+        <p className={`truncate text-sm font-semibold ${visible ? "" : "text-muted-foreground line-through"}`}>
+          {cat.name}
+          {!visible && <span className="ml-1 text-[10px] font-normal no-underline">(ukryta)</span>}
+        </p>
         <p className="text-xs text-muted-foreground">/sklep?category={cat.slug}</p>
       </div>
       <button
+        onClick={toggleVisible}
+        disabled={visToggling}
+        className="ml-1 shrink-0 rounded p-1 hover:bg-muted disabled:opacity-40"
+        aria-label={visible ? "Ukryj kategorię" : "Pokaż kategorię"}
+        title={visible ? "Widoczna — kliknij aby ukryć" : "Ukryta — kliknij aby pokazać"}
+      >
+        {visToggling ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+        ) : visible ? (
+          <Eye className="h-3.5 w-3.5 text-primary" />
+        ) : (
+          <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />
+        )}
+      </button>
+      <button
         onClick={() => setOpen(true)}
-        className="ml-1 shrink-0 rounded p-1 hover:bg-muted"
+        className="shrink-0 rounded p-1 hover:bg-muted"
         aria-label="Edytuj kategorię"
       >
         <Pencil className="h-3.5 w-3.5 text-muted-foreground" />

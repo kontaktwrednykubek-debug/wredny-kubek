@@ -59,7 +59,8 @@ export default async function ShopPage({
   const [categoriesRes, allRangeRes, productsRes, wishlistRes] = await Promise.all([
     supabase
       .from("categories")
-      .select("id, slug, name, description, long_description, image_url, parent_id, sort_order")
+      .select("id, slug, name, description, long_description, image_url, parent_id, sort_order, is_visible")
+      .neq("is_visible", false)
       .order("sort_order", { ascending: true }),
     supabase
       .from("shop_products")

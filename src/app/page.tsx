@@ -40,6 +40,7 @@ export default async function HomePage() {
       .from("categories")
       .select("id, slug, name, description, image_url, parent_id, sort_order")
       .is("parent_id", null)
+      .neq("is_visible", false)
       .order("sort_order", { ascending: true }),
     supabase
       .from("shop_products")
@@ -62,7 +63,8 @@ export default async function HomePage() {
   // Pobierz dzieci dla każdego rodzica (drugie zapytanie w pamięci).
   const allCatsRes = await supabase
     .from("categories")
-    .select("id, slug, parent_id");
+    .select("id, slug, parent_id")
+    .neq("is_visible", false);
   const childrenMap = new Map<string, string[]>();
   for (const c of allCatsRes.data ?? []) {
     if (c.parent_id) {
