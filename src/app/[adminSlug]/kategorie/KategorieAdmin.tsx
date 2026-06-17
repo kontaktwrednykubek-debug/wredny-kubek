@@ -167,11 +167,19 @@ function CategoryRowEdit({
   async function toggleVisible() {
     setVisToggling(true);
     try {
-      await fetch(`/api/categories/${cat.id}`, {
+      const res = await fetch(`/api/categories/${cat.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isVisible: !visible }),
       });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        alert(
+          `Nie udało się zmienić widoczności: ${j.error ?? res.statusText}.\n` +
+            `Jeśli błąd dotyczy kolumny "is_visible" — w Supabase: Settings → API → Reload schema cache.`,
+        );
+        return;
+      }
       onSaved();
     } finally {
       setVisToggling(false);
