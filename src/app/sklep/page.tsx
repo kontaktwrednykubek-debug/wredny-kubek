@@ -68,7 +68,7 @@ export default async function ShopPage({
     supabase
       .from("shop_products")
       .select(
-        "slug, title, price_grosze, images, rating, reviews_count, category, variants",
+        "slug, title, price_grosze, images, rating, reviews_count, category, categories, variants",
       )
       .eq("is_published", true)
       .order("created_at", { ascending: false }),
@@ -111,8 +111,11 @@ export default async function ShopPage({
     const price = (p.price_grosze as number) ?? 0;
     if (price < selectedMinGr || price > selectedMaxGr) return false;
     if (selectedCategory) {
-      const cat = (p.category as string | null) ?? "";
-      if (!childSlugs.has(cat)) return false;
+      // Produkt może należeć do wielu kategorii — sprawdzamy całą tablicę,
+      // nie tylko główną (category). Fallback na pojedyncze pole.
+      const cats =
+        (p.categories as string[] | null) ?? [(p.category as string | null) ?? ""];
+      if (!cats.some((c) => childSlugs.has(c))) return false;
     }
     if (searchQuery && !((p.title as string) ?? "").toLowerCase().includes(searchQuery)) return false;
     return true;
