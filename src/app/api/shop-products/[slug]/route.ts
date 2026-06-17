@@ -79,7 +79,7 @@ export async function DELETE(
 const variantsSchema = z
   .object({
     colors: z.array(z.object({ name: z.string(), hex: z.string() })).optional(),
-    cupColors: z.array(z.object({ id: z.string(), name: z.string(), imageUrl: z.string() })).optional(),
+    cupColors: z.array(z.object({ id: z.string(), name: z.string(), imageUrl: z.string(), priceGrosze: z.number().int().min(0).nullable().optional() })).optional(),
     capacities: z.array(z.string()).optional(),
     sizes: z.array(z.string()).optional(),
     options: z.array(z.object({ label: z.string(), values: z.array(z.string()) })).optional(),
