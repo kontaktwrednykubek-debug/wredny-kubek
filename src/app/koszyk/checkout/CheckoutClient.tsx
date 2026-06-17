@@ -696,20 +696,43 @@ export function CheckoutClient({
                     )}
                   </label>
                   
-                  <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
-                    <p className="mb-3 text-sm font-semibold text-foreground">
-                      📍 Sprawdź, gdzie znajduje się Twój paczkomat
-                    </p>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="w-full border-primary text-primary hover:bg-primary hover:text-primary-foreground"
-                      onClick={() => window.open('https://inpost.pl/znajdz-paczkomat', '_blank', 'noopener,noreferrer')}
-                    >
-                      Otwórz mapę paczkomatów InPost
-                    </Button>
-                  </div>
+                  {(() => {
+                    const nm = (isInternational ? intlMethod?.name : method?.name)?.toLowerCase() ?? "";
+                    const isDpd = nm.includes("dpd");
+                    const isInpost = nm.includes("paczkomat") || nm.includes("inpost");
+                    // gdy nie rozpoznano przewoźnika — pokaż obie mapy
+                    const showInpost = isInpost || (!isDpd && !isInpost);
+                    const showDpd = isDpd || (!isDpd && !isInpost);
+                    return (
+                      <div className="space-y-2 rounded-lg border border-primary/30 bg-primary/5 p-4">
+                        <p className="text-sm font-semibold text-foreground">
+                          📍 Znajdź swój punkt odbioru
+                        </p>
+                        {showInpost && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="w-full border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                            onClick={() => window.open("https://inpost.pl/znajdz-paczkomat", "_blank", "noopener,noreferrer")}
+                          >
+                            Otwórz mapę paczkomatów InPost
+                          </Button>
+                        )}
+                        {showDpd && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="w-full border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                            onClick={() => window.open("https://www.dpd.com.pl/dla-ciebie/znajdz-punkt-dpd-pickup", "_blank", "noopener,noreferrer")}
+                          >
+                            Otwórz mapę punktów DPD Pickup
+                          </Button>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
             </CardContent>

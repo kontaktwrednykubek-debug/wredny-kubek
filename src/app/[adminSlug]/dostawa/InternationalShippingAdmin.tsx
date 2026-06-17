@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Loader2, Plus, Trash2, Globe, Package, Pencil, Check, X } from "lucide-react";
+import { Loader2, Plus, Trash2, Globe, Package, Pencil, Check, X, ChevronUp, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/lib/utils";
 
@@ -12,6 +12,7 @@ type CountryMethod = {
   price_grosze: number;
   requires_parcel_code: boolean;
   is_active: boolean;
+  sort_order: number;
 };
 
 type Country = {
@@ -19,6 +20,7 @@ type Country = {
   code: string;
   name: string;
   is_active: boolean;
+  sort_order: number;
   methods: CountryMethod[];
 };
 
@@ -82,6 +84,27 @@ export function InternationalShippingAdmin() {
     setCountries((prev) => prev.map((c) => (c.id === id ? { ...c, is_active: active } : c)));
   }
 
+  // Zamiana kolejności krajów (góra/dół) — wymienia sort_order z sąsiadem.
+  async function moveCountry(index: number, dir: -1 | 1) {
+    const j = index + dir;
+    if (j < 0 || j >= countries.length) return;
+    const a = countries[index];
+    const b = countries[j];
+    await Promise.all([
+      fetch(`/api/admin/shipping-countries/${a.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sort_order: b.sort_order }),
+      }),
+      fetch(`/api/admin/shipping-countries/${b.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sort_order: a.sort_order }),
+      }),
+    ]);
+    await load();
+  }
+
   return (
     <div className="space-y-5">
       <div>
@@ -127,10 +150,13 @@ export function InternationalShippingAdmin() {
         </div>
       ) : (
         <div className="space-y-4">
-          {countries.map((c) => (
+          {countries.map((c, i) => (
             <CountryCard
               key={c.id}
               country={c}
+              index={i}
+              total={countries.length}
+              onMove={(dir) => moveCountry(i, dir)}
               onDelete={() => deleteCountry(c.id)}
               onToggle={(a) => toggleCountry(c.id, a)}
               onReload={load}
@@ -144,11 +170,17 @@ export function InternationalShippingAdmin() {
 
 function CountryCard({
   country,
+  index,
+  total,
+  onMove,
   onDelete,
   onToggle,
   onReload,
 }: {
   country: Country;
+  index: number;
+  total: number;
+  onMove: (dir: -1 | 1) => void;
   onDelete: () => void;
   onToggle: (active: boolean) => void;
   onReload: () => Promise<void>;
@@ -204,6 +236,27 @@ function CountryCard({
     await onReload();
   }
 
+  // Zmiana kolejności metod w obrębie kraju (góra/dół)
+  async function moveMethod(i: number, dir: -1 | 1) {
+    const j = i + dir;
+    if (j < 0 || j >= country.methods.length) return;
+    const a = country.methods[i];
+    const b = country.methods[j];
+    await Promise.all([
+      fetch(`/api/admin/shipping-country-methods/${a.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sort_order: b.sort_order }),
+      }),
+      fetch(`/api/admin/shipping-country-methods/${b.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sort_order: a.sort_order }),
+      }),
+    ]);
+    await onReload();
+  }
+
   return (
     <div className={`rounded-2xl border p-4 ${country.is_active ? "border-border bg-card" : "border-border bg-muted/40 opacity-70"}`}>
       <div className="flex items-center justify-between gap-3">
@@ -238,6 +291,24 @@ function CountryCard({
         ) : (
           <>
             <div className="flex items-center gap-2">
+              <div className="flex flex-col">
+                <button
+                  onClick={() => onMove(-1)}
+                  disabled={index === 0}
+                  aria-label="W górę"
+                  className="text-muted-foreground hover:text-primary disabled:opacity-30"
+                >
+                  <ChevronUp className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => onMove(1)}
+                  disabled={index === total - 1}
+                  aria-label="W dół"
+                  className="text-muted-foreground hover:text-primary disabled:opacity-30"
+                >
+                  <ChevronDown className="h-4 w-4" />
+                </button>
+              </div>
               <span className="rounded-md bg-primary/10 px-2 py-0.5 font-mono text-sm font-bold text-primary">
                 {country.code}
               </span>
@@ -274,8 +345,16 @@ function CountryCard({
         {country.methods.length === 0 ? (
           <p className="text-xs text-muted-foreground">Brak metod — dodaj poniżej.</p>
         ) : (
-          country.methods.map((m) => (
-            <MethodRow key={m.id} method={m} onReload={onReload} onDelete={() => deleteMethod(m.id)} />
+          country.methods.map((m, i) => (
+            <MethodRow
+              key={m.id}
+              method={m}
+              index={i}
+              total={country.methods.length}
+              onMove={(dir) => moveMethod(i, dir)}
+              onReload={onReload}
+              onDelete={() => deleteMethod(m.id)}
+            />
           ))
         )}
 
@@ -305,10 +384,16 @@ function CountryCard({
 
 function MethodRow({
   method,
+  index,
+  total,
+  onMove,
   onReload,
   onDelete,
 }: {
   method: CountryMethod;
+  index: number;
+  total: number;
+  onMove: (dir: -1 | 1) => void;
   onReload: () => Promise<void>;
   onDelete: () => void;
 }) {
@@ -374,6 +459,24 @@ function MethodRow({
         method.is_active ? "" : "opacity-60"
       }`}
     >
+      <div className="flex flex-col">
+        <button
+          onClick={() => onMove(-1)}
+          disabled={index === 0}
+          aria-label="W górę"
+          className="text-muted-foreground hover:text-primary disabled:opacity-30"
+        >
+          <ChevronUp className="h-4 w-4" />
+        </button>
+        <button
+          onClick={() => onMove(1)}
+          disabled={index === total - 1}
+          aria-label="W dół"
+          className="text-muted-foreground hover:text-primary disabled:opacity-30"
+        >
+          <ChevronDown className="h-4 w-4" />
+        </button>
+      </div>
       <Package className="h-4 w-4 shrink-0 text-muted-foreground" />
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium">
