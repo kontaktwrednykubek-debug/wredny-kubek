@@ -197,14 +197,9 @@ export default async function ShopPage({
                             {p.title}
                           </p>
                           <div className="mt-2 flex items-start justify-between">
-                            <div>
-                              <span className="text-lg font-bold text-primary">
-                                {priceLabel(p.price_grosze as number, p.variants)}
-                              </span>
-                              <p className="text-[10px] leading-tight text-muted-foreground">
-                                w tym podatek VAT 23%
-                              </p>
-                            </div>
+                            <span className="text-lg font-bold text-primary">
+                              {priceLabel(p.price_grosze as number, p.variants)}
+                            </span>
                             <span className="flex items-center gap-1 text-xs text-muted-foreground">
                               <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
                               {Number(p.rating).toFixed(1)} ({p.reviews_count})
