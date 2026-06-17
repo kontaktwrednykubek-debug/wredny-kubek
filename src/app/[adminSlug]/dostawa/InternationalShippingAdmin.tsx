@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Loader2, Plus, Trash2, Globe, Package } from "lucide-react";
+import { Loader2, Plus, Trash2, Globe, Package, Pencil, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/lib/utils";
 
@@ -158,6 +158,21 @@ function CountryCard({
   const [mParcel, setMParcel] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
 
+  // Edycja danych kraju (kod + nazwa)
+  const [editingCountry, setEditingCountry] = React.useState(false);
+  const [cCode, setCCode] = React.useState(country.code);
+  const [cName, setCName] = React.useState(country.name);
+
+  async function saveCountry() {
+    await fetch(`/api/admin/shipping-countries/${country.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: cCode.trim().toUpperCase(), name: cName.trim() }),
+    });
+    setEditingCountry(false);
+    await onReload();
+  }
+
   async function addMethod(e: React.FormEvent) {
     e.preventDefault();
     if (!mName.trim()) return;
@@ -192,26 +207,66 @@ function CountryCard({
   return (
     <div className={`rounded-2xl border p-4 ${country.is_active ? "border-border bg-card" : "border-border bg-muted/40 opacity-70"}`}>
       <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <span className="rounded-md bg-primary/10 px-2 py-0.5 font-mono text-sm font-bold text-primary">
-            {country.code}
-          </span>
-          <span className="font-semibold">{country.name}</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <label className="flex cursor-pointer items-center gap-1.5 text-xs">
+        {editingCountry ? (
+          <div className="flex flex-1 items-center gap-2">
             <input
-              type="checkbox"
-              checked={country.is_active}
-              onChange={(e) => onToggle(e.target.checked)}
-              className="h-4 w-4"
+              value={cCode}
+              onChange={(e) => setCCode(e.target.value.toUpperCase())}
+              maxLength={3}
+              className={`${inputCls} w-20 uppercase`}
             />
-            Aktywny
-          </label>
-          <Button variant="ghost" size="sm" onClick={onDelete} className="gap-1 text-red-600 hover:bg-red-50">
-            <Trash2 className="h-3.5 w-3.5" /> Usuń
-          </Button>
-        </div>
+            <input
+              value={cName}
+              onChange={(e) => setCName(e.target.value)}
+              className={`${inputCls} flex-1`}
+            />
+            <Button size="sm" onClick={saveCountry} className="gap-1">
+              <Check className="h-3.5 w-3.5" /> Zapisz
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setCCode(country.code);
+                setCName(country.name);
+                setEditingCountry(false);
+              }}
+            >
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center gap-2">
+              <span className="rounded-md bg-primary/10 px-2 py-0.5 font-mono text-sm font-bold text-primary">
+                {country.code}
+              </span>
+              <span className="font-semibold">{country.name}</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <label className="flex cursor-pointer items-center gap-1.5 text-xs">
+                <input
+                  type="checkbox"
+                  checked={country.is_active}
+                  onChange={(e) => onToggle(e.target.checked)}
+                  className="h-4 w-4"
+                />
+                Aktywny
+              </label>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setEditingCountry(true)}
+                className="gap-1"
+              >
+                <Pencil className="h-3.5 w-3.5" /> Edytuj
+              </Button>
+              <Button variant="ghost" size="sm" onClick={onDelete} className="gap-1 text-red-600 hover:bg-red-50">
+                <Trash2 className="h-3.5 w-3.5" /> Usuń
+              </Button>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Metody wysyłki dla tego kraju */}
@@ -220,23 +275,7 @@ function CountryCard({
           <p className="text-xs text-muted-foreground">Brak metod — dodaj poniżej.</p>
         ) : (
           country.methods.map((m) => (
-            <div key={m.id} className="flex items-center gap-3 rounded-xl border border-border bg-background p-2.5">
-              <Package className="h-4 w-4 shrink-0 text-muted-foreground" />
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium">{m.name}</p>
-                {m.requires_parcel_code && (
-                  <p className="text-xs text-muted-foreground">wymaga kodu punktu odbioru</p>
-                )}
-              </div>
-              <span className="shrink-0 text-sm font-bold text-primary">{formatPrice(m.price_grosze)}</span>
-              <button
-                onClick={() => deleteMethod(m.id)}
-                aria-label="Usuń metodę"
-                className="rounded-full p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </div>
+            <MethodRow key={m.id} method={m} onReload={onReload} onDelete={() => deleteMethod(m.id)} />
           ))
         )}
 
@@ -260,6 +299,106 @@ function CountryCard({
           </Button>
         </form>
       </div>
+    </div>
+  );
+}
+
+function MethodRow({
+  method,
+  onReload,
+  onDelete,
+}: {
+  method: CountryMethod;
+  onReload: () => Promise<void>;
+  onDelete: () => void;
+}) {
+  const [editing, setEditing] = React.useState(false);
+  const [name, setName] = React.useState(method.name);
+  const [price, setPrice] = React.useState((method.price_grosze / 100).toFixed(2));
+  const [parcel, setParcel] = React.useState(method.requires_parcel_code);
+  const [active, setActive] = React.useState(method.is_active);
+  const [busy, setBusy] = React.useState(false);
+
+  async function save() {
+    setBusy(true);
+    try {
+      await fetch(`/api/admin/shipping-country-methods/${method.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name.trim(),
+          price_grosze: Math.round((parseFloat(price.replace(",", ".")) || 0) * 100),
+          requires_parcel_code: parcel,
+          is_active: active,
+        }),
+      });
+      setEditing(false);
+      await onReload();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (editing) {
+    return (
+      <div className="flex flex-wrap items-end gap-2 rounded-xl border border-primary/40 bg-primary/5 p-2.5">
+        <label className="block flex-1 min-w-[140px]">
+          <span className="text-xs font-medium">Nazwa</span>
+          <input value={name} onChange={(e) => setName(e.target.value)} className={inputCls} />
+        </label>
+        <label className="block w-24">
+          <span className="text-xs font-medium">Cena (zł)</span>
+          <input value={price} onChange={(e) => setPrice(e.target.value)} inputMode="decimal" className={inputCls} />
+        </label>
+        <label className="flex items-center gap-1.5 pb-2 text-xs">
+          <input type="checkbox" checked={parcel} onChange={(e) => setParcel(e.target.checked)} className="h-4 w-4" />
+          Paczkomat
+        </label>
+        <label className="flex items-center gap-1.5 pb-2 text-xs">
+          <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} className="h-4 w-4" />
+          Aktywna
+        </label>
+        <Button size="sm" onClick={save} disabled={busy} className="gap-1">
+          {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />} Zapisz
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => setEditing(false)}>
+          <X className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`flex items-center gap-3 rounded-xl border border-border bg-background p-2.5 ${
+        method.is_active ? "" : "opacity-60"
+      }`}
+    >
+      <Package className="h-4 w-4 shrink-0 text-muted-foreground" />
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium">
+          {method.name}
+          {!method.is_active && <span className="ml-2 text-xs text-muted-foreground">(wyłączona)</span>}
+        </p>
+        {method.requires_parcel_code && (
+          <p className="text-xs text-muted-foreground">wymaga kodu punktu odbioru</p>
+        )}
+      </div>
+      <span className="shrink-0 text-sm font-bold text-primary">{formatPrice(method.price_grosze)}</span>
+      <button
+        onClick={() => setEditing(true)}
+        aria-label="Edytuj metodę"
+        className="rounded-full p-1.5 text-muted-foreground hover:bg-primary/10 hover:text-primary"
+      >
+        <Pencil className="h-4 w-4" />
+      </button>
+      <button
+        onClick={onDelete}
+        aria-label="Usuń metodę"
+        className="rounded-full p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+      >
+        <Trash2 className="h-4 w-4" />
+      </button>
     </div>
   );
 }
