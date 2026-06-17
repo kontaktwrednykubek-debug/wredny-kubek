@@ -16,6 +16,7 @@ export type CategoryRow = {
   parent_id: string | null;
   sort_order: number;
   is_visible?: boolean;
+  is_adult?: boolean;
 };
 
 function slugify(s: string): string {
@@ -254,6 +255,7 @@ function EditCategoryModal({
   const [metaDesc, setMetaDesc] = React.useState(cat.meta_description ?? "");
   const [imageUrl, setImageUrl] = React.useState(cat.image_url ?? "");
   const [sortOrder, setSortOrder] = React.useState(String(cat.sort_order));
+  const [isAdult, setIsAdult] = React.useState(cat.is_adult === true);
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -277,6 +279,7 @@ function EditCategoryModal({
           metaDescription: metaDesc.trim(),
           imageUrl: imageUrl.trim() || null,
           sortOrder: parseInt(sortOrder, 10) || 100,
+          isAdult,
         }),
       });
       if (!res.ok) {
@@ -385,6 +388,21 @@ function EditCategoryModal({
             onChange={(e) => setSortOrder(e.target.value)}
             className="w-28 rounded-xl border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
+        </label>
+
+        <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-amber-400/50 bg-amber-50/50 p-3 dark:bg-amber-950/10">
+          <input
+            type="checkbox"
+            checked={isAdult}
+            onChange={(e) => setIsAdult(e.target.checked)}
+            className="mt-0.5 h-4 w-4 accent-amber-500"
+          />
+          <span className="text-sm">
+            <span className="font-semibold">Kategoria 18+ (treści dla dorosłych)</span>
+            <span className="mt-0.5 block text-xs text-muted-foreground">
+              Przy wejściu do tej kategorii klient zobaczy klauzulę potwierdzenia wieku.
+            </span>
+          </span>
         </label>
 
         {error && <p className="text-sm text-destructive">{error}</p>}

@@ -5,6 +5,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatPrice } from "@/lib/utils";
 import { ShopFilters, type Category } from "./ShopFilters";
 import { WishlistButton } from "@/components/WishlistButton";
+import { AgeGate } from "./AgeGate";
 
 /**
  * Etykieta ceny na kafelku: zakres od najtańszego do najdroższego wariantu
@@ -59,7 +60,7 @@ export default async function ShopPage({
   const [categoriesRes, allRangeRes, productsRes, wishlistRes] = await Promise.all([
     supabase
       .from("categories")
-      .select("id, slug, name, description, long_description, image_url, parent_id, sort_order, is_visible")
+      .select("id, slug, name, description, long_description, image_url, parent_id, sort_order, is_visible, is_adult")
       .neq("is_visible", false)
       .order("sort_order", { ascending: true }),
     supabase
@@ -130,8 +131,21 @@ export default async function ShopPage({
   const shortDesc = selectedCat?.description ?? null;
   const longDesc = selectedCat?.long_description ?? null;
 
+  // Bramka 18+: gdy wybrana kategoria (lub jej rodzic) jest oznaczona jako dla dorosłych.
+  type CatAdult = Category & { is_adult?: boolean; parent_id?: string | null };
+  let requireAgeGate = false;
+  if (selectedCat) {
+    const sc = selectedCat as CatAdult;
+    requireAgeGate = sc.is_adult === true;
+    if (!requireAgeGate && sc.parent_id) {
+      const parent = (categories as CatAdult[]).find((c) => c.id === sc.parent_id);
+      requireAgeGate = parent?.is_adult === true;
+    }
+  }
+
   return (
     <>
+      {requireAgeGate && selectedCategory && <AgeGate categorySlug={selectedCategory} />}
       <header className="bg-muted">
         <div className="container mx-auto px-5 py-10 sm:px-6 lg:px-10 xl:px-12">
           <h1 className="text-3xl font-bold tracking-tight">{headerLabel}</h1>

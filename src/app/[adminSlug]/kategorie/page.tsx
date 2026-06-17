@@ -7,7 +7,7 @@ export default async function KategoriePage() {
   const supabase = createSupabaseServerClient();
   const { data } = await supabase
     .from("categories")
-    .select("id, slug, name, description, long_description, meta_description, image_url, parent_id, sort_order, is_visible")
+    .select("id, slug, name, description, long_description, meta_description, image_url, parent_id, sort_order, is_visible, is_adult")
     .order("sort_order", { ascending: true });
 
   const categories: CategoryRow[] = (data ?? []).map((c) => ({
@@ -21,6 +21,7 @@ export default async function KategoriePage() {
     parent_id: (c.parent_id as string | null) ?? null,
     sort_order: (c.sort_order as number) ?? 100,
     is_visible: (c.is_visible as boolean | null) ?? true,
+    is_adult: (c.is_adult as boolean | null) ?? false,
   }));
 
   return <KategorieAdmin categories={categories} />;

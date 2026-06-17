@@ -12,6 +12,7 @@ const patchSchema = z.object({
   imageUrl: z.string().url("").or(z.literal("")).nullable().optional(),
   sortOrder: z.number().int().min(0).max(99999).optional(),
   isVisible: z.boolean().optional(),
+  isAdult: z.boolean().optional(),
 });
 
 async function requireAdmin() {
@@ -58,6 +59,7 @@ export async function PATCH(
   if (p.imageUrl !== undefined) update.image_url = p.imageUrl || null;
   if (p.sortOrder !== undefined) update.sort_order = p.sortOrder;
   if (p.isVisible !== undefined) update.is_visible = p.isVisible;
+  if (p.isAdult !== undefined) update.is_adult = p.isAdult;
 
   const { error } = await auth.supabase
     .from("categories")
