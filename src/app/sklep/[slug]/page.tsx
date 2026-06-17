@@ -12,6 +12,7 @@ import { ProductRatingTrigger } from "./ProductRatingTrigger";
 import { ViewCounter } from "./ViewCounter";
 import { RelatedProducts } from "./RelatedProducts";
 import { WrednyChatButton } from "./WrednyChatButton";
+import { AgeGate } from "../AgeGate";
 
 export async function generateMetadata({
   params,
@@ -43,13 +44,32 @@ export default async function ProductDetailsPage({
   const { data: product } = await supabase
     .from("shop_products")
     .select(
-      "id, slug, title, description, body, category, price_grosze, images, specs, variants, rating, reviews_count, show_variant_stock, variant_stock, show_view_counter, view_count_base",
+      "id, slug, title, description, body, category, categories, price_grosze, images, specs, variants, rating, reviews_count, show_variant_stock, variant_stock, show_view_counter, view_count_base",
     )
     .eq("slug", params.slug)
     .eq("is_published", true)
     .maybeSingle();
 
   if (!product) notFound();
+
+  // Bramka 18+: jeśli produkt należy do JAKIEJKOLWIEK kategorii dla dorosłych
+  // (flaga is_adult lub nazwa/slug 18/wulgar/doros) — pokaż klauzulę wieku.
+  const prodCats =
+    (product.categories as string[] | null) ??
+    [(product.category as string | null) ?? ""].filter(Boolean);
+  const { data: adultCatsData } = await supabase
+    .from("categories")
+    .select("slug, name, is_adult");
+  const adultSlugs = new Set(
+    (adultCatsData ?? [])
+      .filter(
+        (c) =>
+          c.is_adult === true ||
+          /18\+?|wulgar|doros/i.test(`${c.slug ?? ""} ${c.name ?? ""}`),
+      )
+      .map((c) => c.slug as string),
+  );
+  const isAdultProduct = prodCats.some((c) => adultSlugs.has(c));
 
   const images = (product.images as string[]) ?? [];
   const specs = (product.specs as Record<string, string>) ?? {};
@@ -63,6 +83,7 @@ export default async function ProductDetailsPage({
 
   return (
     <section className="container mx-auto max-w-6xl px-4 py-6 sm:py-8 mx-4 sm:mx-0">
+      {isAdultProduct && <AgeGate categorySlug={product.slug} />}
       <BackLink href="/sklep" label="Wróć do sklepu" />
 
       <div className="grid gap-6 lg:gap-8 lg:grid-cols-2">
