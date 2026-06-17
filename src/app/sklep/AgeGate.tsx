@@ -49,21 +49,28 @@ export function AgeGate({ categorySlug }: { categorySlug: string }) {
         </div>
         <h2 className="text-2xl font-extrabold">Treści dla dorosłych 18+</h2>
         <p className="mt-3 text-sm text-muted-foreground">
-          Ta kategoria zawiera produkty o charakterze wulgarnym / dla dorosłych
-          (mocne słownictwo, treści 18+). Wchodząc, oświadczasz, że masz
-          ukończone <strong>18 lat</strong> i przeglądasz te treści
-          dobrowolnie, na własną odpowiedzialność.
+          Uwaga! Wchodzisz do sekcji przeznaczonej{" "}
+          <strong>wyłącznie dla osób pełnoletnich</strong>. Znajdziesz tu
+          produkty o charakterze wulgarnym i humorze dla dorosłych — mocne,
+          dosadne słownictwo i treści, które mogą być uznane za nieodpowiednie
+          lub obraźliwe.
+        </p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Klikając „wchodzę" oświadczasz, że masz ukończone{" "}
+          <strong>18 lat</strong> i przeglądasz te treści świadomie,
+          dobrowolnie i <strong>na własną odpowiedzialność</strong>. Sklep nie
+          ponosi odpowiedzialności za odbiór tych treści.
         </p>
         <p className="mt-2 text-xs text-muted-foreground/80">
-          Jeśli nie masz ukończonych 18 lat lub nie chcesz oglądać takich
-          treści — opuść tę kategorię.
+          Jeśli nie masz ukończonych 18 lat lub takie treści Ci nie odpowiadają
+          — opuść tę sekcję.
         </p>
         <div className="mt-6 flex flex-col gap-2">
           <Button onClick={accept} size="lg" className="w-full">
             Mam ukończone 18 lat — wchodzę
           </Button>
           <Button onClick={decline} size="lg" variant="outline" className="w-full">
-            Wyjdź
+            Nie mam 18 lat / wyjdź
           </Button>
         </div>
       </div>

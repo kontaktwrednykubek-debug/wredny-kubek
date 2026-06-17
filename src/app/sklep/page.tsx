@@ -131,15 +131,18 @@ export default async function ShopPage({
   const shortDesc = selectedCat?.description ?? null;
   const longDesc = selectedCat?.long_description ?? null;
 
-  // Bramka 18+: gdy wybrana kategoria (lub jej rodzic) jest oznaczona jako dla dorosłych.
+  // Bramka 18+: gdy wybrana kategoria (lub jej rodzic) jest oznaczona jako dla
+  // dorosłych — flagą is_adult LUB po nazwie/slug (18, wulgarne, dorosłych).
   type CatAdult = Category & { is_adult?: boolean; parent_id?: string | null };
+  const looksAdult = (c?: CatAdult | null) =>
+    !!c && (c.is_adult === true || /18\+?|wulgar|doros/i.test(`${c.slug ?? ""} ${c.name ?? ""}`));
   let requireAgeGate = false;
   if (selectedCat) {
     const sc = selectedCat as CatAdult;
-    requireAgeGate = sc.is_adult === true;
+    requireAgeGate = looksAdult(sc);
     if (!requireAgeGate && sc.parent_id) {
       const parent = (categories as CatAdult[]).find((c) => c.id === sc.parent_id);
-      requireAgeGate = parent?.is_adult === true;
+      requireAgeGate = looksAdult(parent);
     }
   }
 
