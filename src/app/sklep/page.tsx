@@ -18,7 +18,7 @@ function priceLabel(base: number, variants: unknown): string {
     : [base];
   const min = Math.min(...prices);
   const max = Math.max(...prices);
-  return min === max ? formatPrice(min) : `${formatPrice(min)} – ${formatPrice(max)}`;
+  return min === max ? formatPrice(min) : `${formatPrice(min)}–${formatPrice(max)}`;
 }
 
 export async function generateMetadata({
@@ -196,10 +196,15 @@ export default async function ShopPage({
                           <p className="line-clamp-2 font-semibold">
                             {p.title}
                           </p>
-                          <div className="mt-2 flex items-center justify-between">
-                            <span className="text-lg font-bold text-primary">
-                              {priceLabel(p.price_grosze as number, p.variants)}
-                            </span>
+                          <div className="mt-2 flex items-start justify-between">
+                            <div>
+                              <span className="text-lg font-bold text-primary">
+                                {priceLabel(p.price_grosze as number, p.variants)}
+                              </span>
+                              <p className="text-[10px] leading-tight text-muted-foreground">
+                                w tym podatek VAT 23%
+                              </p>
+                            </div>
                             <span className="flex items-center gap-1 text-xs text-muted-foreground">
                               <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
                               {Number(p.rating).toFixed(1)} ({p.reviews_count})
