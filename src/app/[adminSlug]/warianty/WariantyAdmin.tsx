@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Loader2, Pencil, Plus, Save, Trash2, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { formatPrice } from "@/lib/utils";
 
 export type CupColorVariant = {
   id: string;
@@ -101,7 +102,7 @@ function VariantCard({
   const [savingStock, setSavingStock] = React.useState(false);
   const [editingPrice, setEditingPrice] = React.useState(false);
   const [priceVal, setPriceVal] = React.useState(
-    variant.price_grosze != null ? (variant.price_grosze / 100).toFixed(2) : "",
+    variant.price_grosze != null ? String(variant.price_grosze / 100) : "",
   );
   const [savingPrice, setSavingPrice] = React.useState(false);
   const [uploading, setUploading] = React.useState(false);
@@ -275,7 +276,7 @@ function VariantCard({
             className="flex items-center gap-1 rounded px-1 hover:bg-muted"
           >
             <span className="font-semibold text-foreground">
-              {variant.price_grosze != null ? `${(variant.price_grosze / 100).toFixed(2)} zł` : "bazowa"}
+              {variant.price_grosze != null ? formatPrice(variant.price_grosze) : "bazowa"}
             </span>
             <Pencil className="h-2.5 w-2.5 text-muted-foreground" />
           </button>
