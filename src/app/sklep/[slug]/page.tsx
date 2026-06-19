@@ -112,10 +112,13 @@ export default async function ProductDetailsPage({
             <ViewCounter productId={product.id} />
           )}
 
-          {/* Cena */}
-          <p className="text-2xl sm:text-3xl font-bold text-primary">
-            {formatPrice(product.price_grosze)}
-          </p>
+          {/* Cena — tylko dla merch (personalizacja). Dla produktów z wariantami
+              cenę pokazuje BuyNowSection (zmienia się z wybranym kolorem). */}
+          {product.category === "merch" && (
+            <p className="text-2xl sm:text-3xl font-bold text-primary">
+              {formatPrice(product.price_grosze)}
+            </p>
+          )}
 
           {/* Krótki opis */}
           {product.description && (

@@ -7,7 +7,7 @@ export default async function WariantyPage() {
   const supabase = createSupabaseServerClient();
   const { data } = await supabase
     .from("cup_color_variants")
-    .select("id, name, image_url, sort_order, stock_count")
+    .select("id, name, image_url, sort_order, stock_count, price_grosze")
     .order("sort_order", { ascending: true });
 
   const variants: CupColorVariant[] = (data ?? []).map((v) => ({
@@ -16,6 +16,7 @@ export default async function WariantyPage() {
     image_url: (v.image_url as string | null) ?? null,
     sort_order: (v.sort_order as number) ?? 100,
     stock_count: (v.stock_count as number) ?? 0,
+    price_grosze: (v.price_grosze as number | null) ?? null,
   }));
 
   return <WariantyAdmin variants={variants} />;

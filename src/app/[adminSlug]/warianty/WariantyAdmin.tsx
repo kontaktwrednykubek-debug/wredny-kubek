@@ -12,6 +12,7 @@ export type CupColorVariant = {
   image_url: string | null;
   sort_order: number;
   stock_count: number;
+  price_grosze?: number | null;
 };
 
 const inputCls =
@@ -98,7 +99,30 @@ function VariantCard({
   const [editingStock, setEditingStock] = React.useState(false);
   const [stockVal, setStockVal] = React.useState(String(variant.stock_count));
   const [savingStock, setSavingStock] = React.useState(false);
+  const [editingPrice, setEditingPrice] = React.useState(false);
+  const [priceVal, setPriceVal] = React.useState(
+    variant.price_grosze != null ? (variant.price_grosze / 100).toFixed(2) : "",
+  );
+  const [savingPrice, setSavingPrice] = React.useState(false);
   const [uploading, setUploading] = React.useState(false);
+
+  async function savePrice() {
+    const raw = priceVal.replace(",", ".").trim();
+    const n = raw ? parseFloat(raw) : NaN;
+    const priceGrosze = !isNaN(n) && n >= 0 ? Math.round(n * 100) : null;
+    setSavingPrice(true);
+    try {
+      await fetch(`/api/cup-variants/${variant.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ priceGrosze }),
+      });
+      onSaved();
+    } finally {
+      setSavingPrice(false);
+      setEditingPrice(false);
+    }
+  }
   const fileRef = React.useRef<HTMLInputElement>(null);
 
   async function saveName() {
@@ -218,6 +242,41 @@ function VariantCard({
             <span className={`font-semibold ${
               variant.stock_count === 0 ? "text-destructive" : "text-foreground"
             }`}>{variant.stock_count} szt.</span>
+            <Pencil className="h-2.5 w-2.5 text-muted-foreground" />
+          </button>
+        )}
+      </div>
+
+      {/* Cena koloru (globalna) */}
+      <div className="flex items-center justify-between border-t border-border/50 px-3 py-2 text-xs">
+        <span className="text-muted-foreground">Cena:</span>
+        {editingPrice ? (
+          <div className="flex items-center gap-1">
+            <input
+              autoFocus
+              inputMode="decimal"
+              value={priceVal}
+              onChange={(e) => setPriceVal(e.target.value)}
+              placeholder="bazowa"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") void savePrice();
+                if (e.key === "Escape") setEditingPrice(false);
+              }}
+              className="w-20 rounded border border-input bg-background px-1.5 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+            />
+            <span className="text-muted-foreground">zł</span>
+            <button onClick={() => void savePrice()} disabled={savingPrice} className="rounded p-0.5 text-primary hover:bg-primary/10">
+              {savingPrice ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setEditingPrice(true)}
+            className="flex items-center gap-1 rounded px-1 hover:bg-muted"
+          >
+            <span className="font-semibold text-foreground">
+              {variant.price_grosze != null ? `${(variant.price_grosze / 100).toFixed(2)} zł` : "bazowa"}
+            </span>
             <Pencil className="h-2.5 w-2.5 text-muted-foreground" />
           </button>
         )}

@@ -33,10 +33,10 @@ export async function GET(
     return NextResponse.json({ variants: [] });
   }
   
-  // Get only the selected cup variants with global stock
+  // Get only the selected cup variants with global stock + global price
   const { data: globalVariants, error: globalError } = await supabase
     .from("cup_color_variants")
-    .select("id, name, image_url, sort_order, stock_count")
+    .select("id, name, image_url, sort_order, stock_count, price_grosze")
     .in("id", selectedIds)
     .order("sort_order", { ascending: true });
     
@@ -69,7 +69,8 @@ export async function GET(
       imageUrl: item.image_url,
       sortOrder: item.sort_order,
       stockCount: availableStock,
-      priceGrosze: priceMap.get(item.id) ?? null, // cena custom lub null = bazowa
+      // Cena: nadpisanie per produkt > globalna cena koloru > null (=cena bazowa)
+      priceGrosze: priceMap.get(item.id) ?? item.price_grosze ?? null,
       globalStock, // For admin reference
       productStock, // For admin reference
     };
