@@ -28,8 +28,18 @@ const bodySchema = z.object({
         "Nieprawidłowy kod pocztowy",
       ),
     shippingMethod: z.string().min(2).max(80),
-    parcelCode: z.string().max(40).optional(),
+    parcelCode: z.string().max(250).optional(),
     country: z.string().max(80).optional(),
+    pickupPoint: z
+      .object({
+        name: z.string().max(120),
+        street: z.string().max(120),
+        house: z.string().max(40),
+        apt: z.string().max(40).optional(),
+        zip: z.string().max(20),
+        city: z.string().max(80),
+      })
+      .optional(),
     note: z.string().max(500).optional(),
   }),
   items: z

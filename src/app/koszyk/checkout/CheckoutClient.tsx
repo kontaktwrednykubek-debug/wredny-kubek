@@ -94,6 +94,13 @@ export function CheckoutClient({
     city: "",
     zip: "",
     parcelCode: "",
+    // Pełny adres zagranicznego punktu odbioru / automatu (gdy kraj != PL)
+    pickupName: "",
+    pickupStreet: "",
+    pickupHouse: "",
+    pickupApt: "",
+    pickupZip: "",
+    pickupCity: "",
     note: "",
   });
   // Wybór kraju: "PL" = dostawa krajowa (Polska), inaczej id kraju zagranicznego.
@@ -239,8 +246,18 @@ export function CheckoutClient({
     if (!form.zip.trim()) errs.zip = "Kod pocztowy jest wymagany";
     else if (!isInternational && !/^\d{2}-\d{3}$/.test(form.zip) && !/^\d{3,6}$/.test(form.zip))
       errs.zip = "Format: 00-000 (PL) lub 1234 (międzynarodowy)";
-    if (requiresParcelCode && !form.parcelCode.trim())
-      errs.parcelCode = "Wpisz kod paczkomatu (np. WAW123M)";
+    if (requiresParcelCode) {
+      if (isInternational) {
+        // Zagranica: pełny adres punktu odbioru (Nr lokalu opcjonalny)
+        if (!form.pickupName.trim()) errs.pickupName = "Podaj nazwę punktu odbioru";
+        if (!form.pickupStreet.trim()) errs.pickupStreet = "Podaj ulicę";
+        if (!form.pickupHouse.trim()) errs.pickupHouse = "Podaj nr domu";
+        if (!form.pickupZip.trim()) errs.pickupZip = "Podaj kod pocztowy";
+        if (!form.pickupCity.trim()) errs.pickupCity = "Podaj miasto";
+      } else if (!form.parcelCode.trim()) {
+        errs.parcelCode = "Wpisz kod paczkomatu (np. WAW123M)";
+      }
+    }
 
     if (Object.keys(errs).length > 0) {
       setFieldErrors(errs);
@@ -264,7 +281,29 @@ export function CheckoutClient({
             zip: form.zip,
             shippingMethod,
             country: isInternational ? selectedCountry?.name : "Polska",
-            parcelCode: form.parcelCode || undefined,
+            // Zagraniczny punkt odbioru: składamy pełny adres jako parcelCode
+            // (widoczny w panelu/mailu) + przekazujemy pola osobno.
+            parcelCode:
+              isInternational && requiresParcelCode
+                ? [
+                    form.pickupName.trim(),
+                    `ul. ${form.pickupStreet.trim()} ${form.pickupHouse.trim()}${form.pickupApt.trim() ? `/${form.pickupApt.trim()}` : ""}`,
+                    `${form.pickupZip.trim()} ${form.pickupCity.trim()}`,
+                  ]
+                    .filter(Boolean)
+                    .join(", ")
+                : form.parcelCode || undefined,
+            pickupPoint:
+              isInternational && requiresParcelCode
+                ? {
+                    name: form.pickupName.trim(),
+                    street: form.pickupStreet.trim(),
+                    house: form.pickupHouse.trim(),
+                    apt: form.pickupApt.trim() || undefined,
+                    zip: form.pickupZip.trim(),
+                    city: form.pickupCity.trim(),
+                  }
+                : undefined,
             note: form.note || undefined,
           },
           items: items.map((i) => {
@@ -670,7 +709,78 @@ export function CheckoutClient({
                 </>
               )}
 
-              {requiresParcelCode && (
+              {/* ZAGRANICZNY punkt odbioru — pełny adres (bez kodu automatu) */}
+              {requiresParcelCode && isInternational && (
+                <div className="block space-y-3 rounded-xl border border-primary/30 bg-primary/5 p-4">
+                  <p className="text-sm font-semibold">
+                    Adres punktu odbioru / automatu <span className="text-destructive">*</span>
+                  </p>
+                  <p className="-mt-2 text-xs text-muted-foreground">
+                    Za granicą podaj pełny adres punktu (znajdziesz go na stronie przewoźnika).
+                  </p>
+                  <label className="block">
+                    <span className="mb-1 block text-sm font-medium">Nazwa punktu odbioru</span>
+                    <input
+                      value={form.pickupName}
+                      onChange={(e) => { setForm((f) => ({ ...f, pickupName: e.target.value })); if (fieldErrors.pickupName) setFieldErrors((fe) => ({ ...fe, pickupName: "" })); }}
+                      className={fieldCls("pickupName")}
+                    />
+                    <FieldError name="pickupName" />
+                  </label>
+                  <div className="grid grid-cols-[1fr_100px_100px] gap-2">
+                    <label className="block">
+                      <span className="mb-1 block text-sm font-medium">Ulica</span>
+                      <input
+                        value={form.pickupStreet}
+                        onChange={(e) => { setForm((f) => ({ ...f, pickupStreet: e.target.value })); if (fieldErrors.pickupStreet) setFieldErrors((fe) => ({ ...fe, pickupStreet: "" })); }}
+                        className={fieldCls("pickupStreet")}
+                      />
+                      <FieldError name="pickupStreet" />
+                    </label>
+                    <label className="block">
+                      <span className="mb-1 block text-sm font-medium">Nr domu</span>
+                      <input
+                        value={form.pickupHouse}
+                        onChange={(e) => { setForm((f) => ({ ...f, pickupHouse: e.target.value })); if (fieldErrors.pickupHouse) setFieldErrors((fe) => ({ ...fe, pickupHouse: "" })); }}
+                        className={fieldCls("pickupHouse")}
+                      />
+                      <FieldError name="pickupHouse" />
+                    </label>
+                    <label className="block">
+                      <span className="mb-1 block text-sm font-medium">Nr lokalu</span>
+                      <input
+                        placeholder="opcj."
+                        value={form.pickupApt}
+                        onChange={(e) => setForm((f) => ({ ...f, pickupApt: e.target.value }))}
+                        className={inputCls}
+                      />
+                    </label>
+                  </div>
+                  <div className="grid grid-cols-[120px_1fr] gap-2">
+                    <label className="block">
+                      <span className="mb-1 block text-sm font-medium">Kod pocztowy</span>
+                      <input
+                        value={form.pickupZip}
+                        onChange={(e) => { setForm((f) => ({ ...f, pickupZip: e.target.value })); if (fieldErrors.pickupZip) setFieldErrors((fe) => ({ ...fe, pickupZip: "" })); }}
+                        className={fieldCls("pickupZip")}
+                      />
+                      <FieldError name="pickupZip" />
+                    </label>
+                    <label className="block">
+                      <span className="mb-1 block text-sm font-medium">Miasto</span>
+                      <input
+                        value={form.pickupCity}
+                        onChange={(e) => { setForm((f) => ({ ...f, pickupCity: e.target.value })); if (fieldErrors.pickupCity) setFieldErrors((fe) => ({ ...fe, pickupCity: "" })); }}
+                        className={fieldCls("pickupCity")}
+                      />
+                      <FieldError name="pickupCity" />
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              {/* KRAJOWY paczkomat — kod + mapa */}
+              {requiresParcelCode && !isInternational && (
                 <div className="block pt-2 space-y-3">
                   <label className="block">
                     <span className="mb-1 block text-sm font-medium">
@@ -695,10 +805,8 @@ export function CheckoutClient({
                       </span>
                     )}
                   </label>
-                  
-                  {/* Mapy punktów TYLKO dla dostawy krajowej (Polska).
-                      Za granicą klient wpisuje sam kod punktu (pole wyżej). */}
-                  {!isInternational && (() => {
+
+                  {(() => {
                     const nm = (method?.name)?.toLowerCase() ?? "";
                     const isDpd = nm.includes("dpd");
                     const isInpost = nm.includes("paczkomat") || nm.includes("inpost");
