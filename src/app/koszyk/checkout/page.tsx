@@ -27,7 +27,7 @@ export default async function CheckoutPage() {
       .order("sort_order", { ascending: true }),
     supabase
       .from("shipping_country_methods")
-      .select("id, country_id, name, carrier, price_grosze, requires_parcel_code, sort_order")
+      .select("id, country_id, name, carrier, price_grosze, requires_parcel_code, sort_order, shipping_country_method_tiers(id, min_quantity, price_grosze)")
       .eq("is_active", true)
       .order("sort_order", { ascending: true }),
   ]);
@@ -56,6 +56,9 @@ export default async function CheckoutPage() {
           name: m.name as string,
           priceGrosze: m.price_grosze as number,
           requiresParcelCode: Boolean(m.requires_parcel_code),
+          tiers: (
+            (m.shipping_country_method_tiers as { id: string; min_quantity: number; price_grosze: number }[]) ?? []
+          ).sort((a, b) => a.min_quantity - b.min_quantity),
         })),
     }))
     .filter((c) => c.methods.length > 0);

@@ -30,7 +30,18 @@ export type ShippingCountryMethod = {
   name: string;
   priceGrosze: number;
   requiresParcelCode: boolean;
+  tiers?: ShippingTier[];
 };
+
+/** Cena metody zagranicznej wg progów liczby sztuk (fallback: cena bazowa). */
+function calcCountryMethodPrice(m: ShippingCountryMethod | null, totalQty: number): number {
+  if (!m) return 0;
+  const tiers = m.tiers ?? [];
+  if (tiers.length === 0) return m.priceGrosze;
+  const sorted = [...tiers].sort((a, b) => b.min_quantity - a.min_quantity);
+  const tier = sorted.find((t) => t.min_quantity <= totalQty);
+  return tier?.price_grosze ?? m.priceGrosze;
+}
 
 export type ShippingCountry = {
   id: string;
@@ -134,7 +145,7 @@ export function CheckoutClient({
 
   const method = isInternational ? undefined : methods.find((m) => m.code === shippingMethod);
   const shippingPrice = isInternational
-    ? intlMethod?.priceGrosze ?? 0
+    ? calcCountryMethodPrice(intlMethod, totalQty)
     : calcShippingPrice(method, totalQty);
   const isFreeShippingDiscount = discount?.type === "free_shipping";
   // Próg darmowej dostawy obowiązuje tylko dla dostawy krajowej.
@@ -701,7 +712,9 @@ export function CheckoutClient({
                           </div>
                         </div>
                         <span className="shrink-0 text-sm font-bold text-primary">
-                          {m.priceGrosze === 0 ? "Gratis" : formatPrice(m.priceGrosze)}
+                          {calcCountryMethodPrice(m, totalQty) === 0
+                            ? "Gratis"
+                            : formatPrice(calcCountryMethodPrice(m, totalQty))}
                         </span>
                       </label>
                     );

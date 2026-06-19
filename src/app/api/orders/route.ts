@@ -175,7 +175,7 @@ export async function POST(req: Request) {
     const methodId = shipping.shippingMethod.slice("intl:".length);
     const { data: intlMethod } = await supabase
       .from("shipping_country_methods")
-      .select("id, name, carrier, price_grosze, requires_parcel_code, is_active, shipping_countries(name)")
+      .select("id, name, carrier, price_grosze, requires_parcel_code, is_active, shipping_countries(name), shipping_country_method_tiers(min_quantity, price_grosze)")
       .eq("id", methodId)
       .maybeSingle();
 
@@ -188,7 +188,15 @@ export async function POST(req: Request) {
     const countryName =
       (intlMethod.shipping_countries as { name?: string } | null)?.name ?? shipping.country ?? "";
     shippingMethodName = countryName ? `${intlMethod.name} (${countryName})` : intlMethod.name;
-    shippingPriceGr = intlMethod.price_grosze ?? 0;
+    // Cena wg progów liczby sztuk (fallback: cena bazowa)
+    const iTiers = (intlMethod.shipping_country_method_tiers as { min_quantity: number; price_grosze: number }[]) ?? [];
+    let iPrice = intlMethod.price_grosze ?? 0;
+    if (iTiers.length > 0) {
+      const sorted = [...iTiers].sort((a, b) => b.min_quantity - a.min_quantity);
+      const tier = sorted.find((t) => t.min_quantity <= totalQty);
+      if (tier) iPrice = tier.price_grosze;
+    }
+    shippingPriceGr = iPrice;
     shippingCarrier = (intlMethod.carrier as string | null) ?? null;
     requiresParcel = Boolean(intlMethod.requires_parcel_code);
   } else {

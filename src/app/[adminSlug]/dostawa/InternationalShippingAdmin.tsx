@@ -5,6 +5,8 @@ import { Loader2, Plus, Trash2, Globe, Package, Pencil, Check, X, ChevronUp, Che
 import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/lib/utils";
 
+type MethodTier = { id: string; min_quantity: number; price_grosze: number };
+
 type CountryMethod = {
   id: string;
   name: string;
@@ -13,6 +15,7 @@ type CountryMethod = {
   requires_parcel_code: boolean;
   is_active: boolean;
   sort_order: number;
+  tiers?: MethodTier[];
 };
 
 type Country = {
@@ -404,6 +407,32 @@ function MethodRow({
   const [active, setActive] = React.useState(method.is_active);
   const [busy, setBusy] = React.useState(false);
 
+  // Progi cenowe wg liczby sztuk
+  const [tierQty, setTierQty] = React.useState("");
+  const [tierPrice, setTierPrice] = React.useState("");
+  const tiers = (method.tiers ?? []).slice().sort((a, b) => a.min_quantity - b.min_quantity);
+
+  async function addTier() {
+    const q = parseInt(tierQty, 10);
+    const p = parseFloat(tierPrice.replace(",", "."));
+    if (isNaN(q) || q < 1 || isNaN(p) || p < 0) return;
+    await fetch(`/api/admin/shipping-country-methods/${method.id}/tiers`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ min_quantity: q, price_grosze: Math.round(p * 100) }),
+    });
+    setTierQty("");
+    setTierPrice("");
+    await onReload();
+  }
+
+  async function deleteTier(tierId: string) {
+    await fetch(`/api/admin/shipping-country-methods/${method.id}/tiers/${tierId}`, {
+      method: "DELETE",
+    });
+    await onReload();
+  }
+
   async function save() {
     setBusy(true);
     try {
@@ -454,54 +483,85 @@ function MethodRow({
   }
 
   return (
-    <div
-      className={`flex items-center gap-3 rounded-xl border border-border bg-background p-2.5 ${
-        method.is_active ? "" : "opacity-60"
-      }`}
-    >
-      <div className="flex flex-col">
+    <div className={`space-y-2 rounded-xl border border-border bg-background p-2.5 ${method.is_active ? "" : "opacity-60"}`}>
+      <div className="flex items-center gap-3">
+        <div className="flex flex-col">
+          <button
+            onClick={() => onMove(-1)}
+            disabled={index === 0}
+            aria-label="W górę"
+            className="text-muted-foreground hover:text-primary disabled:opacity-30"
+          >
+            <ChevronUp className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => onMove(1)}
+            disabled={index === total - 1}
+            aria-label="W dół"
+            className="text-muted-foreground hover:text-primary disabled:opacity-30"
+          >
+            <ChevronDown className="h-4 w-4" />
+          </button>
+        </div>
+        <Package className="h-4 w-4 shrink-0 text-muted-foreground" />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium">
+            {method.name}
+            {!method.is_active && <span className="ml-2 text-xs text-muted-foreground">(wyłączona)</span>}
+          </p>
+          {method.requires_parcel_code && (
+            <p className="text-xs text-muted-foreground">wymaga kodu punktu odbioru</p>
+          )}
+        </div>
+        <span className="shrink-0 text-sm font-bold text-primary">{formatPrice(method.price_grosze)}</span>
         <button
-          onClick={() => onMove(-1)}
-          disabled={index === 0}
-          aria-label="W górę"
-          className="text-muted-foreground hover:text-primary disabled:opacity-30"
+          onClick={() => setEditing(true)}
+          aria-label="Edytuj metodę"
+          className="rounded-full p-1.5 text-muted-foreground hover:bg-primary/10 hover:text-primary"
         >
-          <ChevronUp className="h-4 w-4" />
+          <Pencil className="h-4 w-4" />
         </button>
         <button
-          onClick={() => onMove(1)}
-          disabled={index === total - 1}
-          aria-label="W dół"
-          className="text-muted-foreground hover:text-primary disabled:opacity-30"
+          onClick={onDelete}
+          aria-label="Usuń metodę"
+          className="rounded-full p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
         >
-          <ChevronDown className="h-4 w-4" />
+          <Trash2 className="h-4 w-4" />
         </button>
       </div>
-      <Package className="h-4 w-4 shrink-0 text-muted-foreground" />
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium">
-          {method.name}
-          {!method.is_active && <span className="ml-2 text-xs text-muted-foreground">(wyłączona)</span>}
+
+      {/* Progi cenowe wg liczby sztuk (jak w Polsce) */}
+      <div className="ml-7 space-y-1 border-t border-border/60 pt-2">
+        <p className="text-xs font-medium text-muted-foreground">
+          Progi cenowe wg liczby sztuk <span className="text-muted-foreground/70">(opcjonalne — bez progów obowiązuje cena wyżej)</span>
         </p>
-        {method.requires_parcel_code && (
-          <p className="text-xs text-muted-foreground">wymaga kodu punktu odbioru</p>
-        )}
+        {tiers.map((t) => (
+          <div key={t.id} className="flex items-center gap-2 text-xs">
+            <span className="text-muted-foreground">od {t.min_quantity} szt. →</span>
+            <span className="font-semibold">{formatPrice(t.price_grosze)}</span>
+            <button
+              onClick={() => deleteTier(t.id)}
+              aria-label="Usuń próg"
+              className="rounded p-0.5 text-muted-foreground hover:text-destructive"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        ))}
+        <div className="flex flex-wrap items-end gap-2 pt-0.5">
+          <label className="block w-20">
+            <span className="text-[10px] text-muted-foreground">od ilości</span>
+            <input value={tierQty} onChange={(e) => setTierQty(e.target.value)} inputMode="numeric" placeholder="np. 5" className={inputCls} />
+          </label>
+          <label className="block w-24">
+            <span className="text-[10px] text-muted-foreground">cena (zł)</span>
+            <input value={tierPrice} onChange={(e) => setTierPrice(e.target.value)} inputMode="decimal" placeholder="np. 79" className={inputCls} />
+          </label>
+          <Button size="sm" variant="outline" onClick={addTier} className="gap-1">
+            <Plus className="h-3.5 w-3.5" /> Dodaj próg
+          </Button>
+        </div>
       </div>
-      <span className="shrink-0 text-sm font-bold text-primary">{formatPrice(method.price_grosze)}</span>
-      <button
-        onClick={() => setEditing(true)}
-        aria-label="Edytuj metodę"
-        className="rounded-full p-1.5 text-muted-foreground hover:bg-primary/10 hover:text-primary"
-      >
-        <Pencil className="h-4 w-4" />
-      </button>
-      <button
-        onClick={onDelete}
-        aria-label="Usuń metodę"
-        className="rounded-full p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-      >
-        <Trash2 className="h-4 w-4" />
-      </button>
     </div>
   );
 }

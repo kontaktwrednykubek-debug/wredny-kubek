@@ -31,9 +31,19 @@ export async function GET() {
     .select("*")
     .order("sort_order", { ascending: true });
 
+  const { data: tiers } = await supabase
+    .from("shipping_country_method_tiers")
+    .select("*")
+    .order("min_quantity", { ascending: true });
+
   const result = (countries ?? []).map((c) => ({
     ...c,
-    methods: (methods ?? []).filter((m) => m.country_id === c.id),
+    methods: (methods ?? [])
+      .filter((m) => m.country_id === c.id)
+      .map((m) => ({
+        ...m,
+        tiers: (tiers ?? []).filter((t) => t.method_id === m.id),
+      })),
   }));
   return NextResponse.json({ countries: result });
 }
