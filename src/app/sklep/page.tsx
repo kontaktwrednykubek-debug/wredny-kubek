@@ -246,7 +246,9 @@ export default async function ShopPage({
                       </Link>
                     );
                     return isAdult ? (
-                      <AdultProductCard key={p.slug as string}>{card}</AdultProductCard>
+                      <AdultProductCard key={p.slug as string} cover={cover}>
+                        {card}
+                      </AdultProductCard>
                     ) : (
                       card
                     );

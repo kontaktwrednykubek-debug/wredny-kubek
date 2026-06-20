@@ -75,7 +75,9 @@ export default async function NowosciPage() {
               </Link>
             );
             return isAdult ? (
-              <AdultProductCard key={p.slug}>{card}</AdultProductCard>
+              <AdultProductCard key={p.slug} cover={cover}>
+                {card}
+              </AdultProductCard>
             ) : (
               card
             );

@@ -1,16 +1,23 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import { Lock } from "lucide-react";
 import { AgeGateModal, AGE_EVENT, confirmAge, isAgeConfirmed } from "./AgeGateModal";
 
 /**
  * Owija kartę produktu dla dorosłych. Dopóki w tej sesji nie potwierdzono 18+,
- * zamiast karty pokazuje neutralny, zablokowany kafelek (bez zdjęcia/tytułu).
- * Kliknięcie otwiera klauzulę 18+; po akceptacji odblokowują się wszystkie
- * kafelki naraz (event AGE_EVENT). Niepełnoletni nie zobaczy treści.
+ * pokazuje ROZMAZANE zdjęcie produktu z nakładką i znakiem 18+ (coś widać, ale
+ * treść jest zasłonięta). Kliknięcie otwiera klauzulę 18+; po akceptacji
+ * odblokowują się wszystkie kafelki naraz (event AGE_EVENT).
  */
-export function AdultProductCard({ children }: { children: React.ReactNode }) {
+export function AdultProductCard({
+  cover,
+  children,
+}: {
+  cover?: string | null;
+  children: React.ReactNode;
+}) {
   const [confirmed, setConfirmed] = React.useState(false);
   const [showModal, setShowModal] = React.useState(false);
 
@@ -30,12 +37,24 @@ export function AdultProductCard({ children }: { children: React.ReactNode }) {
         onClick={() => setShowModal(true)}
         className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card text-left transition hover:border-amber-500 hover:shadow-md"
       >
-        <div className="relative grid aspect-square place-items-center bg-muted">
-          <div className="flex flex-col items-center gap-2 text-muted-foreground">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-500/15">
-              <Lock className="h-7 w-7 text-amber-500" />
+        <div className="relative aspect-square overflow-hidden bg-muted">
+          {cover ? (
+            <Image
+              src={cover}
+              alt=""
+              fill
+              unoptimized
+              aria-hidden
+              className="scale-125 object-cover blur-2xl"
+            />
+          ) : null}
+          {/* Nakładka przyciemniająca + znak 18+ */}
+          <div className="absolute inset-0 bg-black/45" />
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-white">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-black/40 backdrop-blur-sm">
+              <Lock className="h-7 w-7" />
             </div>
-            <span className="text-2xl font-extrabold text-amber-500">18+</span>
+            <span className="text-2xl font-extrabold drop-shadow">18+</span>
           </div>
         </div>
         <div className="p-4">
