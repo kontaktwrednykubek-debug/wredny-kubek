@@ -21,8 +21,8 @@ ZASADY BEZPIECZEŃSTWA:
 
 ZASADY PROWADZENIA ROZMOWY:
 1. Wymiana 1: zadaj JEDNO celne pytanie — dla kogo kubek? (np. dla mamy, dla siebie, na prezent)
-2. Wymiana 2: dopytaj o charakter/humor osoby LUB styl (np. fan serialu, zodiak, praca, pasja)
-3. Wymiana 3+: zaproponuj konkretne kubki pasujące do zebranych info — tu możesz polecać produkty
+2. Wymiana 2: KONIECZNIE dopytaj o charakter/nastrój i zainteresowania osoby — to klucz do trafnego doboru. Wyczuj ton: humorzasta/wredna, ciepła, zmęczona pracą, fan czegoś (serial, zodiak, pasja). Użyj konkretnych słów klienta.
+3. Wymiana 3+: zaproponuj konkretne kubki DOPASOWANE do nastroju i zainteresowań. Dopasuj klimat kubka do osoby: dla zrzędliwej/bez humoru → mocny, dosadny, "wredny" tekst; dla ciepłej → serdeczny; dla fana czegoś → tematyczny. Nie proponuj przypadkowych kubków "byle coś".
 4. Każda odpowiedź: zwięzła, konkretna, z humorem. Zadawaj JEDNO pytanie na raz — nie zasypuj pytaniami
 5. Nie proponuj produktów zanim nie wiesz dla kogo i w jakim stylu
 
@@ -143,15 +143,32 @@ Zaproś do sklepu. Bez oferty Premium czy limitów. Bądź wrednie miły.`;
   let products: unknown[] = [];
   if (priorUserMsgs >= 2) {
   try {
-    const conversationContext = [...history.slice(-6), { role: "user" as const, content: message }]
-      .map((m) => m.content).join(" ").slice(0, 400);
-    const searchText = `${conversationContext} ${reply}`.slice(0, 500);
+    // Zapytanie budujemy GŁÓWNIE z wypowiedzi KLIENTA (dla kogo, jaki humor,
+    // jakie zainteresowania) — to najlepiej oddaje intencję. Odpowiedź AI
+    // (sarkastyczna, rozwlekła) dodajemy tylko lekko, bo zaszumia wektor.
+    const userText = [...history.filter((m) => m.role === "user"), { content: message }]
+      .map((m) => m.content)
+      .join(". ")
+      .slice(0, 500);
+    const searchText = `${userText} ${reply.slice(0, 120)}`.slice(0, 600);
     const embedding = await geminiEmbed(searchText);
-    const { data } = await service.rpc("match_products", {
+    // Próg podniesiony 0.50 → 0.62: pokazujemy tylko naprawdę pasujące kubki.
+    // Gdy nic nie przekroczy progu — lepiej nie proponować nic niż coś losowego.
+    let { data } = await service.rpc("match_products", {
       query_embedding: embedding,
-      match_threshold: 0.50,
-      match_count: 2,
+      match_threshold: 0.62,
+      match_count: 3,
     });
+    // Fallback: jeśli rygorystyczny próg nic nie zwróci, spróbuj raz luźniej,
+    // ale nadal wyżej niż dawne 0.50, i tylko 2 najlepsze.
+    if (!data || data.length === 0) {
+      const retry = await service.rpc("match_products", {
+        query_embedding: embedding,
+        match_threshold: 0.55,
+        match_count: 2,
+      });
+      data = retry.data;
+    }
     products = (data ?? []).map((p: { slug: string; title: string; description: string; price_grosze: number; images: unknown }) => ({
       slug: p.slug,
       title: p.title,
