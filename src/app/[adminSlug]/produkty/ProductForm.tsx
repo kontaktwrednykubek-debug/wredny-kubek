@@ -176,6 +176,15 @@ export function ProductForm({
     ];
   });
 
+  // Produkt bez wariantów — chowa pojemności/kolory, zostaje sama cena/opis/zdjęcia.
+  // Dla edycji: domyślnie włączone, gdy produkt nie ma żadnych wariantów.
+  const [noVariants, setNoVariants] = React.useState<boolean>(() => {
+    if (!initial) return false;
+    const hasCaps = (initial.variants?.capacities?.length ?? 0) > 0;
+    const hasColors = (initial.variants?.cupColors?.length ?? 0) > 0;
+    return !hasCaps && !hasColors;
+  });
+
   // Warianty — pojemności
   const [capacities, setCapacities] = React.useState<string[]>(
     initial?.variants?.capacities ?? [],
@@ -321,8 +330,8 @@ export function ProductForm({
       }
     }
     const variants: Variants = {};
-    if (capacities.length > 0) variants.capacities = capacities;
-    if (selectedCupColorIds.length > 0) {
+    if (!noVariants && capacities.length > 0) variants.capacities = capacities;
+    if (!noVariants && selectedCupColorIds.length > 0) {
       variants.cupColors = cupColorVariants
         .filter((v) => selectedCupColorIds.includes(v.id))
         .map((v) => {
@@ -332,14 +341,16 @@ export function ProductForm({
           return { id: v.id, name: v.name, imageUrl: v.image_url ?? "", priceGrosze };
         });
     }
+    // Bez wariantów: nie wysyłaj stanu magazynowego per-kolor.
+    const variantStockToSend = noVariants ? {} : variantStock;
 
     const payload = {
       slug,
       title,
       description,
       body,
-      showVariantStock,
-      variantStock,
+      showVariantStock: noVariants ? false : showVariantStock,
+      variantStock: variantStockToSend,
       categories: selectedCategories,
       category: selectedCategories[0] ?? "",
       priceGrosze: priceGr,
@@ -683,6 +694,25 @@ export function ProductForm({
           Warianty (opcjonalne)
         </legend>
 
+        {/* Przełącznik: produkt bez wariantów */}
+        <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border/60 bg-muted/30 p-4">
+          <input
+            type="checkbox"
+            checked={noVariants}
+            onChange={(e) => setNoVariants(e.target.checked)}
+            className="mt-0.5 h-4 w-4 accent-primary"
+          />
+          <span>
+            <span className="block text-sm font-medium">Produkt bez wariantów</span>
+            <span className="block text-xs text-muted-foreground">
+              Zaznacz, jeśli produkt nie ma pojemności ani kolorów — zostaje sama
+              cena, opis, zdjęcia i specyfikacja.
+            </span>
+          </span>
+        </label>
+
+        {!noVariants && (
+        <>
         {/* Pojemność kubka */}
         <div className="space-y-3 rounded-xl border border-border/60 p-4">
           <p className="text-sm font-medium">Pojemność kubka</p>
@@ -897,6 +927,8 @@ export function ProductForm({
             </p>
           </div>
         </label>
+        </>
+        )}
       </fieldset>
 
       {/* Licznik popularności */}
