@@ -45,7 +45,7 @@ export function AdultProductCard({
               fill
               unoptimized
               aria-hidden
-              className="scale-110 object-cover blur-[8px]"
+              className="scale-110 object-cover blur-[6px]"
             />
           ) : null}
           {/* Nakładka przyciemniająca + znak 18+ */}
