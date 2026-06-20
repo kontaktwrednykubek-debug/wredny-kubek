@@ -62,10 +62,10 @@ export default function KontaktPage() {
               <div>
                 <p className="font-semibold">E-mail</p>
                 <a
-                  href="mailto:wrednykubek@gmail.com"
+                  href="mailto:czegoznowu@wrednykubek.pl"
                   className="mt-1 block text-sm text-muted-foreground transition-colors hover:text-primary"
                 >
-                  wrednykubek@gmail.com
+                  czegoznowu@wrednykubek.pl
                 </a>
               </div>
             </div>

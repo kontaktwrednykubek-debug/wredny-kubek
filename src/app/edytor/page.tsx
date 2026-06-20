@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     "Masz pomysł na własny kubek? Wyślij nam grafikę mailem — przygotujemy wizualizację i wycenę. Płacisz dopiero po akceptacji projektu.",
 };
 
-const SHOP_EMAIL = "wrednykubek@gmail.com";
+const SHOP_EMAIL = "czegoznowu@wrednykubek.pl";
 
 const MAIL_SUBJECT = "Mój projekt na kubek";
 const MAIL_BODY = `Cześć! Chcę zamówić własny projekt na kubek.
