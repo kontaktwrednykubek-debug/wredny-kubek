@@ -17,6 +17,7 @@ import {
 import { BannerSlider } from "@/components/BannerSlider";
 import Marquee from "@/components/Marquee";
 import { TikTokSection } from "@/features/tiktok/TikTokSection";
+import { getAdultCategorySlugs } from "@/lib/adult";
 
 export default async function HomePage() {
   const supabase = createSupabaseServerClient();
@@ -31,7 +32,7 @@ export default async function HomePage() {
   const [carouselRes, categoriesRes, productsForCoverRes, featuredRes] = await Promise.all([
     supabase
       .from("shop_products")
-      .select("slug, title, price_grosze, images, rating, reviews_count, variants")
+      .select("slug, title, price_grosze, images, rating, reviews_count, variants, category, categories")
       .eq("is_published", true)
       .neq("category", "merch")
       .order("created_at", { ascending: false })
@@ -49,14 +50,27 @@ export default async function HomePage() {
       .order("created_at", { ascending: false }),
     supabase
       .from("shop_products")
-      .select("slug, title, price_grosze, images, rating, reviews_count, variants")
+      .select("slug, title, price_grosze, images, rating, reviews_count, variants, category, categories")
       .eq("is_published", true)
       .eq("is_featured", true)
       .order("created_at", { ascending: false })
       .limit(15),
   ]);
-  const products = (carouselRes.data ?? []) as CarouselProduct[];
-  const featuredProducts = (featuredRes.data ?? []) as CarouselProduct[];
+
+  // Strona główna nie pokazuje treści 18+ — odfiltrowujemy produkty i kategorie
+  // dla dorosłych z karuzel i kolażu (są dostępne w sklepie za bramką wieku).
+  const adultCatSlugs = await getAdultCategorySlugs(supabase);
+  const isAdultProduct = (p: { category?: unknown; categories?: unknown }) => {
+    const cats =
+      (p.categories as string[] | null) ?? [(p.category as string | null) ?? ""];
+    return cats.some((c) => adultCatSlugs.has(c));
+  };
+  const products = (carouselRes.data ?? []).filter(
+    (p) => !isAdultProduct(p),
+  ) as CarouselProduct[];
+  const featuredProducts = (featuredRes.data ?? []).filter(
+    (p) => !isAdultProduct(p),
+  ) as CarouselProduct[];
 
   // Mapowanie kategorii → pierwsze zdjęcie produktu z tej kategorii (lub child).
   const allCats = categoriesRes.data ?? [];
@@ -76,12 +90,15 @@ export default async function HomePage() {
   const productsByCat = new Map<string, string[]>();
   for (const p of productsForCoverRes.data ?? []) {
     const cat = (p.category as string | null) ?? "";
+    if (adultCatSlugs.has(cat)) continue; // nie używaj okładek 18+
     const imgs = (p.images as string[]) ?? [];
     const cover = imgs[0] ?? "";
     if (!productsByCat.has(cat)) productsByCat.set(cat, []);
     if (cover) productsByCat.get(cat)!.push(cover);
   }
-  const categoryCards: CategoryCard[] = allCats.map((c) => {
+  const categoryCards: CategoryCard[] = allCats
+    .filter((c) => !adultCatSlugs.has(c.slug as string))
+    .map((c) => {
     const childSlugs = childrenMap.get(c.id as string) ?? [];
     const slugsToCheck = [c.slug as string, ...childSlugs];
     let cover: string | null = (c.image_url as string | null) ?? null;
