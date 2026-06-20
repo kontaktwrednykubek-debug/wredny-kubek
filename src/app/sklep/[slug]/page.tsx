@@ -73,9 +73,11 @@ export default async function ProductDetailsPage({
 
   const images = (product.images as string[]) ?? [];
   const specs = (product.specs as Record<string, string>) ?? {};
-  // Pokazuj tylko parametry z wypełnioną wartością — puste (np. usunięte) pomijamy.
+  // Tabelka „Dane techniczne" pokazuje tylko własne parametry z wartością.
+  // „Stan" i „Ilość" to dane wewnętrzne (stan magazynowy) — nie dla klienta.
+  const HIDDEN_SPECS = ["Stan", "Ilość"];
   const specEntries = Object.entries(specs).filter(
-    ([, v]) => String(v ?? "").trim() !== "",
+    ([k, v]) => !HIDDEN_SPECS.includes(k) && String(v ?? "").trim() !== "",
   );
   const variants = (product.variants as Variants) ?? {};
   const rating = Number(product.rating ?? 0);
