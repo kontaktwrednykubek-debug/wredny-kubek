@@ -8,6 +8,9 @@ import { Button } from "@/components/ui/button";
 
 const MAX_IMAGES = 10;
 
+// Stałe opcje pojemności kubka pokazywane jako klikalne przyciski.
+const CAPACITY_OPTIONS = ["330 ml", "450 ml"];
+
 type Spec = { key: string; value: string };
 
 type CupColorVariant = {
@@ -177,7 +180,6 @@ export function ProductForm({
   const [capacities, setCapacities] = React.useState<string[]>(
     initial?.variants?.capacities ?? [],
   );
-  const [capInput, setCapInput] = React.useState("");
 
   // Warianty — kolory kubków (ID z globalnych wariantów)
   const [selectedCupColorIds, setSelectedCupColorIds] = React.useState<string[]>(
@@ -213,11 +215,11 @@ export function ProductForm({
     );
   }
 
-  function addCapacity() {
-    const v = capInput.trim();
-    if (!v || capacities.includes(v)) return;
-    setCapacities((prev) => [...prev, v]);
-    setCapInput("");
+  // Stałe opcje pojemności — klikasz, by zaznaczyć/odznaczyć.
+  function toggleCapacity(v: string) {
+    setCapacities((prev) =>
+      prev.includes(v) ? prev.filter((c) => c !== v) : [...prev, v],
+    );
   }
 
   const [uploading, setUploading] = React.useState(false);
@@ -685,40 +687,50 @@ export function ProductForm({
         <div className="space-y-3 rounded-xl border border-border/60 p-4">
           <p className="text-sm font-medium">Pojemność kubka</p>
           <p className="text-xs text-muted-foreground">
-            Wpisz pojemność (np. 330 ml) i kliknij „+" lub Enter. Na stronie
-            produktu klient będzie mógł wybrać jedną opcję.
+            Kliknij pojemność, aby ją dodać. Zaznaczone podświetlają się na
+            zielono i pojawią się na stronie produktu do wyboru.
           </p>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={capInput}
-              onChange={(e) => setCapInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCapacity(); } }}
-              placeholder="np. 330 ml"
-              className={`${inputCls} flex-1`}
-            />
-            <Button type="button" variant="outline" size="sm" onClick={addCapacity}>
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
-          {capacities.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {capacities.map((cap) => (
-                <span
+          <div className="flex flex-wrap gap-2">
+            {CAPACITY_OPTIONS.map((cap) => {
+              const selected = capacities.includes(cap);
+              return (
+                <button
                   key={cap}
-                  className="flex items-center gap-1 rounded-lg border border-primary/40 bg-primary/5 px-3 py-1 text-sm font-medium text-primary"
+                  type="button"
+                  onClick={() => toggleCapacity(cap)}
+                  aria-pressed={selected}
+                  className={`rounded-xl border-2 px-4 py-2 text-sm font-semibold transition ${
+                    selected
+                      ? "border-green-500 bg-green-500/10 text-green-700"
+                      : "border-border text-foreground hover:border-green-500/50"
+                  }`}
                 >
                   {cap}
-                  <button
-                    type="button"
-                    onClick={() => setCapacities((prev) => prev.filter((c) => c !== cap))}
-                    className="ml-0.5 rounded-full hover:bg-primary/20"
-                    aria-label="Usuń"
+                </button>
+              );
+            })}
+          </div>
+          {/* Zgodność wstecz: pokaż niestandardowe pojemności zapisane wcześniej */}
+          {capacities.filter((c) => !CAPACITY_OPTIONS.includes(c)).length > 0 && (
+            <div className="flex flex-wrap gap-2 pt-1">
+              {capacities
+                .filter((c) => !CAPACITY_OPTIONS.includes(c))
+                .map((cap) => (
+                  <span
+                    key={cap}
+                    className="flex items-center gap-1 rounded-lg border border-green-500/40 bg-green-500/10 px-3 py-1 text-sm font-medium text-green-700"
                   >
-                    <X className="h-3 w-3" />
-                  </button>
-                </span>
-              ))}
+                    {cap}
+                    <button
+                      type="button"
+                      onClick={() => setCapacities((prev) => prev.filter((c) => c !== cap))}
+                      className="ml-0.5 rounded-full hover:bg-green-500/20"
+                      aria-label="Usuń"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
             </div>
           )}
         </div>
