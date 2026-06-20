@@ -1033,21 +1033,24 @@ export function ProductForm({
         </legend>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Stan" required>
-            <select
-              value={condition}
-              onChange={(e) => setCondition(e.target.value)}
-              className={inputCls}
-              required
-            >
-              {CONDITIONS.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Ilość" required>
+          {/* „Stan" pomijamy przy produkcie bez wariantu (klient go nie widzi). */}
+          {!noVariants && (
+            <Field label="Stan" required>
+              <select
+                value={condition}
+                onChange={(e) => setCondition(e.target.value)}
+                className={inputCls}
+                required
+              >
+                {CONDITIONS.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          )}
+          <Field label={noVariants ? "Ilość (stan magazynowy)" : "Ilość"} required>
             <select
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
