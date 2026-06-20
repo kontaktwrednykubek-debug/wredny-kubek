@@ -45,7 +45,7 @@ const STEPS = [
   },
   {
     icon: BadgeCheck,
-    title: "3. Akceptujesz i wyceniasz",
+    title: "3. Akceptujesz lub poprawiasz",
     text: "Dostajesz podgląd i wycenę. Coś poprawić? Zmieniamy. Płacisz dopiero, gdy projekt Ci się spodoba.",
   },
   {
