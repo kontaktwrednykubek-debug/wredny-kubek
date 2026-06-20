@@ -160,6 +160,11 @@ export function CheckoutClient({
   const requiresParcelCode = isInternational
     ? intlMethod?.requiresParcelCode ?? false
     : method?.requiresParcelCode ?? false;
+  // Pełny adres punktu (Nazwa/Ulica/Nr/Kod/Miasto) dotyczy tylko zagranicznego
+  // automatu DPD — rozpoznawanego po słowie "automat" w nazwie. Pozostałe metody
+  // wymagające punktu (np. Paczkomat InPost) używają zwykłego pola kodu.
+  const isIntlPickupAutomat =
+    isInternational && (intlMethod?.name?.toLowerCase().includes("automat") ?? false);
 
   React.useEffect(() => {
     if (items.length === 0) {
@@ -258,8 +263,8 @@ export function CheckoutClient({
     else if (!isInternational && !/^\d{2}-\d{3}$/.test(form.zip) && !/^\d{3,6}$/.test(form.zip))
       errs.zip = "Format: 00-000 (PL) lub 1234 (międzynarodowy)";
     if (requiresParcelCode) {
-      if (isInternational) {
-        // Zagranica: pełny adres punktu odbioru (Nr lokalu opcjonalny)
+      if (isIntlPickupAutomat) {
+        // Zagraniczny automat DPD: pełny adres punktu odbioru (Nr lokalu opcjonalny)
         if (!form.pickupName.trim()) errs.pickupName = "Podaj nazwę punktu odbioru";
         if (!form.pickupStreet.trim()) errs.pickupStreet = "Podaj ulicę";
         if (!form.pickupHouse.trim()) errs.pickupHouse = "Podaj nr domu";
@@ -295,7 +300,7 @@ export function CheckoutClient({
             // Zagraniczny punkt odbioru: składamy pełny adres jako parcelCode
             // (widoczny w panelu/mailu) + przekazujemy pola osobno.
             parcelCode:
-              isInternational && requiresParcelCode
+              isIntlPickupAutomat && requiresParcelCode
                 ? [
                     form.pickupName.trim(),
                     `ul. ${form.pickupStreet.trim()} ${form.pickupHouse.trim()}${form.pickupApt.trim() ? `/${form.pickupApt.trim()}` : ""}`,
@@ -305,7 +310,7 @@ export function CheckoutClient({
                     .join(", ")
                 : form.parcelCode || undefined,
             pickupPoint:
-              isInternational && requiresParcelCode
+              isIntlPickupAutomat && requiresParcelCode
                 ? {
                     name: form.pickupName.trim(),
                     street: form.pickupStreet.trim(),
@@ -722,8 +727,8 @@ export function CheckoutClient({
                 </>
               )}
 
-              {/* ZAGRANICZNY punkt odbioru — pełny adres (bez kodu automatu) */}
-              {requiresParcelCode && isInternational && (
+              {/* ZAGRANICZNY automat DPD — pełny adres (bez kodu automatu) */}
+              {requiresParcelCode && isIntlPickupAutomat && (
                 <div className="block space-y-3 rounded-xl border border-primary/30 bg-primary/5 p-4">
                   <p className="text-sm font-semibold">
                     Adres punktu odbioru / automatu <span className="text-destructive">*</span>
@@ -792,8 +797,8 @@ export function CheckoutClient({
                 </div>
               )}
 
-              {/* KRAJOWY paczkomat — kod + mapa */}
-              {requiresParcelCode && !isInternational && (
+              {/* Paczkomat/punkt z kodem — krajowy oraz zagraniczny inny niż automat DPD */}
+              {requiresParcelCode && !isIntlPickupAutomat && (
                 <div className="block pt-2 space-y-3">
                   <label className="block">
                     <span className="mb-1 block text-sm font-medium">
@@ -820,7 +825,7 @@ export function CheckoutClient({
                   </label>
 
                   {(() => {
-                    const nm = (method?.name)?.toLowerCase() ?? "";
+                    const nm = (method?.name ?? intlMethod?.name)?.toLowerCase() ?? "";
                     const isDpd = nm.includes("dpd");
                     const isInpost = nm.includes("paczkomat") || nm.includes("inpost");
                     const showInpost = isInpost || (!isDpd && !isInpost);
