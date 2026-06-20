@@ -6,6 +6,7 @@ import { formatPrice } from "@/lib/utils";
 import { ShopFilters, type Category } from "./ShopFilters";
 import { WishlistButton } from "@/components/WishlistButton";
 import { AgeGate } from "./AgeGate";
+import { AdultProductCard } from "./AdultProductCard";
 
 /**
  * Etykieta ceny na kafelku: zakres od najtańszego do najdroższego wariantu
@@ -81,6 +82,18 @@ export default async function ShopPage({
 
   const savedSlugs = new Set((wishlistRes.data ?? []).map((w: { product_slug: string }) => w.product_slug));
   const categories: Category[] = (categoriesRes.data ?? []) as Category[];
+
+  // Zbiór slugów kategorii 18+ (flaga is_adult lub nazwa/slug; dziecko kategorii
+  // dla dorosłych też jest 18+). Produkt z taką kategorią będzie blokowany.
+  type CatAdultRow = Category & { is_adult?: boolean; parent_id?: string | null };
+  const isAdultCat = (c?: CatAdultRow | null) =>
+    !!c && (c.is_adult === true || /18\+?|wulgar|doros/i.test(`${c.slug ?? ""} ${c.name ?? ""}`));
+  const adultCatSlugs = new Set<string>();
+  (categories as CatAdultRow[]).forEach((c) => {
+    const parent = c.parent_id ? (categories as CatAdultRow[]).find((x) => x.id === c.parent_id) : null;
+    if (isAdultCat(c) || isAdultCat(parent)) adultCatSlugs.add(c.slug);
+  });
+
   const allProducts = productsRes.data ?? [];
   const prices = (allRangeRes.data ?? []).map(
     (p) => (p.price_grosze as number) ?? 0,
@@ -188,7 +201,10 @@ export default async function ShopPage({
                 <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
                   {products.map((p) => {
                     const cover = (p.images as string[])?.[0];
-                    return (
+                    const pCats =
+                      (p.categories as string[] | null) ?? [(p.category as string | null) ?? ""];
+                    const isAdult = pCats.some((c) => adultCatSlugs.has(c));
+                    const card = (
                       <Link
                         key={p.slug as string}
                         href={`/sklep/${p.slug}`}
@@ -228,6 +244,11 @@ export default async function ShopPage({
                           </div>
                         </div>
                       </Link>
+                    );
+                    return isAdult ? (
+                      <AdultProductCard key={p.slug as string}>{card}</AdultProductCard>
+                    ) : (
+                      card
                     );
                   })}
                 </div>

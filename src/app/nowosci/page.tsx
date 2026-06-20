@@ -3,6 +3,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatPrice } from "@/lib/utils";
+import { getAdultCategorySlugs } from "@/lib/adult";
+import { AdultProductCard } from "../sklep/AdultProductCard";
 
 export const metadata: Metadata = {
   title: "Nowości",
@@ -13,12 +15,13 @@ export default async function NowosciPage() {
   const supabase = createSupabaseServerClient();
   const { data } = await supabase
     .from("shop_products")
-    .select("slug, title, price_grosze, images, rating, reviews_count")
+    .select("slug, title, price_grosze, images, rating, reviews_count, category, categories")
     .eq("is_published", true)
     .order("created_at", { ascending: false })
     .limit(40);
 
   const products = data ?? [];
+  const adultCatSlugs = await getAdultCategorySlugs(supabase);
 
   return (
     <div className="container mx-auto px-5 py-14 sm:px-6 md:py-20 lg:px-10 xl:px-12">
@@ -40,7 +43,10 @@ export default async function NowosciPage() {
           {products.map((p) => {
             const imgs = Array.isArray(p.images) ? p.images : [];
             const cover = typeof imgs[0] === "string" ? imgs[0] : null;
-            return (
+            const pCats =
+              (p.categories as string[] | null) ?? [(p.category as string | null) ?? ""];
+            const isAdult = pCats.some((c) => adultCatSlugs.has(c));
+            const card = (
               <Link
                 key={p.slug}
                 href={`/sklep/${p.slug}`}
@@ -67,6 +73,11 @@ export default async function NowosciPage() {
                   <p className="mt-auto text-sm font-bold text-primary">{formatPrice(p.price_grosze)}</p>
                 </div>
               </Link>
+            );
+            return isAdult ? (
+              <AdultProductCard key={p.slug}>{card}</AdultProductCard>
+            ) : (
+              card
             );
           })}
         </div>
