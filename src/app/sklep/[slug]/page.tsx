@@ -73,6 +73,10 @@ export default async function ProductDetailsPage({
 
   const images = (product.images as string[]) ?? [];
   const specs = (product.specs as Record<string, string>) ?? {};
+  // Pokazuj tylko parametry z wypełnioną wartością — puste (np. usunięte) pomijamy.
+  const specEntries = Object.entries(specs).filter(
+    ([, v]) => String(v ?? "").trim() !== "",
+  );
   const variants = (product.variants as Variants) ?? {};
   const rating = Number(product.rating ?? 0);
   const body = (product.body as string | null) ?? null;
@@ -177,15 +181,15 @@ export default async function ProductDetailsPage({
       </div>
 
       {/* Dane techniczne + opis — pełna szerokość pod galerią i sekcją zakupu */}
-      {(body || Object.keys(specs).length > 0) && (
+      {(body || specEntries.length > 0) && (
         <div className="mt-6 lg:mt-8 flex flex-col gap-4 sm:gap-5">
-          {Object.keys(specs).length > 0 && (
+          {specEntries.length > 0 && (
             <div className="rounded-2xl border border-border bg-card p-5">
               <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
                 Dane techniczne
               </h2>
               <dl className="grid gap-2 text-sm">
-                {Object.entries(specs).map(([k, v]) => (
+                {specEntries.map(([k, v]) => (
                   <div
                     key={k}
                     className="flex justify-between gap-3 border-b border-border/50 py-1.5 last:border-b-0"

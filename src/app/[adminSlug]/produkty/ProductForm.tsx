@@ -321,8 +321,10 @@ export function ProductForm({
     };
     for (const s of specs) {
       const k = s.key.trim();
-      if (k && k !== "Stan" && k !== "Ilość") {
-        specsObj[k] = s.value.trim();
+      const v = s.value.trim();
+      // Zapisuj tylko parametry z nazwą I wartością — puste pomijamy.
+      if (k && v && k !== "Stan" && k !== "Ilość") {
+        specsObj[k] = v;
       }
     }
     const variants: Variants = {};
