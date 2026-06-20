@@ -262,17 +262,15 @@ export function CheckoutClient({
     if (!form.zip.trim()) errs.zip = "Kod pocztowy jest wymagany";
     else if (!isInternational && !/^\d{2}-\d{3}$/.test(form.zip) && !/^\d{3,6}$/.test(form.zip))
       errs.zip = "Format: 00-000 (PL) lub 1234 (międzynarodowy)";
-    if (requiresParcelCode) {
-      if (isIntlPickupAutomat) {
-        // Zagraniczny automat DPD: pełny adres punktu odbioru (Nr lokalu opcjonalny)
-        if (!form.pickupName.trim()) errs.pickupName = "Podaj nazwę punktu odbioru";
-        if (!form.pickupStreet.trim()) errs.pickupStreet = "Podaj ulicę";
-        if (!form.pickupHouse.trim()) errs.pickupHouse = "Podaj nr domu";
-        if (!form.pickupZip.trim()) errs.pickupZip = "Podaj kod pocztowy";
-        if (!form.pickupCity.trim()) errs.pickupCity = "Podaj miasto";
-      } else if (!form.parcelCode.trim()) {
-        errs.parcelCode = "Wpisz kod paczkomatu (np. WAW123M)";
-      }
+    if (isIntlPickupAutomat) {
+      // Zagraniczny automat DPD: pełny adres punktu odbioru (Nr lokalu opcjonalny)
+      if (!form.pickupName.trim()) errs.pickupName = "Podaj nazwę punktu odbioru";
+      if (!form.pickupStreet.trim()) errs.pickupStreet = "Podaj ulicę";
+      if (!form.pickupHouse.trim()) errs.pickupHouse = "Podaj nr domu";
+      if (!form.pickupZip.trim()) errs.pickupZip = "Podaj kod pocztowy";
+      if (!form.pickupCity.trim()) errs.pickupCity = "Podaj miasto";
+    } else if (requiresParcelCode && !form.parcelCode.trim()) {
+      errs.parcelCode = "Wpisz kod paczkomatu (np. WAW123M)";
     }
 
     if (Object.keys(errs).length > 0) {
@@ -300,7 +298,7 @@ export function CheckoutClient({
             // Zagraniczny punkt odbioru: składamy pełny adres jako parcelCode
             // (widoczny w panelu/mailu) + przekazujemy pola osobno.
             parcelCode:
-              isIntlPickupAutomat && requiresParcelCode
+              isIntlPickupAutomat
                 ? [
                     form.pickupName.trim(),
                     `ul. ${form.pickupStreet.trim()} ${form.pickupHouse.trim()}${form.pickupApt.trim() ? `/${form.pickupApt.trim()}` : ""}`,
@@ -310,7 +308,7 @@ export function CheckoutClient({
                     .join(", ")
                 : form.parcelCode || undefined,
             pickupPoint:
-              isIntlPickupAutomat && requiresParcelCode
+              isIntlPickupAutomat
                 ? {
                     name: form.pickupName.trim(),
                     street: form.pickupStreet.trim(),
@@ -727,8 +725,8 @@ export function CheckoutClient({
                 </>
               )}
 
-              {/* ZAGRANICZNY automat DPD — pełny adres (bez kodu automatu) */}
-              {requiresParcelCode && isIntlPickupAutomat && (
+              {/* ZAGRANICZNY automat DPD — pełny adres (niezależnie od flagi kodu) */}
+              {isIntlPickupAutomat && (
                 <div className="block space-y-3 rounded-xl border border-primary/30 bg-primary/5 p-4">
                   <p className="text-sm font-semibold">
                     Adres punktu odbioru / automatu <span className="text-destructive">*</span>
