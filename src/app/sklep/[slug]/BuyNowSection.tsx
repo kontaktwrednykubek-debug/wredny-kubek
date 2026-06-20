@@ -95,16 +95,22 @@ export function BuyNowSection({
     ? (color ? (variants.find((v) => v.id === color)?.stockCount ?? 999) : 999)
     : (baseStock ?? 999);
 
-  // Produkt bez wariantów wyprzedany, gdy stan bazowy = 0.
-  const isSoldOut = !hasColorVariants && baseStock === 0;
-  // Mało sztuk (1–5) dla produktu bez wariantów — pokazujemy zachętę.
-  const lowStock =
-    !hasColorVariants && baseStock != null && baseStock > 0 && baseStock <= 5
-      ? baseStock
-      : null;
-
   // Cena zależna od wybranego koloru — wariant może mieć cenę custom, inaczej cena bazowa.
   const selectedVariant = variants.find((v) => v.id === color);
+
+  // Wyprzedane: produkt bez wariantów ze stanem 0, LUB wybrany kolor ma 0 szt.
+  const isSoldOut =
+    (!hasColorVariants && baseStock === 0) ||
+    (hasColorVariants && selectedVariant != null && selectedVariant.stockCount === 0);
+  // Mało sztuk (1–5): dla produktu bez wariantów (stan bazowy) lub wybranego koloru.
+  // Przy wariantach pokazujemy tylko, gdy admin włączył widoczność stanu.
+  const effectiveStock = hasColorVariants
+    ? (showVariantStock ? selectedVariant?.stockCount ?? null : null)
+    : baseStock;
+  const lowStock =
+    effectiveStock != null && effectiveStock > 0 && effectiveStock <= 5
+      ? effectiveStock
+      : null;
   const effectivePriceGr =
     selectedVariant?.priceGrosze != null ? selectedVariant.priceGrosze : priceGrosze;
 
@@ -329,14 +335,16 @@ export function BuyNowSection({
       {isSoldOut ? (
         <div className="rounded-2xl border-2 border-dashed border-primary/40 bg-primary/5 p-5 text-center">
           <p className="text-base font-extrabold text-primary">
-            Tak nas polubili, że nas wykupili! 🫣
+            Ktoś nie mógł się oprzeć i zgarnął ostatnią sztukę — zaraz wracamy! 🫣
           </p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Ten kubek właśnie zniknął z półki — ktoś był szybszy.{" "}
+            {hasColorVariants
+              ? "Ten kolor właśnie się wyprzedał — wybierz inny powyżej albo "
+              : "Ten kubek chwilowo zniknął z półki — "}
             <a href="/kontakt" className="font-semibold text-primary underline underline-offset-2">
-              Napisz do nas
+              napisz do nas
             </a>
-            , a damy znać, gdy wróci na stan.
+            , damy znać, gdy wróci na stan.
           </p>
         </div>
       ) : (
