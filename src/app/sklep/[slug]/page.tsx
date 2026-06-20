@@ -77,6 +77,9 @@ export default async function ProductDetailsPage({
   const rating = Number(product.rating ?? 0);
   const body = (product.body as string | null) ?? null;
   const showVariantStock = Boolean(product.show_variant_stock);
+  // Stan bazowy (pole „Ilość") — używany dla produktów bez wariantów.
+  const parsedBaseStock = parseInt(specs["Ilość"] ?? "", 10);
+  const baseStock = Number.isFinite(parsedBaseStock) ? parsedBaseStock : null;
   // Per-product stock map (zapisany w variant_stock JSONB)
   const variantStockMap: Record<string, number> =
     (product.variant_stock as Record<string, number>) ?? {};
@@ -157,6 +160,7 @@ export default async function ProductDetailsPage({
                 variants={variants}
                 showVariantStock={showVariantStock}
                 variantStockMap={variantStockMap}
+                baseStock={baseStock}
               />
             </React.Suspense>
           )}

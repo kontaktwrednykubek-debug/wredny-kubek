@@ -59,7 +59,8 @@ const BADGE_OPTIONS = [
 ] as const;
 
 const CONDITIONS = ["Nowy", "Używany"] as const;
-const QUANTITIES = Array.from({ length: 30 }, (_, i) => String(i + 1));
+// 0–30: 0 = brak na stanie (produkt niedostępny do kupienia).
+const QUANTITIES = Array.from({ length: 31 }, (_, i) => String(i));
 
 function slugify(s: string): string {
   return s
@@ -160,20 +161,15 @@ export function ProductForm({
     initial?.specs?.["Ilość"] ?? "1",
   );
 
-  // Pozostałe specs (bez Stan/Ilość)
+  // Dodatkowe parametry (bez Stan/Ilość). Startują puste — admin dodaje je
+  // ręcznie przyciskiem „Dodaj parametr". Żadnych systemowych pól na start.
   const [specs, setSpecs] = React.useState<Spec[]>(() => {
     if (initial?.specs) {
-      const rest = Object.entries(initial.specs).filter(
-        ([k]) => k !== "Stan" && k !== "Ilość",
-      );
-      return rest.length > 0
-        ? rest.map(([key, value]) => ({ key, value }))
-        : [{ key: "Pojemność", value: "" }];
+      return Object.entries(initial.specs)
+        .filter(([k]) => k !== "Stan" && k !== "Ilość")
+        .map(([key, value]) => ({ key, value }));
     }
-    return [
-      { key: "Pojemność", value: "" },
-      { key: "Materiał", value: "" },
-    ];
+    return [];
   });
 
   // Produkt bez wariantów — chowa pojemności/kolory, zostaje sama cena/opis/zdjęcia.
@@ -310,8 +306,8 @@ export function ProductForm({
       return;
     }
     const qInt = parseInt(quantity, 10);
-    if (!Number.isFinite(qInt) || qInt < 1 || qInt > 30) {
-      setError("Pole 'Ilość' musi być liczbą 1–30.");
+    if (!Number.isFinite(qInt) || qInt < 0 || qInt > 30) {
+      setError("Pole 'Ilość' musi być liczbą 0–30.");
       return;
     }
     const priceGr = Math.round(parseFloat(priceZl.replace(",", ".")) * 100);

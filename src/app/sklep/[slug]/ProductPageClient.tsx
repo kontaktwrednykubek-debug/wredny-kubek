@@ -19,6 +19,7 @@ export function ProductPageClient({
   variants,
   showVariantStock,
   variantStockMap: initialStockMap,
+  baseStock,
 }: {
   slug: string;
   title: string;
@@ -27,6 +28,7 @@ export function ProductPageClient({
   variants: Variants;
   showVariantStock: boolean;
   variantStockMap: Record<string, number>;
+  baseStock?: number | null;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -96,6 +98,7 @@ export function ProductPageClient({
       cover={cover}
       showVariantStock={showVariantStock}
       capacities={variants.capacities ?? []}
+      baseStock={baseStock}
     />
   );
 }

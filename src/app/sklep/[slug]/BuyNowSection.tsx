@@ -26,6 +26,7 @@ export function BuyNowSection({
   cover,
   showVariantStock,
   capacities = [],
+  baseStock = null,
 }: {
   slug: string;
   title: string;
@@ -33,6 +34,7 @@ export function BuyNowSection({
   cover: string | null;
   showVariantStock: boolean;
   capacities?: string[];
+  baseStock?: number | null;
 }) {
   const router = useRouter();
   const add = useCart((state) => state.add);
@@ -84,9 +86,22 @@ export function BuyNowSection({
     };
   }, [slug, fetchVariants]);
   
-  // maxQty ZAWSZE limituje zakup do dostępnego stanu (showVariantStock kontroluje tylko wyświetlanie liczby)
-  const maxQty = color ?
-    (variants.find(v => v.id === color)?.stockCount ?? 999) : 999;
+  // Czy produkt w ogóle ma warianty kolorów. Bez nich kupujemy bez wyboru koloru.
+  const hasColorVariants = variants.length > 0;
+
+  // maxQty ZAWSZE limituje zakup do dostępnego stanu. Dla produktu bez wariantów
+  // stanem jest baseStock (pole „Ilość"); null = brak limitu.
+  const maxQty = hasColorVariants
+    ? (color ? (variants.find((v) => v.id === color)?.stockCount ?? 999) : 999)
+    : (baseStock ?? 999);
+
+  // Produkt bez wariantów wyprzedany, gdy stan bazowy = 0.
+  const isSoldOut = !hasColorVariants && baseStock === 0;
+  // Mało sztuk (1–5) dla produktu bez wariantów — pokazujemy zachętę.
+  const lowStock =
+    !hasColorVariants && baseStock != null && baseStock > 0 && baseStock <= 5
+      ? baseStock
+      : null;
 
   // Cena zależna od wybranego koloru — wariant może mieć cenę custom, inaczej cena bazowa.
   const selectedVariant = variants.find((v) => v.id === color);
@@ -102,10 +117,11 @@ export function BuyNowSection({
   };
 
   const handleAdd = (redirect = false) => {
-    if (!color || maxQty < 1) return;
-    const variant = variants.find(v => v.id === color);
-    if (!variant) return;
-    
+    if (maxQty < 1) return;
+    // Produkt z kolorami wymaga wyboru koloru; produkt bez wariantów — nie.
+    const variant = hasColorVariants ? variants.find((v) => v.id === color) : null;
+    if (hasColorVariants && !variant) return;
+
     // Don't set maxQty - always fetch from database to prevent race conditions
     add({
       designId: null,
@@ -114,9 +130,7 @@ export function BuyNowSection({
       previewUrl: cover ?? undefined,
       label: buildLabel(),
       quantity: qty,
-      variant: {
-        color: variant.id,
-      },
+      variant: variant ? { color: variant.id } : undefined,
     });
     if (redirect) router.push("/koszyk");
     else {
@@ -301,27 +315,53 @@ export function BuyNowSection({
         )}
       </div>
 
-      {/* Przyciski */}
-      <div className="flex gap-3">
-        <Button
-          size="lg"
-          onClick={() => handleAdd(false)}
-          disabled={!color || maxQty === 0}
-          className="flex-1"
-        >
-          <ShoppingCart className="h-4 w-4" />
-          {added ? "Dodano!" : "Do koszyka"}
-        </Button>
-        <Button
-          size="lg"
-          onClick={() => handleAdd(true)}
-          disabled={!color || maxQty === 0}
-          variant="outline"
-          className="flex-1"
-        >
-          Kup teraz
-        </Button>
-      </div>
+      {/* Mało sztuk — zachęta do szybkiego zakupu */}
+      {lowStock != null && (
+        <p className="flex items-center gap-1.5 text-sm font-semibold text-amber-600">
+          <Package className="h-4 w-4 shrink-0" />
+          {lowStock === 1
+            ? "Ostatnia sztuka — albo teraz, albo nigdy! 🔥"
+            : `Zostały tylko ${lowStock} szt. — ktoś już sięga po swój kubek… ⏳`}
+        </p>
+      )}
+
+      {/* Wyprzedane — blokujemy zakup i pokazujemy „wredny", ale miły komunikat */}
+      {isSoldOut ? (
+        <div className="rounded-2xl border-2 border-dashed border-primary/40 bg-primary/5 p-5 text-center">
+          <p className="text-base font-extrabold text-primary">
+            Tak nas polubili, że nas wykupili! 🫣
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Ten kubek właśnie zniknął z półki — ktoś był szybszy.{" "}
+            <a href="/kontakt" className="font-semibold text-primary underline underline-offset-2">
+              Napisz do nas
+            </a>
+            , a damy znać, gdy wróci na stan.
+          </p>
+        </div>
+      ) : (
+        /* Przyciski */
+        <div className="flex gap-3">
+          <Button
+            size="lg"
+            onClick={() => handleAdd(false)}
+            disabled={(hasColorVariants && !color) || maxQty === 0}
+            className="flex-1"
+          >
+            <ShoppingCart className="h-4 w-4" />
+            {added ? "Dodano!" : "Do koszyka"}
+          </Button>
+          <Button
+            size="lg"
+            onClick={() => handleAdd(true)}
+            disabled={(hasColorVariants && !color) || maxQty === 0}
+            variant="outline"
+            className="flex-1"
+          >
+            Kup teraz
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
