@@ -45,11 +45,11 @@ export function AdultProductCard({
               fill
               unoptimized
               aria-hidden
-              className="scale-125 object-cover blur-2xl"
+              className="scale-110 object-cover blur-md"
             />
           ) : null}
           {/* Nakładka przyciemniająca + znak 18+ */}
-          <div className="absolute inset-0 bg-black/45" />
+          <div className="absolute inset-0 bg-black/30" />
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-white">
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-black/40 backdrop-blur-sm">
               <Lock className="h-7 w-7" />
