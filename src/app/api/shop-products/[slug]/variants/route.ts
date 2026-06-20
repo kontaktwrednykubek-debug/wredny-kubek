@@ -36,7 +36,7 @@ export async function GET(
   // Get only the selected cup variants with global stock + global price
   const { data: globalVariants, error: globalError } = await supabase
     .from("cup_color_variants")
-    .select("id, name, image_url, sort_order, stock_count, price_grosze")
+    .select("id, name, image_url, sort_order, stock_count, price_grosze, materials, extra_info")
     .in("id", selectedIds)
     .order("sort_order", { ascending: true });
     
@@ -71,6 +71,9 @@ export async function GET(
       stockCount: availableStock,
       // Cena: nadpisanie per produkt > globalna cena koloru > null (=cena bazowa)
       priceGrosze: priceMap.get(item.id) ?? item.price_grosze ?? null,
+      // Specyfikacja globalna koloru — zmienia się wraz z wybranym wariantem.
+      materials: (item.materials as string[] | null) ?? [],
+      extraInfo: (item.extra_info as string[] | null) ?? [],
       globalStock, // For admin reference
       productStock, // For admin reference
     };

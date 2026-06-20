@@ -15,6 +15,8 @@ type Variant = {
   sortOrder: number;
   stockCount: number;
   priceGrosze?: number | null; // cena custom wariantu; null = cena bazowa
+  materials?: string[]; // specyfikacja: z czego wykonany
+  extraInfo?: string[]; // specyfikacja: informacje dodatkowe
 };
 
 export function BuyNowSection({
@@ -226,6 +228,37 @@ export function BuyNowSection({
           </div>
         </div>
       )}
+
+      {/* Specyfikacja wybranego koloru — zmienia się wraz z wariantem */}
+      {selectedVariant &&
+        ((selectedVariant.materials?.length ?? 0) > 0 ||
+          (selectedVariant.extraInfo?.length ?? 0) > 0) && (
+          <div className="rounded-xl border border-border bg-muted/30 p-4">
+            <p className="mb-2 text-sm font-semibold">Specyfikacja produktu</p>
+            <dl className="space-y-2 text-sm">
+              {(selectedVariant.materials?.length ?? 0) > 0 && (
+                <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-2">
+                  <dt className="shrink-0 font-medium text-muted-foreground sm:w-40">
+                    Materiał wykonania
+                  </dt>
+                  <dd className="text-foreground">
+                    {selectedVariant.materials!.join(", ")}
+                  </dd>
+                </div>
+              )}
+              {(selectedVariant.extraInfo?.length ?? 0) > 0 && (
+                <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-2">
+                  <dt className="shrink-0 font-medium text-muted-foreground sm:w-40">
+                    Informacje dodatkowe
+                  </dt>
+                  <dd className="text-foreground">
+                    {selectedVariant.extraInfo!.join(", ")}
+                  </dd>
+                </div>
+              )}
+            </dl>
+          </div>
+        )}
 
       {/* Ilość */}
       <div className="space-y-2">

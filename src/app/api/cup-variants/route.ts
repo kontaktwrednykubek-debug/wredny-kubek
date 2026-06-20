@@ -6,7 +6,7 @@ export async function GET() {
   const supabase = createSupabaseServerClient();
   const { data, error } = await supabase
     .from("cup_color_variants")
-    .select("id, name, image_url, sort_order, stock_count, price_grosze")
+    .select("id, name, image_url, sort_order, stock_count, price_grosze, materials, extra_info")
     .order("sort_order", { ascending: true });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ variants: data ?? [] });
@@ -18,6 +18,8 @@ const postSchema = z.object({
   sortOrder: z.number().int().min(0).max(9999).optional(),
   stockCount: z.number().int().min(0).optional(),
   priceGrosze: z.number().int().min(0).max(1000000).nullable().optional(),
+  materials: z.array(z.string().min(1).max(60)).max(20).optional(),
+  extraInfo: z.array(z.string().min(1).max(80)).max(20).optional(),
 });
 
 export async function POST(req: Request) {
@@ -32,11 +34,11 @@ export async function POST(req: Request) {
   const parsed = postSchema.safeParse(json);
   if (!parsed.success) return NextResponse.json({ error: "bad_request" }, { status: 400 });
 
-  const { name, imageUrl, sortOrder, stockCount, priceGrosze } = parsed.data;
+  const { name, imageUrl, sortOrder, stockCount, priceGrosze, materials, extraInfo } = parsed.data;
   const { data, error } = await supabase
     .from("cup_color_variants")
-    .insert({ name, image_url: imageUrl ?? null, sort_order: sortOrder ?? 100, stock_count: stockCount ?? 0, price_grosze: priceGrosze ?? null })
-    .select("id, name, image_url, sort_order, stock_count, price_grosze")
+    .insert({ name, image_url: imageUrl ?? null, sort_order: sortOrder ?? 100, stock_count: stockCount ?? 0, price_grosze: priceGrosze ?? null, materials: materials ?? [], extra_info: extraInfo ?? [] })
+    .select("id, name, image_url, sort_order, stock_count, price_grosze, materials, extra_info")
     .single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ variant: data }, { status: 201 });

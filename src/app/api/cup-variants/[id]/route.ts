@@ -15,6 +15,8 @@ const patchSchema = z.object({
   sortOrder: z.number().int().min(0).max(9999).optional(),
   stockCount: z.number().int().min(0).optional(),
   priceGrosze: z.number().int().min(0).max(1000000).nullable().optional(),
+  materials: z.array(z.string().min(1).max(60)).max(20).optional(),
+  extraInfo: z.array(z.string().min(1).max(80)).max(20).optional(),
 });
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
@@ -31,12 +33,14 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   if (parsed.data.sortOrder !== undefined) patch.sort_order = parsed.data.sortOrder;
   if (parsed.data.stockCount !== undefined) patch.stock_count = parsed.data.stockCount;
   if (parsed.data.priceGrosze !== undefined) patch.price_grosze = parsed.data.priceGrosze;
+  if (parsed.data.materials !== undefined) patch.materials = parsed.data.materials;
+  if (parsed.data.extraInfo !== undefined) patch.extra_info = parsed.data.extraInfo;
 
   const { data, error } = await supabase
     .from("cup_color_variants")
     .update(patch)
     .eq("id", params.id)
-    .select("id, name, image_url, sort_order, stock_count, price_grosze")
+    .select("id, name, image_url, sort_order, stock_count, price_grosze, materials, extra_info")
     .single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ variant: data });

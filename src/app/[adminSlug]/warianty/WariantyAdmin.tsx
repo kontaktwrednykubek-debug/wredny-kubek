@@ -14,7 +14,19 @@ export type CupColorVariant = {
   sort_order: number;
   stock_count: number;
   price_grosze?: number | null;
+  materials?: string[];
+  extra_info?: string[];
 };
+
+// Stałe opcje specyfikacji — zaznaczane przy kolorze, pojawiają się na produkcie.
+const MATERIAL_OPTIONS = ["Ceramika", "Metal", "Porcelana", "Szkło", "Tworzywo sztuczne"];
+const EXTRA_INFO_OPTIONS = [
+  "Kubek zmieniający kolor",
+  "Możliwość mycia w zmywarce",
+  "Mikrofalówka",
+  "Opakowanie prezentowe",
+  "Własne zdjęcie",
+];
 
 const inputCls =
   "w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring";
@@ -106,6 +118,38 @@ function VariantCard({
   );
   const [savingPrice, setSavingPrice] = React.useState(false);
   const [uploading, setUploading] = React.useState(false);
+  const [materials, setMaterials] = React.useState<string[]>(variant.materials ?? []);
+  const [extraInfo, setExtraInfo] = React.useState<string[]>(variant.extra_info ?? []);
+  const [savingSpec, setSavingSpec] = React.useState(false);
+
+  // Zapisuje specyfikację (materiały / info) od razu po kliknięciu checkboxa.
+  async function saveSpec(next: { materials?: string[]; extraInfo?: string[] }) {
+    setSavingSpec(true);
+    try {
+      await fetch(`/api/cup-variants/${variant.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(next),
+      });
+      onSaved();
+    } finally {
+      setSavingSpec(false);
+    }
+  }
+  function toggleMaterial(opt: string) {
+    const next = materials.includes(opt)
+      ? materials.filter((m) => m !== opt)
+      : [...materials, opt];
+    setMaterials(next);
+    void saveSpec({ materials: next });
+  }
+  function toggleExtra(opt: string) {
+    const next = extraInfo.includes(opt)
+      ? extraInfo.filter((m) => m !== opt)
+      : [...extraInfo, opt];
+    setExtraInfo(next);
+    void saveSpec({ extraInfo: next });
+  }
 
   async function savePrice() {
     const raw = priceVal.replace(",", ".").trim();
@@ -317,6 +361,58 @@ function VariantCard({
             </div>
           </div>
         )}
+      </div>
+
+      {/* Specyfikacja koloru — materiały + informacje dodatkowe */}
+      <div className="border-t border-border/50 px-3 py-3">
+        <div className="mb-1.5 flex items-center justify-between">
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Specyfikacja
+          </span>
+          {savingSpec && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
+        </div>
+
+        <p className="mb-1 text-[11px] font-medium text-muted-foreground">Materiał wykonania</p>
+        <div className="mb-2 flex flex-wrap gap-1">
+          {MATERIAL_OPTIONS.map((opt) => {
+            const on = materials.includes(opt);
+            return (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => toggleMaterial(opt)}
+                className={`rounded-full border px-2 py-0.5 text-[11px] transition ${
+                  on
+                    ? "border-green-500 bg-green-500/10 text-green-700"
+                    : "border-border text-muted-foreground hover:border-green-500/50"
+                }`}
+              >
+                {opt}
+              </button>
+            );
+          })}
+        </div>
+
+        <p className="mb-1 text-[11px] font-medium text-muted-foreground">Informacje dodatkowe</p>
+        <div className="flex flex-wrap gap-1">
+          {EXTRA_INFO_OPTIONS.map((opt) => {
+            const on = extraInfo.includes(opt);
+            return (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => toggleExtra(opt)}
+                className={`rounded-full border px-2 py-0.5 text-[11px] transition ${
+                  on
+                    ? "border-green-500 bg-green-500/10 text-green-700"
+                    : "border-border text-muted-foreground hover:border-green-500/50"
+                }`}
+              >
+                {opt}
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
