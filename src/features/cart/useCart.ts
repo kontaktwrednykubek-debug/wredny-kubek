@@ -148,6 +148,11 @@ export const useCart = create<CartState>()(
       name: "kubkomania-cart",
       onRehydrateStorage: () => (state) => {
         if (state) {
+          // Odrzuć uszkodzone/stare pozycje bez poprawnego productId —
+          // inaczej .startsWith() rzuca i cała strona koszyka pada.
+          state.items = (state.items ?? []).filter(
+            (item) => typeof item?.productId === "string",
+          );
           const itemsWithVariant = state.items.filter(
             (item) => !item.productId.startsWith("shop:") || item.variant?.color,
           );
@@ -168,11 +173,16 @@ export function useAutoClearCart() {
 
   useEffect(() => {
     const itemsWithoutVariant = items.filter(
-      (item) => item.productId.startsWith("shop:") && !item.variant?.color,
+      (item) =>
+        typeof item.productId === "string" &&
+        item.productId.startsWith("shop:") &&
+        !item.variant?.color,
     );
     if (itemsWithoutVariant.length > 0) {
       const itemsToKeep = items.filter(
-        (item) => !item.productId.startsWith("shop:") || item.variant?.color,
+        (item) =>
+          typeof item.productId === "string" &&
+          (!item.productId.startsWith("shop:") || item.variant?.color),
       );
       clear();
       itemsToKeep.forEach((item) => {

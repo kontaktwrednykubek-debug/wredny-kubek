@@ -58,7 +58,10 @@ export function CartClient() {
   React.useEffect(() => {
     async function fetchStock() {
       const shopItems = items.filter(
-        (item) => item.productId.startsWith("shop:") && item.variant?.color,
+        (item) =>
+          typeof item.productId === "string" &&
+          item.productId.startsWith("shop:") &&
+          item.variant?.color,
       );
       if (shopItems.length === 0) {
         setStockMap({});
@@ -86,7 +89,10 @@ export function CartClient() {
   }, [items]);
 
   const itemsWithoutVariant = items.filter(
-    (item) => item.productId.startsWith("shop:") && !item.variant?.color,
+    (item) =>
+      typeof item.productId === "string" &&
+      item.productId.startsWith("shop:") &&
+      !item.variant?.color,
   );
 
   if (items.length === 0) {
@@ -108,7 +114,7 @@ export function CartClient() {
   const gratisDiscount = cartGratisDiscountGr(items);
 
   const getMaxQty = (item: CartItem) => {
-    if (!item.productId.startsWith("shop:") || !item.variant?.color) return 999;
+    if (typeof item.productId !== "string" || !item.productId.startsWith("shop:") || !item.variant?.color) return 999;
     const slug = item.productId.slice("shop:".length);
     const key = `${slug}:${item.variant.color}`;
     return stockMap[key] ?? 999;
