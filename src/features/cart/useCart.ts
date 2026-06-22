@@ -34,6 +34,8 @@ export function isMissingRequiredVariant(item: CartItem): boolean {
   return (
     typeof item?.productId === "string" &&
     item.productId.startsWith("shop:") &&
+    // Pozycje gratis są generowane automatycznie — nigdy nie wymagają wyboru wariantu.
+    !item.isGratis &&
     !item.variantOptional &&
     !item.variant?.color
   );
@@ -93,6 +95,7 @@ function syncGratis(items: CartItem[], promo: Promotion | null): CartItem[] {
     previewUrl: cheapest.previewUrl,
     label: cheapest.label,
     variant: cheapest.variant,
+    variantOptional: cheapest.variantOptional,
     isGratis: true,
     promoId: promo.id,
   };
