@@ -96,10 +96,10 @@ export function CartClient() {
         <ShoppingBag className="mx-auto h-16 w-16 text-muted-foreground" />
         <h1 className="mt-4 text-3xl font-bold">Twój koszyk jest pusty</h1>
         <p className="mt-3 text-muted-foreground">
-          Stwórz swój pierwszy projekt w edytorze.
+          Zajrzyj do sklepu i wybierz coś dla siebie.
         </p>
-        <Link href="/edytor" className="mt-6 inline-block">
-          <Button size="lg">Otwórz edytor</Button>
+        <Link href="/sklep" className="mt-6 inline-block">
+          <Button size="lg">Przejdź do sklepu</Button>
         </Link>
       </section>
     );
@@ -416,7 +416,7 @@ export function CartClient() {
             </Button>
           </Link>
           <Link
-            href="/edytor"
+            href="/sklep"
             className="mt-3 block text-center text-sm text-muted-foreground hover:text-foreground"
           >
             ← Dodaj kolejny produkt
