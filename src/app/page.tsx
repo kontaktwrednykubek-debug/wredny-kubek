@@ -29,7 +29,7 @@ export default async function HomePage() {
     .limit(3);
   const activeBanners = bannersRes.data ?? [];
 
-  const [carouselRes, categoriesRes, productsForCoverRes, featuredRes] = await Promise.all([
+  const [carouselRes, categoriesRes, productsForCoverRes, featuredRes, bestsellersRes] = await Promise.all([
     supabase
       .from("shop_products")
       .select("slug, title, price_grosze, images, rating, reviews_count, variants, category, categories")
@@ -55,6 +55,13 @@ export default async function HomePage() {
       .eq("is_featured", true)
       .order("created_at", { ascending: false })
       .limit(15),
+    supabase
+      .from("shop_products")
+      .select("slug, title, price_grosze, images, rating, reviews_count, variants, category, categories")
+      .eq("is_published", true)
+      .contains("labels", ["bestseller"])
+      .order("created_at", { ascending: false })
+      .limit(15),
   ]);
 
   // Strona główna nie pokazuje treści 18+ — odfiltrowujemy produkty i kategorie
@@ -69,6 +76,9 @@ export default async function HomePage() {
     (p) => !isAdultProduct(p),
   ) as CarouselProduct[];
   const featuredProducts = (featuredRes.data ?? []).filter(
+    (p) => !isAdultProduct(p),
+  ) as CarouselProduct[];
+  const bestsellerProducts = (bestsellersRes.data ?? []).filter(
     (p) => !isAdultProduct(p),
   ) as CarouselProduct[];
 
@@ -266,6 +276,34 @@ export default async function HomePage() {
               </Link>
             </div>
             <ProductCarousel products={featuredProducts} />
+          </div>
+        </section>
+      )}
+
+      {/* BESTSELLERY — produkty z etykietą "bestseller" (panel admina) */}
+      {bestsellerProducts.length > 0 && (
+        <section className="bg-background border-t border-border">
+          <div className="container mx-auto px-5 py-14 sm:px-6 md:py-20 lg:px-10 xl:px-12">
+            <div className="mb-8 flex flex-col items-start gap-3 md:mb-10 md:flex-row md:items-end md:justify-between">
+              <div>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-rose-500">
+                  🔥 Bestsellery
+                </span>
+                <h2 className="mt-3 text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl md:text-5xl">
+                  Najchętniej kupowane
+                </h2>
+                <p className="mt-3 max-w-2xl text-muted-foreground">
+                  Liderzy sprzedaży — kubki, które wybieracie najczęściej.
+                </p>
+              </div>
+              <Link
+                href="/sklep"
+                className="text-sm font-semibold text-primary underline-offset-4 hover:underline"
+              >
+                Zobacz wszystkie →
+              </Link>
+            </div>
+            <ProductCarousel products={bestsellerProducts} />
           </div>
         </section>
       )}
