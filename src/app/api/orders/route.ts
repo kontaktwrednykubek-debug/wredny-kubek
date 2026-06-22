@@ -49,6 +49,7 @@ const bodySchema = z.object({
         productId: z.string().min(1).max(120),
         label: z.string().max(300).optional(),
         variantColor: z.string().max(100).optional(),
+        variantOptional: z.boolean().optional(),
         quantity: z.number().int().min(1).max(999),
         unitPriceGr: z.number().int().min(0),
         previewUrl: z.string().url().optional().nullable(),
@@ -84,9 +85,10 @@ export async function POST(req: Request) {
     label: i.label
   })));
 
-  // Server-side validation: shop products must have variantColor
+  // Server-side validation: produkt sklepowy Z wariantami musi mieć variantColor.
+  // Produkt bez wariantów (variantOptional) jest poprawny bez koloru.
   for (const item of items) {
-    if (item.productId.startsWith("shop:") && !item.variantColor) {
+    if (item.productId.startsWith("shop:") && !item.variantColor && !item.variantOptional) {
       console.error("[orders-api] Shop product without variantColor:", item);
       return NextResponse.json(
         {

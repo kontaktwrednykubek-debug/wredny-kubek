@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { AlertTriangle, Check, Loader2, Tag, Truck, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useCart, cartTotalGr } from "@/features/cart/useCart";
+import { useCart, cartTotalGr, isMissingRequiredVariant } from "@/features/cart/useCart";
 import { formatPrice } from "@/lib/utils";
 import { isValidPhone } from "@/lib/phone";
 
@@ -326,18 +326,19 @@ export function CheckoutClient({
             productId: i.productId,
             label: i.label,
             variantColor: i.variant?.color,
+            variantOptional: i.variantOptional,
             quantity: i.quantity,
             unitPriceGr: i.unitPriceGr,
             previewUrl: i.previewUrl ?? null,
           };
           console.log("[CheckoutClient] Item payload:", item);
-          
-          // Validation: shop products must have variantColor
-          if (i.productId.startsWith("shop:") && !item.variantColor) {
+
+          // Walidacja: tylko produkt Z wariantami musi mieć wybrany kolor.
+          if (isMissingRequiredVariant(i)) {
             console.error("[CheckoutClient] Shop product without variantColor:", i);
             throw new Error(`Produkt "${i.label}" wymaga wyboru wariantu koloru. Usuń go z koszyka i dodaj ponownie.`);
           }
-          
+
           return item;
         }),
           discountCode: discount?.code ?? null,
