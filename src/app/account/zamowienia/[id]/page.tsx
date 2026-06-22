@@ -5,6 +5,7 @@ import { BackLink } from "@/components/BackLink";
 import { formatPrice } from "@/lib/utils";
 import { getProduct } from "@/config/products";
 import { backfillOrderPreviews } from "@/lib/orderPreviews";
+import { computeOrderTotals } from "@/lib/orderTotals";
 
 export const metadata = { title: "Szczegóły zamówienia" };
 
@@ -54,7 +55,7 @@ export default async function OrderDetailsPage({
   const { data: order } = await supabase
     .from("orders")
     .select(
-      "id, group_id, product_id, label, amount_grosze, quantity, status, created_at, preview_url, shipping_info, design_id",
+      "id, group_id, product_id, label, amount_grosze, quantity, status, created_at, preview_url, shipping_info, design_id, discount_grosze, discount_code_id",
     )
     .eq("id", params.id)
     .eq("user_id", user.id)
@@ -69,7 +70,7 @@ export default async function OrderDetailsPage({
     const { data: siblings } = await supabase
       .from("orders")
       .select(
-        "id, group_id, product_id, label, amount_grosze, quantity, status, created_at, preview_url, shipping_info, design_id",
+        "id, group_id, product_id, label, amount_grosze, quantity, status, created_at, preview_url, shipping_info, design_id, discount_grosze, discount_code_id",
       )
       .eq("group_id", groupId)
       .eq("user_id", user.id)
@@ -80,9 +81,25 @@ export default async function OrderDetailsPage({
   rows = await backfillOrderPreviews(supabase, rows);
 
   const shipping = (order.shipping_info as Shipping) ?? {};
-  const itemsTotal = rows.reduce((s, r) => s + (r.amount_grosze ?? 0), 0);
-  const shippingPrice = shipping.shippingPriceGr ?? 0;
-  const total = itemsTotal + shippingPrice;
+
+  // Czy użyty kod to darmowa dostawa (zeruje dostawę).
+  let freeShipping = false;
+  const discountCodeId = (order as { discount_code_id?: string | null })
+    .discount_code_id;
+  if (discountCodeId) {
+    const { data: code } = await supabase
+      .from("discount_codes")
+      .select("type")
+      .eq("id", discountCodeId)
+      .maybeSingle();
+    freeShipping = (code as { type?: string } | null)?.type === "free_shipping";
+  }
+
+  const totals = computeOrderTotals(rows, { freeShipping });
+  const itemsTotal = totals.itemsTotal;
+  const shippingPrice = totals.shippingGr;
+  const discountGrosze = totals.discountGr;
+  const total = totals.total;
 
   return (
     <section className="container mx-auto max-w-4xl px-4 py-8">
@@ -175,6 +192,12 @@ export default async function OrderDetailsPage({
                 {shippingPrice === 0 ? "Gratis" : formatPrice(shippingPrice)}
               </dd>
             </div>
+            {discountGrosze > 0 && (
+              <div className="flex justify-between text-emerald-600">
+                <dt>Rabat</dt>
+                <dd className="font-medium">−{formatPrice(discountGrosze)}</dd>
+              </div>
+            )}
             <div className="flex justify-between border-t border-border pt-2 text-base font-bold">
               <dt>Razem</dt>
               <dd className="text-primary">{formatPrice(total)}</dd>

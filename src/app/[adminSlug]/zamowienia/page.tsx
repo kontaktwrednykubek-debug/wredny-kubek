@@ -3,6 +3,7 @@ import { CheckCircle2, Clock, Package, TrendingUp } from "lucide-react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { backfillOrderPreviews } from "@/lib/orderPreviews";
 import { formatPrice } from "@/lib/utils";
+import { computeOrderTotals } from "@/lib/orderTotals";
 import { OrderStatusSelect } from "./OrderStatusSelect";
 import {
   OrderShippingActions,
@@ -20,13 +21,33 @@ export default async function AdminOrdersPage() {
   const { data: rawOrders } = await supabase
     .from("orders")
     .select(
-      "id, user_id, group_id, product_id, label, amount_grosze, quantity, status, shipping_info, created_at, preview_url",
+      "id, user_id, group_id, product_id, label, amount_grosze, quantity, status, shipping_info, created_at, preview_url, discount_grosze, discount_code_id",
     )
     .order("created_at", { ascending: false })
     .limit(200);
 
   const orders = await backfillOrderPreviews(supabase, rawOrders ?? []);
   const list = orders;
+
+  // Typy użytych kodów rabatowych (do rozpoznania darmowej dostawy).
+  const codeIds = Array.from(
+    new Set(
+      (list as { discount_code_id?: string | null }[])
+        .map((o) => o.discount_code_id)
+        .filter((x): x is string => Boolean(x)),
+    ),
+  );
+  const freeShipCodeIds = new Set<string>();
+  if (codeIds.length > 0) {
+    const { data: codes } = await supabase
+      .from("discount_codes")
+      .select("id, type")
+      .in("id", codeIds);
+    for (const c of codes ?? []) {
+      if ((c as { type?: string }).type === "free_shipping")
+        freeShipCodeIds.add((c as { id: string }).id);
+    }
+  }
 
   // Grupuj pozycje z jednego koszyka (wspólny group_id) w jedno zamówienie.
   type OrderRow = (typeof list)[number] & { group_id?: string | null };
@@ -41,8 +62,13 @@ export default async function AdminOrdersPage() {
 
   const paid = groups.filter((g) => PAID_STATUSES.includes(g[0].status));
   const pending = groups.filter((g) => g[0].status === "PENDING");
+  const groupFreeShip = (g: OrderRow[]) =>
+    freeShipCodeIds.has(
+      (g[0] as { discount_code_id?: string | null }).discount_code_id ?? "",
+    );
   const paidRevenue = paid.reduce(
-    (s, g) => s + g.reduce((x, o) => x + (o.amount_grosze ?? 0), 0),
+    (s, g) =>
+      s + computeOrderTotals(g, { freeShipping: groupFreeShip(g) }).total,
     0,
   );
   const avgPaid = paid.length ? Math.round(paidRevenue / paid.length) : 0;
@@ -91,10 +117,9 @@ export default async function AdminOrdersPage() {
           {groups.map((group) => {
             const primary = group[0];
             const ids = group.map((o) => o.id);
-            const totalGr = group.reduce(
-              (s, o) => s + (o.amount_grosze ?? 0),
-              0,
-            );
+            const totals = computeOrderTotals(group, {
+              freeShipping: groupFreeShip(group),
+            });
             const ship = (primary.shipping_info ?? {}) as Record<
               string,
               string | undefined
@@ -163,8 +188,18 @@ export default async function AdminOrdersPage() {
                   </div>
 
                   <div className="text-right">
+                    {totals.discountGr > 0 && (
+                      <>
+                        <p className="text-xs text-muted-foreground line-through">
+                          {formatPrice(totals.itemsTotal + totals.shippingGr)}
+                        </p>
+                        <p className="text-xs font-medium text-emerald-600">
+                          Rabat −{formatPrice(totals.discountGr)}
+                        </p>
+                      </>
+                    )}
                     <p className="text-lg font-bold text-primary">
-                      {formatPrice(totalGr)}
+                      {formatPrice(totals.total)}
                     </p>
                     <div className="mt-1">
                       <OrderStatusSelect

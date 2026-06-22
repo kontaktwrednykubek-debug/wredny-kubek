@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { BackLink } from "@/components/BackLink";
 import { backfillOrderPreviews } from "@/lib/orderPreviews";
+import { computeOrderTotals } from "@/lib/orderTotals";
 import { OrdersClient } from "./OrdersClient";
 
 export const metadata = { title: "Twoje zamówienia" };
@@ -20,12 +21,32 @@ export default async function OrdersPage({
   const { data: rawOrders } = await supabase
     .from("orders")
     .select(
-      "id, group_id, product_id, label, amount_grosze, quantity, status, created_at, preview_url",
+      "id, group_id, product_id, label, amount_grosze, quantity, status, created_at, preview_url, shipping_info, discount_grosze, discount_code_id",
     )
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
   const orders = await backfillOrderPreviews(supabase, rawOrders ?? []);
+
+  // Typy użytych kodów rabatowych (rozpoznanie darmowej dostawy).
+  const codeIds = Array.from(
+    new Set(
+      (orders as { discount_code_id?: string | null }[])
+        .map((o) => o.discount_code_id)
+        .filter((x): x is string => Boolean(x)),
+    ),
+  );
+  const freeShipCodeIds = new Set<string>();
+  if (codeIds.length > 0) {
+    const { data: codes } = await supabase
+      .from("discount_codes")
+      .select("id, type")
+      .in("id", codeIds);
+    for (const c of codes ?? []) {
+      if ((c as { type?: string }).type === "free_shipping")
+        freeShipCodeIds.add((c as { id: string }).id);
+    }
+  }
 
   // Grupuj pozycje z jednego koszyka (wspólny group_id) w JEDNO zamówienie —
   // tak jak w panelu admina. Bez group_id traktujemy wiersz jako osobny.
@@ -40,11 +61,17 @@ export default async function OrdersPage({
 
   const groupedOrders = Array.from(groupMap.values()).map((rows) => {
     const first = rows[0];
+    const freeShipping = freeShipCodeIds.has(
+      (first as { discount_code_id?: string | null }).discount_code_id ?? "",
+    );
+    const totals = computeOrderTotals(rows, { freeShipping });
     return {
       id: first.id, // reprezentant — link do szczegółów
       status: first.status,
       created_at: first.created_at,
-      totalGrosze: rows.reduce((s, r) => s + (r.amount_grosze ?? 0), 0),
+      totalGrosze: totals.total,
+      discountGrosze: totals.discountGr,
+      subtotalGrosze: totals.itemsTotal + totals.shippingGr,
       ids: rows.map((r) => r.id),
       items: rows.map((r) => ({
         id: r.id,

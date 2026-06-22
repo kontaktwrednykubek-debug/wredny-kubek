@@ -39,6 +39,8 @@ type GroupedOrder = {
   status: string;
   created_at: string;
   totalGrosze: number;
+  discountGrosze?: number;
+  subtotalGrosze?: number;
   ids: string[];
   items: OrderItem[];
 };
@@ -151,13 +153,30 @@ export function OrdersClient({ orders }: { orders: GroupedOrder[] }) {
             </div>
 
             {/* Suma całego zamówienia */}
-            <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
-              <span className="text-sm text-muted-foreground">
-                Razem ({itemCount} {itemCount === 1 ? "szt." : "szt."})
-              </span>
-              <span className="text-lg font-bold text-primary">
-                {formatPrice(o.totalGrosze)}
-              </span>
+            <div className="mt-3 space-y-1 border-t border-border pt-3">
+              {(o.discountGrosze ?? 0) > 0 && (
+                <div className="flex items-center justify-between text-sm text-emerald-600">
+                  <span>Rabat</span>
+                  <span className="font-medium">
+                    −{formatPrice(o.discountGrosze ?? 0)}
+                  </span>
+                </div>
+              )}
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">
+                  Razem ({itemCount} szt.)
+                </span>
+                <span className="flex items-baseline gap-2">
+                  {(o.discountGrosze ?? 0) > 0 && o.subtotalGrosze != null && (
+                    <span className="text-sm text-muted-foreground line-through">
+                      {formatPrice(o.subtotalGrosze)}
+                    </span>
+                  )}
+                  <span className="text-lg font-bold text-primary">
+                    {formatPrice(o.totalGrosze)}
+                  </span>
+                </span>
+              </div>
             </div>
           </Link>
         );
