@@ -137,6 +137,8 @@ export function BuyNowSection({
       label: buildLabel(),
       quantity: qty,
       variant: variant ? { color: variant.id } : undefined,
+      // Produkt bez wariantów kolorów — brak koloru jest poprawny, koszyk go nie usuwa.
+      variantOptional: !hasColorVariants,
     });
     if (redirect) router.push("/koszyk");
     else {

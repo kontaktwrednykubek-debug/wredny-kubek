@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Trash2, Minus, Plus, ShoppingBag, AlertTriangle, Gift, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useCart, cartTotalGr, cartGratisDiscountGr, useAutoClearCart, MYSTERY_MUG_ID, type CartItem } from "@/features/cart/useCart";
+import { useCart, cartTotalGr, cartGratisDiscountGr, useAutoClearCart, isMissingRequiredVariant, MYSTERY_MUG_ID, type CartItem } from "@/features/cart/useCart";
 import { usePromoStore } from "@/features/promo/usePromoStore";
 import { formatPrice } from "@/lib/utils";
 import * as React from "react";
@@ -88,12 +88,7 @@ export function CartClient() {
     fetchStock();
   }, [items]);
 
-  const itemsWithoutVariant = items.filter(
-    (item) =>
-      typeof item.productId === "string" &&
-      item.productId.startsWith("shop:") &&
-      !item.variant?.color,
-  );
+  const itemsWithoutVariant = items.filter(isMissingRequiredVariant);
 
   if (items.length === 0) {
     return (

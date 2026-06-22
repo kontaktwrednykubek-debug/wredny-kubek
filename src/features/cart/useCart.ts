@@ -22,7 +22,22 @@ export type CartItem = {
   isGratis?: boolean;
   /** ID promocji która wygenerowała tę pozycję */
   promoId?: string;
+  /** Produkt sklepowy NIE ma wariantów kolorów — brak koloru jest poprawny. */
+  variantOptional?: boolean;
 };
+
+/**
+ * Czy pozycja sklepowa wymaga wariantu koloru, którego brakuje.
+ * Produkt bez wariantów (variantOptional) jest poprawny bez koloru.
+ */
+export function isMissingRequiredVariant(item: CartItem): boolean {
+  return (
+    typeof item?.productId === "string" &&
+    item.productId.startsWith("shop:") &&
+    !item.variantOptional &&
+    !item.variant?.color
+  );
+}
 
 type CartState = {
   items: CartItem[];
@@ -154,7 +169,7 @@ export const useCart = create<CartState>()(
             (item) => typeof item?.productId === "string",
           );
           const itemsWithVariant = state.items.filter(
-            (item) => !item.productId.startsWith("shop:") || item.variant?.color,
+            (item) => !isMissingRequiredVariant(item),
           );
           if (itemsWithVariant.length !== state.items.length) {
             state.items = itemsWithVariant;
@@ -172,17 +187,11 @@ export function useAutoClearCart() {
   const items = useCart((state) => state.items);
 
   useEffect(() => {
-    const itemsWithoutVariant = items.filter(
-      (item) =>
-        typeof item.productId === "string" &&
-        item.productId.startsWith("shop:") &&
-        !item.variant?.color,
-    );
+    const itemsWithoutVariant = items.filter(isMissingRequiredVariant);
     if (itemsWithoutVariant.length > 0) {
       const itemsToKeep = items.filter(
         (item) =>
-          typeof item.productId === "string" &&
-          (!item.productId.startsWith("shop:") || item.variant?.color),
+          typeof item.productId === "string" && !isMissingRequiredVariant(item),
       );
       clear();
       itemsToKeep.forEach((item) => {
