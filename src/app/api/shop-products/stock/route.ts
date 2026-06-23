@@ -16,45 +16,21 @@ export async function POST(req: Request) {
     const variantIds = items.map(i => i.variantId);
     const slugs = [...new Set(items.map(i => i.slug))];
     
-    // Fetch global stock
+    // Fetch global stock (JEDEN wspólny stan per kolor — bez limitów per-produkt).
     const { data: globalVariants } = await supabase
       .from("cup_color_variants")
       .select("id, stock_count")
       .in("id", variantIds);
-    
-    // Fetch product IDs for slugs
-    const { data: products } = await supabase
-      .from("shop_products")
-      .select("id, slug")
-      .in("slug", slugs);
-    
-    const productMap = new Map(products?.map(p => [p.slug, p.id]) ?? []);
-    const productIds = Array.from(productMap.values());
-    
-    // Fetch per-product stock
-    const { data: productVariants } = await supabase
-      .from("product_variants")
-      .select("product_id, variant_id, stock_count")
-      .in("product_id", productIds)
-      .in("variant_id", variantIds);
-    
+
+    void slugs;
     const globalMap = new Map(globalVariants?.map(v => [v.id, v.stock_count]) ?? []);
-    const productStockMap = new Map<string, number>();
-    productVariants?.forEach(pv => {
-      productStockMap.set(`${pv.product_id}:${pv.variant_id}`, pv.stock_count);
-    });
-    
-    // Build stock map: key = `${slug}:${variantId}`, value = min(global, per-product)
+
+    // Build stock map: key = `${slug}:${variantId}`, value = stan globalny koloru.
     const stockMap: Record<string, number> = {};
     items.forEach(item => {
-      const productId = productMap.get(item.slug);
-      const global = globalMap.get(item.variantId) ?? 0;
-      const perProduct = productId 
-        ? productStockMap.get(`${productId}:${item.variantId}`) ?? 999999
-        : 999999;
-      stockMap[`${item.slug}:${item.variantId}`] = Math.min(global, perProduct);
+      stockMap[`${item.slug}:${item.variantId}`] = globalMap.get(item.variantId) ?? 0;
     });
-    
+
     return NextResponse.json({ stock: stockMap });
   }
   

@@ -101,66 +101,81 @@ export async function POST(req: Request) {
     }
   }
 
-  // Atomowa walidacja i rezerwacja stanu magazynowego (zapobieganie race conditions)
+  // Rezerwacja stanu magazynowego — JEDEN wspólny globalny stan per kolor
+  // (cup_color_variants.stock_count). Wszystkie pozycje o tym samym kolorze,
+  // niezależnie od produktu, schodzą z tej samej puli.
+  const stockService = createSupabaseServiceClient();
+
+  // Zsumuj zamawianą ilość per kolor (wariant) ze wszystkich pozycji sklepowych.
+  const qtyByVariant = new Map<string, number>();
   for (const item of items) {
-    if (!item.productId.startsWith("shop:")) {
-      console.log(`[orders-api] Skipping non-shop product: ${item.productId}`);
-      continue;
-    }
-    const slug = item.productId.slice("shop:".length);
-    if (!item.variantColor) {
-      console.log(`[orders-api] Skipping item without variantColor: ${item.productId}`);
-      continue;
-    }
-    
-    console.log(`[orders-api] Processing stock reservation for ${slug}, variant: ${item.variantColor}, qty: ${item.quantity}`);
-    
-    // Użyj atomowej operacji UPDATE z warunkiem, aby zarezerwować sztuki
-    console.log(`[orders-api] Calling RPC reserve_variant_stock with params:`, {
-      p_slug: slug,
-      p_variant_id: item.variantColor,
-      p_quantity: item.quantity,
-    });
-    
-    const { data: rpcResult, error: updateError } = await supabase.rpc(
-      "reserve_variant_stock",
-      {
-        p_slug: slug,
-        p_variant_id: item.variantColor,
-        p_quantity: item.quantity,
-      }
+    if (!item.productId.startsWith("shop:") || !item.variantColor) continue;
+    qtyByVariant.set(
+      item.variantColor,
+      (qtyByVariant.get(item.variantColor) ?? 0) + item.quantity,
     );
-    
-    console.log(`[orders-api] RPC response:`, { data: rpcResult, error: updateError });
-    
-    if (updateError) {
-      console.error(`[orders-api] Stock reservation failed for ${slug}:`, updateError);
-      return NextResponse.json(
-        { 
-          error: `Produktu w wariancie "${item.variantColor}" nie ma wystarczającej ilości.`,
-          code: "OUT_OF_STOCK",
-          details: updateError.message,
-        },
-        { status: 400 }
-      );
+  }
+
+  for (const [variantId, qty] of qtyByVariant) {
+    // Atomowa rezerwacja przez compare-and-swap (kilka prób przy równoległych zakupach).
+    let reserved = false;
+    for (let attempt = 0; attempt < 5 && !reserved; attempt++) {
+      const { data: row, error: readErr } = await stockService
+        .from("cup_color_variants")
+        .select("stock_count, name")
+        .eq("id", variantId)
+        .maybeSingle();
+
+      if (readErr || !row) {
+        return NextResponse.json(
+          { error: "Nie znaleziono wariantu koloru.", code: "OUT_OF_STOCK" },
+          { status: 400 },
+        );
+      }
+
+      const available = row.stock_count ?? 0;
+      const name = row.name ?? variantId;
+
+      if (available < qty) {
+        return NextResponse.json(
+          {
+            error: `Produktu w wariancie "${name}" pozostało tylko ${available} szt.`,
+            code: "OUT_OF_STOCK",
+            available,
+            requested: qty,
+          },
+          { status: 400 },
+        );
+      }
+
+      // CAS: zdejmij sztuki tylko jeśli stan nie zmienił się od odczytu.
+      const { data: updated, error: updErr } = await stockService
+        .from("cup_color_variants")
+        .update({ stock_count: available - qty })
+        .eq("id", variantId)
+        .eq("stock_count", available)
+        .select("id");
+
+      if (updErr) {
+        return NextResponse.json(
+          {
+            error: `Nie udało się zarezerwować stanu dla "${name}".`,
+            code: "OUT_OF_STOCK",
+            details: updErr.message,
+          },
+          { status: 400 },
+        );
+      }
+      if (updated && updated.length > 0) reserved = true;
     }
-    
-    // RPC zwraca tablicę z {success, new_stock, available}
-    const result = Array.isArray(rpcResult) ? rpcResult[0] : rpcResult;
-    const success = result?.success === true;
-    const available = result?.available ?? 0;
-    
-    console.log(`[orders-api] Reservation result:`, { success, available, requested: item.quantity });
-    
-    if (!success) {
+
+    if (!reserved) {
       return NextResponse.json(
-        { 
-          error: `Produktu w wariancie "${item.variantColor}" pozostało tylko ${available} szt.`,
+        {
+          error: "Zbyt duży ruch przy tym produkcie — spróbuj ponownie za chwilę.",
           code: "OUT_OF_STOCK",
-          available,
-          requested: item.quantity,
         },
-        { status: 400 }
+        { status: 409 },
       );
     }
   }

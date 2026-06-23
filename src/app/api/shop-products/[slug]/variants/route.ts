@@ -40,42 +40,28 @@ export async function GET(
     .in("id", selectedIds)
     .order("sort_order", { ascending: true });
     
-  // Get per-product variant limits
-  const { data: productVariants, error: productVariantError } = await supabase
-    .from("product_variants")
-    .select("variant_id, stock_count")
-    .eq("product_id", product.id);
-    
-  if (globalError || productVariantError) {
-    console.error("[product-variants] Error:", { globalError, productVariantError });
+  if (globalError) {
+    console.error("[product-variants] Error:", { globalError });
     return NextResponse.json({ error: "Database error" }, { status: 500 });
   }
-  
-  // Create per-product stock map
-  const productStockMap = new Map();
-  productVariants?.forEach((pv: any) => {
-    productStockMap.set(pv.variant_id, pv.stock_count);
-  });
-  
-  // Transform data to match expected format
+
+  // Stan magazynowy = JEDEN wspólny stan globalny per kolor (cup_color_variants).
+  // Produkty dzielące ten sam kolor korzystają z tej samej puli.
   const variants = globalVariants?.map((item: any) => {
-    const globalStock = item.stock_count;
-    const productStock = productStockMap.get(item.id) ?? 999; // Default to high number if not set
-    const availableStock = Math.min(globalStock, productStock); // Use minimum of both
-    
+    const globalStock = item.stock_count ?? 0;
+
     return {
       id: item.id,
       name: item.name,
       imageUrl: item.image_url,
       sortOrder: item.sort_order,
-      stockCount: availableStock,
+      stockCount: globalStock,
       // Cena: nadpisanie per produkt > globalna cena koloru > null (=cena bazowa)
       priceGrosze: priceMap.get(item.id) ?? item.price_grosze ?? null,
       // Specyfikacja globalna koloru — zmienia się wraz z wybranym wariantem.
       materials: (item.materials as string[] | null) ?? [],
       extraInfo: (item.extra_info as string[] | null) ?? [],
       globalStock, // For admin reference
-      productStock, // For admin reference
     };
   }) ?? [];
   

@@ -843,8 +843,11 @@ export function ProductForm({
                 📦 Stan magazynowy i cena dla każdego koloru
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Wpisz ile sztuk masz dostępnych. Cena opcjonalna — puste = cena
-                bazowa produktu (np. biały 35 zł, różowy 37 zł).
+                Stan magazynowy jest wspólny dla całego sklepu — ten sam kolor
+                dzieli jedną pulę między wszystkimi produktami. Edytuj go w
+                zakładce <span className="font-semibold">Warianty</span>. Cena
+                opcjonalna — puste = cena bazowa produktu (np. biały 35 zł,
+                różowy 37 zł).
               </p>
             </div>
             <div className="space-y-2">
@@ -869,25 +872,19 @@ export function ProductForm({
                       <div className="h-10 w-10 shrink-0 rounded-lg bg-muted" />
                     )}
                     <span className="flex-1 text-sm font-medium">{v.name}</span>
-                    {/* Stan magazynowy */}
+                    {/* Stan magazynowy — wspólny globalny (tylko podgląd, edycja w Warianty) */}
                     <div className="flex items-center gap-1.5">
-                      <input
-                        type="number"
-                        min={0}
-                        max={v.stock_count}
-                        value={variantStock[v.id] ?? ""}
-                        placeholder="0"
-                        onChange={(e) => {
-                          const n = parseInt(e.target.value, 10);
-                          const safe = isNaN(n) ? 0 : Math.max(0, Math.min(v.stock_count, n));
-                          setVariantStock((prev) => ({
-                            ...prev,
-                            [v.id]: safe,
-                          }));
-                        }}
-                        className="w-16 rounded-lg border-2 border-input bg-background px-2 py-1.5 text-sm font-semibold focus:border-primary focus:outline-none"
-                      />
-                      <span className="text-xs text-muted-foreground">/ {v.stock_count} szt.</span>
+                      <span
+                        className={`rounded-lg px-2 py-1.5 text-sm font-semibold ${
+                          v.stock_count === 0
+                            ? "bg-destructive/10 text-destructive"
+                            : "bg-muted text-foreground"
+                        }`}
+                        title="Wspólny stan magazynowy — edytuj w zakładce Warianty"
+                      >
+                        {v.stock_count}
+                      </span>
+                      <span className="text-xs text-muted-foreground">szt. (wspólny)</span>
                     </div>
                     {/* Cena custom */}
                     <div className="flex items-center gap-1.5 border-l border-border pl-3">
