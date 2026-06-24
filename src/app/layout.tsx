@@ -18,7 +18,9 @@ const description =
 
 export const metadata: Metadata = {
   metadataBase: new URL(
-    process.env.NEXT_PUBLIC_APP_URL ?? "https://wredny-kubek.vercel.app",
+    process.env.NEXT_PUBLIC_SITE_URL ??
+      process.env.NEXT_PUBLIC_APP_URL ??
+      "https://wrednykubek.pl",
   ),
   title: { default: brand.name, template: `%s — ${brand.name}` },
   description,
@@ -40,11 +42,13 @@ export const metadata: Metadata = {
     apple: "/icons/apple-touch-icon.png",
   },
   robots: {
-    index: false,
-    follow: false,
+    index: true,
+    follow: true,
     googleBot: {
-      index: false,
-      follow: false,
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
     },
   },
   openGraph: {

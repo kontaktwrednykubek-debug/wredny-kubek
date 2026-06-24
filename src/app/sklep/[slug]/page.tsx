@@ -22,10 +22,36 @@ export async function generateMetadata({
   const supabase = createSupabaseServerClient();
   const { data } = await supabase
     .from("shop_products")
-    .select("title")
+    .select("title, description, images")
     .eq("slug", params.slug)
     .maybeSingle();
-  return { title: data?.title ?? "Produkt" };
+
+  if (!data) return { title: "Produkt" };
+
+  const images = (data.images as string[] | null) ?? [];
+  const cover = images[0];
+  const description =
+    (data.description as string | null)?.slice(0, 200) || undefined;
+
+  return {
+    title: data.title ?? "Produkt",
+    description,
+    alternates: { canonical: `/sklep/${params.slug}` },
+    openGraph: {
+      type: "website",
+      title: data.title ?? "Produkt",
+      description,
+      url: `/sklep/${params.slug}`,
+      // Zdjęcie produktu jako podgląd przy udostępnianiu (fallback: logo z layoutu).
+      ...(cover ? { images: [{ url: cover, alt: data.title ?? "Produkt" }] } : {}),
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: data.title ?? "Produkt",
+      description,
+      ...(cover ? { images: [cover] } : {}),
+    },
+  };
 }
 
 type Variants = {
