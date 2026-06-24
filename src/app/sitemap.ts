@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getAdultCategorySlugs } from "@/lib/adult";
 
 const BASE_URL = (
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://wrednykubek.pl"
@@ -25,30 +26,42 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  // Produkty opublikowane.
+  // Kategorie 18+ — wykluczone z indeksowania (dostępne na stronie za bramką wieku).
+  const adultCatSlugs = await getAdultCategorySlugs(supabase);
+  const isAdultProduct = (p: { category?: unknown; categories?: unknown }) => {
+    const cats =
+      (p.categories as string[] | null) ?? [(p.category as string | null) ?? ""];
+    return cats.some((c) => adultCatSlugs.has(c));
+  };
+
+  // Produkty opublikowane (bez 18+).
   const { data: products } = await supabase
     .from("shop_products")
-    .select("slug, updated_at")
+    .select("slug, updated_at, category, categories")
     .eq("is_published", true);
 
-  const productRoutes: MetadataRoute.Sitemap = (products ?? []).map((p) => ({
-    url: `${BASE_URL}/sklep/${p.slug}`,
-    lastModified: p.updated_at ? new Date(p.updated_at as string) : undefined,
-    changeFrequency: "weekly",
-    priority: 0.8,
-  }));
+  const productRoutes: MetadataRoute.Sitemap = (products ?? [])
+    .filter((p) => !isAdultProduct(p))
+    .map((p) => ({
+      url: `${BASE_URL}/sklep/${p.slug}`,
+      lastModified: p.updated_at ? new Date(p.updated_at as string) : undefined,
+      changeFrequency: "weekly",
+      priority: 0.8,
+    }));
 
-  // Kategorie widoczne (filtr przez parametr ?category=).
+  // Kategorie widoczne (bez 18+; filtr przez parametr ?category=).
   const { data: categories } = await supabase
     .from("categories")
     .select("slug")
     .neq("is_visible", false);
 
-  const categoryRoutes: MetadataRoute.Sitemap = (categories ?? []).map((c) => ({
-    url: `${BASE_URL}/sklep?category=${c.slug}`,
-    changeFrequency: "weekly",
-    priority: 0.6,
-  }));
+  const categoryRoutes: MetadataRoute.Sitemap = (categories ?? [])
+    .filter((c) => !adultCatSlugs.has(c.slug as string))
+    .map((c) => ({
+      url: `${BASE_URL}/sklep?category=${c.slug}`,
+      changeFrequency: "weekly",
+      priority: 0.6,
+    }));
 
   return [...staticRoutes, ...productRoutes, ...categoryRoutes];
 }

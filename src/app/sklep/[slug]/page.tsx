@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Sparkles } from "lucide-react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { brand } from "@/config/theme";
+import { getAdultCategorySlugs } from "@/lib/adult";
 import { Button } from "@/components/ui/button";
 import { BackLink } from "@/components/BackLink";
 import { formatPrice } from "@/lib/utils";
@@ -23,11 +24,17 @@ export async function generateMetadata({
   const supabase = createSupabaseServerClient();
   const { data } = await supabase
     .from("shop_products")
-    .select("title, description, images")
+    .select("title, description, images, category, categories")
     .eq("slug", params.slug)
     .maybeSingle();
 
   if (!data) return { title: "Produkt" };
+
+  // Produkty 18+ — dostępne na stronie (za bramką wieku), ale NIE w Google.
+  const adultCatSlugs = await getAdultCategorySlugs(supabase);
+  const cats =
+    (data.categories as string[] | null) ?? [(data.category as string | null) ?? ""];
+  const isAdult = cats.some((c) => adultCatSlugs.has(c));
 
   const images = (data.images as string[] | null) ?? [];
   const cover = images[0];
@@ -43,6 +50,9 @@ export async function generateMetadata({
     title: data.title ?? "Produkt",
     description,
     alternates: { canonical: `/sklep/${params.slug}` },
+    ...(isAdult
+      ? { robots: { index: false, follow: true, googleBot: { index: false, follow: true } } }
+      : {}),
     openGraph: {
       type: "website",
       locale: "pl_PL",
