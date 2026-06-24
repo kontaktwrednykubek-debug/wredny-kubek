@@ -1,2 +1,8 @@
 User-agent: *
-Disallow: /
+Allow: /
+Disallow: /api/
+Disallow: /account/
+Disallow: /koszyk
+Disallow: /login
+
+Sitemap: https://wrednykubek.pl/sitemap.xml
