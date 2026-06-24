@@ -37,7 +37,10 @@ export async function generateMetadata({
   const isAdult = cats.some((c) => adultCatSlugs.has(c));
 
   const images = (data.images as string[] | null) ?? [];
-  const cover = images[0];
+  const hasCover = images.length > 0;
+  // Podgląd społecznościowy: JPEG 1200×630 z endpointu (Facebook/Messenger
+  // bywają zawodne z WebP). Generowany tylko dla botów, cache 24h.
+  const ogImage = hasCover ? `/api/og/${params.slug}` : undefined;
   // Skróć opis do ~120 znaków, by nie ucinało się w podglądach społecznościowych.
   const rawDesc = (data.description as string | null)?.trim();
   const description = rawDesc
@@ -61,13 +64,25 @@ export async function generateMetadata({
       description,
       url: `/sklep/${params.slug}`,
       // Zdjęcie produktu jako podgląd przy udostępnianiu (fallback: logo z layoutu).
-      ...(cover ? { images: [{ url: cover, alt: data.title ?? "Produkt" }] } : {}),
+      ...(ogImage
+        ? {
+            images: [
+              {
+                url: ogImage,
+                width: 1200,
+                height: 630,
+                type: "image/jpeg",
+                alt: data.title ?? "Produkt",
+              },
+            ],
+          }
+        : {}),
     },
     twitter: {
       card: "summary_large_image",
       title: data.title ?? "Produkt",
       description,
-      ...(cover ? { images: [cover] } : {}),
+      ...(ogImage ? { images: [ogImage] } : {}),
     },
   };
 }
