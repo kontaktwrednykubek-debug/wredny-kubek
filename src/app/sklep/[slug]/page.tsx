@@ -3,6 +3,7 @@ import * as React from "react";
 import { notFound } from "next/navigation";
 import { Sparkles } from "lucide-react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { brand } from "@/config/theme";
 import { Button } from "@/components/ui/button";
 import { BackLink } from "@/components/BackLink";
 import { formatPrice } from "@/lib/utils";
@@ -30,8 +31,13 @@ export async function generateMetadata({
 
   const images = (data.images as string[] | null) ?? [];
   const cover = images[0];
-  const description =
-    (data.description as string | null)?.slice(0, 200) || undefined;
+  // Skróć opis do ~120 znaków, by nie ucinało się w podglądach społecznościowych.
+  const rawDesc = (data.description as string | null)?.trim();
+  const description = rawDesc
+    ? rawDesc.length > 120
+      ? `${rawDesc.slice(0, 117).trimEnd()}…`
+      : rawDesc
+    : undefined;
 
   return {
     title: data.title ?? "Produkt",
@@ -39,6 +45,8 @@ export async function generateMetadata({
     alternates: { canonical: `/sklep/${params.slug}` },
     openGraph: {
       type: "website",
+      locale: "pl_PL",
+      siteName: brand.name,
       title: data.title ?? "Produkt",
       description,
       url: `/sklep/${params.slug}`,
