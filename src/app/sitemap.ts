@@ -49,7 +49,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
     }));
 
-  // Kategorie widoczne (bez 18+; filtr przez parametr ?category=).
+  // Kategorie widoczne (bez 18+; czysty adres /sklep/kategoria/<slug>).
   const { data: categories } = await supabase
     .from("categories")
     .select("slug")
@@ -58,7 +58,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const categoryRoutes: MetadataRoute.Sitemap = (categories ?? [])
     .filter((c) => !adultCatSlugs.has(c.slug as string))
     .map((c) => ({
-      url: `${BASE_URL}/sklep?category=${c.slug}`,
+      url: `${BASE_URL}/sklep/kategoria/${c.slug}`,
       changeFrequency: "weekly",
       priority: 0.6,
     }));

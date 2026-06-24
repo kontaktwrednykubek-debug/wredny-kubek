@@ -43,18 +43,31 @@ export function ShopFilters({
 
   const parents = categories.filter((c) => c.parent_id === null);
 
+  // Czyste adresy: kategoria w ścieżce (/sklep/kategoria/<slug>),
+  // a filtry ceny/wyszukiwania jako parametry zapytania.
+  const basePath = selectedCategory
+    ? `/sklep/kategoria/${selectedCategory}`
+    : "/sklep";
+
+  // Buduje URL z aktualną kategorią (ścieżka) i podanymi parametrami zapytania.
   function buildHref(updates: Record<string, string | null>): string {
     const next = new URLSearchParams(params.toString());
+    next.delete("category"); // kategoria nie jest już parametrem zapytania
     for (const [k, v] of Object.entries(updates)) {
       if (v === null || v === "") next.delete(k);
       else next.set(k, v);
     }
     const qs = next.toString();
-    return qs ? `/sklep?${qs}` : "/sklep";
+    return qs ? `${basePath}?${qs}` : basePath;
   }
 
   function setCategory(slug: string | null) {
-    router.push(buildHref({ category: slug }));
+    // Zmiana kategorii zmienia ścieżkę; zachowujemy filtry ceny/wyszukiwania.
+    const next = new URLSearchParams(params.toString());
+    next.delete("category");
+    const qs = next.toString();
+    const target = slug ? `/sklep/kategoria/${slug}` : "/sklep";
+    router.push(qs ? `${target}?${qs}` : target);
     setOpenMobile(false);
   }
 

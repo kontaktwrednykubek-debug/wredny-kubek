@@ -297,7 +297,7 @@ export default async function HomePage() {
                 </p>
               </div>
               <Link
-                href="/sklep?category=bestsellery"
+                href="/sklep/kategoria/bestsellery"
                 className="text-sm font-semibold text-primary underline-offset-4 hover:underline"
               >
                 Zobacz wszystkie →

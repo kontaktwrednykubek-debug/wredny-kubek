@@ -49,7 +49,7 @@ export function CategoryCarousel({ categories }: { categories: CategoryCard[] })
         {categories.map((c) => (
           <Link
             key={c.slug}
-            href={`/sklep?category=${c.slug}`}
+            href={`/sklep/kategoria/${c.slug}`}
             className="group relative aspect-[4/5] w-[260px] shrink-0 snap-start overflow-hidden rounded-3xl border border-border bg-card shadow-sm transition hover:shadow-xl sm:w-[300px]"
           >
             {c.imageUrl ? (

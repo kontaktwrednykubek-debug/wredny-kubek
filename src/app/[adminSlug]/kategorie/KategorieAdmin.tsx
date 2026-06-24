@@ -194,7 +194,7 @@ function CategoryRowEdit({
           {cat.name}
           {!visible && <span className="ml-1 text-[10px] font-normal no-underline">(ukryta)</span>}
         </p>
-        <p className="text-xs text-muted-foreground">/sklep?category={cat.slug}</p>
+        <p className="text-xs text-muted-foreground">/sklep/kategoria/{cat.slug}</p>
       </div>
       <button
         onClick={toggleVisible}
