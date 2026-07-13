@@ -114,18 +114,16 @@ export function BuyNowSection({
     effectiveStock != null && effectiveStock > 0 && effectiveStock <= 5
       ? effectiveStock
       : null;
-  // Wyprzedaż: cena po obniżce zastępuje cenę bazową. Wariant z ceną custom
-  // ma pierwszeństwo (jego cena nie podlega obniżce).
-  const salePct =
-    selectedVariant?.priceGrosze != null
-      ? null
-      : salePercent(priceGrosze, salePriceGrosze);
+  // Wyprzedaż: procent obniżki liczony z ceny bazowej produktu stosuje się
+  // też do wariantów z własną ceną (np. -10% obniża każdy kolor o 10%).
+  const salePct = salePercent(priceGrosze, salePriceGrosze);
+  // Cena wyjściowa: cena wariantu (jeśli ma własną) albo bazowa produktu.
+  const regularPriceGr =
+    selectedVariant?.priceGrosze != null ? selectedVariant.priceGrosze : priceGrosze;
   const effectivePriceGr =
-    selectedVariant?.priceGrosze != null
-      ? selectedVariant.priceGrosze
-      : salePct != null
-      ? salePriceGrosze!
-      : priceGrosze;
+    salePct != null
+      ? Math.round((regularPriceGr * salePriceGrosze!) / priceGrosze)
+      : regularPriceGr;
 
   const buildLabel = () => {
     const variant = variants.find(v => v.id === color);
@@ -330,7 +328,7 @@ export function BuyNowSection({
           <>
             <span className="flex items-baseline gap-2">
               <span className="text-lg text-muted-foreground line-through">
-                {formatPrice(priceGrosze)}
+                {formatPrice(regularPriceGr)}
               </span>
               <span className="text-3xl font-extrabold text-rose-600">
                 {formatPrice(effectivePriceGr)}
