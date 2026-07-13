@@ -99,6 +99,7 @@ const updateSchema = z.object({
   category: z.string().max(50).optional(),
   categories: z.array(z.string().max(50)).max(60).optional(),
   priceGrosze: z.number().int().min(0).optional(),
+  salePriceGrosze: z.number().int().min(0).nullable().optional(),
   images: z.array(z.string().url()).max(10).optional(),
   specs: z.record(z.string()).optional(),
   variants: variantsSchema.optional(),
@@ -148,6 +149,7 @@ export async function PATCH(
     update.category = p.category;
   }
   if (p.priceGrosze !== undefined) update.price_grosze = p.priceGrosze;
+  if (p.salePriceGrosze !== undefined) update.sale_price_grosze = p.salePriceGrosze;
   if (p.images !== undefined) update.images = p.images;
   if (p.specs !== undefined) update.specs = p.specs;
   if (p.variants !== undefined) update.variants = p.variants;

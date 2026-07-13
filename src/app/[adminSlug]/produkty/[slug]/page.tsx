@@ -14,7 +14,7 @@ export default async function EditProductPage({
   const { data } = await supabase
     .from("shop_products")
     .select(
-      "slug, title, description, body, category, categories, price_grosze, images, specs, variants, rating, reviews_count, show_variant_stock, variant_stock, show_view_counter, view_count_base, view_count_period, related_product_ids, tags, labels",
+      "slug, title, description, body, category, categories, price_grosze, sale_price_grosze, images, specs, variants, rating, reviews_count, show_variant_stock, variant_stock, show_view_counter, view_count_base, view_count_period, related_product_ids, tags, labels",
     )
     .eq("slug", params.slug)
     .maybeSingle();
@@ -29,6 +29,8 @@ export default async function EditProductPage({
     category: data.category ?? "merch",
     categories: (data.categories as string[] | null) ?? undefined,
     price_grosze: Number(data.price_grosze) || 0,
+    sale_price_grosze:
+      data.sale_price_grosze != null ? Number(data.sale_price_grosze) : null,
     images: (data.images as string[]) ?? [],
     specs: (data.specs as Record<string, string>) ?? {},
     variants: (data.variants as ProductInitial["variants"]) ?? {},

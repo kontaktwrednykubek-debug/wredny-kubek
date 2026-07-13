@@ -36,6 +36,7 @@ export type ProductInitial = {
   category: string;
   categories?: string[];
   price_grosze: number;
+  sale_price_grosze?: number | null;
   images: string[];
   specs: Record<string, string>;
   variants: Variants;
@@ -146,6 +147,15 @@ export function ProductForm({
   }
   const [priceZl, setPriceZl] = React.useState(
     initial ? (initial.price_grosze / 100).toFixed(2) : "",
+  );
+  // Wyprzedaż: checkbox włącza pole ceny po obniżce. Procent liczy się sam.
+  const [saleEnabled, setSaleEnabled] = React.useState(
+    initial?.sale_price_grosze != null,
+  );
+  const [salePriceZl, setSalePriceZl] = React.useState(
+    initial?.sale_price_grosze != null
+      ? (initial.sale_price_grosze / 100).toFixed(2)
+      : "",
   );
   const [rating, setRating] = React.useState(initial?.rating ?? 0);
   const [reviewsCount, setReviewsCount] = React.useState(
@@ -315,6 +325,18 @@ export function ProductForm({
       setError("Nieprawidłowa cena.");
       return;
     }
+    let salePriceGr: number | null = null;
+    if (saleEnabled) {
+      salePriceGr = Math.round(parseFloat(salePriceZl.replace(",", ".")) * 100);
+      if (!Number.isFinite(salePriceGr) || salePriceGr <= 0) {
+        setError("Nieprawidłowa cena po obniżce.");
+        return;
+      }
+      if (salePriceGr >= priceGr) {
+        setError("Cena po obniżce musi być niższa od ceny bazowej.");
+        return;
+      }
+    }
     const specsObj: Record<string, string> = {
       Stan: condition,
       Ilość: String(qInt),
@@ -352,6 +374,7 @@ export function ProductForm({
       categories: selectedCategories,
       category: selectedCategories[0] ?? "",
       priceGrosze: priceGr,
+      salePriceGrosze: salePriceGr,
       images,
       specs: specsObj,
       variants,
@@ -660,6 +683,72 @@ export function ProductForm({
             />
           </Field>
         </div>
+        {/* Wyprzedaż / obniżka ceny */}
+        <div
+          className={`rounded-2xl border-2 p-4 sm:p-5 space-y-3 transition ${
+            saleEnabled ? "border-rose-500/60 bg-rose-500/5" : "border-border bg-muted/50"
+          }`}
+        >
+          <label className="flex cursor-pointer items-start gap-3">
+            <input
+              type="checkbox"
+              checked={saleEnabled}
+              onChange={(e) => setSaleEnabled(e.target.checked)}
+              className="mt-0.5 h-4 w-4 accent-rose-500"
+            />
+            <span>
+              <span className="block text-sm font-semibold">🔻 Wyprzedaż — cena po obniżce</span>
+              <span className="block text-xs text-muted-foreground">
+                Zaznacz, aby przecenić produkt. Na karcie pojawi się badge z
+                procentem obniżki, a produkt trafi do sekcji Wyprzedaż na
+                stronie głównej. Klient płaci cenę po obniżce.
+              </span>
+            </span>
+          </label>
+          {saleEnabled && (
+            <div className="flex flex-wrap items-end gap-4 pl-7">
+              <Field label="Cena po obniżce (PLN)" required>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={salePriceZl}
+                  onChange={(e) => setSalePriceZl(e.target.value)}
+                  className={`${inputCls} w-36`}
+                  placeholder="np. 20.00"
+                  required
+                />
+              </Field>
+              {(() => {
+                const base = parseFloat(priceZl.replace(",", "."));
+                const sale = parseFloat(salePriceZl.replace(",", "."));
+                if (!Number.isFinite(base) || !Number.isFinite(sale) || sale <= 0) return null;
+                if (sale >= base) {
+                  return (
+                    <p className="pb-2 text-sm font-semibold text-destructive">
+                      Cena po obniżce musi być niższa niż {base.toFixed(2)} zł
+                    </p>
+                  );
+                }
+                const pct = Math.round((1 - sale / base) * 100);
+                return (
+                  <div className="flex items-center gap-3 pb-1">
+                    <span className="grid h-14 w-14 place-items-center rounded-full bg-gradient-to-br from-rose-500 to-red-600 text-sm font-extrabold text-white shadow">
+                      -{pct}%
+                    </span>
+                    <span className="text-sm text-muted-foreground">
+                      <s>{base.toFixed(2)} zł</s>{" "}
+                      <strong className="text-rose-600">{sale.toFixed(2)} zł</strong>
+                      <br />
+                      klient oszczędza {(base - sale).toFixed(2)} zł
+                    </span>
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+        </div>
+
         <Field label="Ocena (gwiazdki)">
           <div className="flex items-center gap-1">
             {[1, 2, 3, 4, 5].map((n) => (

@@ -11,7 +11,7 @@ export async function GET() {
   const { data, error } = await supabase
     .from("shop_products")
     .select(
-      "id, slug, title, description, price_grosze, currency, images, rating, reviews_count, created_at",
+      "id, slug, title, description, price_grosze, sale_price_grosze, currency, images, rating, reviews_count, created_at",
     )
     .eq("is_published", true)
     .order("created_at", { ascending: false });
@@ -46,6 +46,7 @@ const createSchema = z.object({
   category: z.string().max(50).default("merch"),
   categories: z.array(z.string().max(50)).max(60).optional(),
   priceGrosze: z.number().int().min(0),
+  salePriceGrosze: z.number().int().min(0).nullable().optional(),
   images: z.array(z.string().url()).max(10).default([]),
   specs: z.record(z.string()).default({}),
   variants: variantsSchema,
@@ -107,6 +108,7 @@ export async function POST(req: Request) {
         [p.title, p.description, p.body, ...(p.categories ?? [p.category]), ...p.tags].filter(Boolean).join(" ")
       ).catch(() => null),
       price_grosze: p.priceGrosze,
+      sale_price_grosze: p.salePriceGrosze ?? null,
       images: p.images,
       specs: p.specs,
       variants: p.variants,

@@ -29,10 +29,10 @@ export default async function HomePage() {
     .limit(3);
   const activeBanners = bannersRes.data ?? [];
 
-  const [carouselRes, categoriesRes, productsForCoverRes, featuredRes, bestsellersRes] = await Promise.all([
+  const [carouselRes, categoriesRes, productsForCoverRes, featuredRes, bestsellersRes, saleRes] = await Promise.all([
     supabase
       .from("shop_products")
-      .select("slug, title, price_grosze, images, rating, reviews_count, variants, category, categories")
+      .select("slug, title, price_grosze, sale_price_grosze, images, rating, reviews_count, variants, category, categories")
       .eq("is_published", true)
       .neq("category", "merch")
       .order("created_at", { ascending: false })
@@ -50,16 +50,23 @@ export default async function HomePage() {
       .order("created_at", { ascending: false }),
     supabase
       .from("shop_products")
-      .select("slug, title, price_grosze, images, rating, reviews_count, variants, category, categories")
+      .select("slug, title, price_grosze, sale_price_grosze, images, rating, reviews_count, variants, category, categories")
       .eq("is_published", true)
       .eq("is_featured", true)
       .order("created_at", { ascending: false })
       .limit(15),
     supabase
       .from("shop_products")
-      .select("slug, title, price_grosze, images, rating, reviews_count, variants, category, categories")
+      .select("slug, title, price_grosze, sale_price_grosze, images, rating, reviews_count, variants, category, categories")
       .eq("is_published", true)
       .contains("labels", ["bestseller"])
+      .order("created_at", { ascending: false })
+      .limit(15),
+    supabase
+      .from("shop_products")
+      .select("slug, title, price_grosze, sale_price_grosze, images, rating, reviews_count, variants, category, categories")
+      .eq("is_published", true)
+      .not("sale_price_grosze", "is", null)
       .order("created_at", { ascending: false })
       .limit(15),
   ]);
@@ -80,6 +87,12 @@ export default async function HomePage() {
   ) as CarouselProduct[];
   const bestsellerProducts = (bestsellersRes.data ?? []).filter(
     (p) => !isAdultProduct(p),
+  ) as CarouselProduct[];
+  // Wyprzedaż: tylko realne obniżki (sale < cena bazowa), bez 18+.
+  const saleProducts = (saleRes.data ?? []).filter(
+    (p) =>
+      !isAdultProduct(p) &&
+      (p.sale_price_grosze as number) < (p.price_grosze as number),
   ) as CarouselProduct[];
 
   // Mapowanie kategorii → pierwsze zdjęcie produktu z tej kategorii (lub child).
@@ -250,6 +263,41 @@ export default async function HomePage() {
       <div className="overflow-hidden">
         <Marquee />
       </div>
+
+      {/* WYPRZEDAŻ — produkty z ceną po obniżce (sale_price_grosze) */}
+      {saleProducts.length > 0 && (
+        <section className="relative overflow-hidden border-y border-rose-500/20 bg-gradient-to-b from-rose-500/[0.07] via-background to-background">
+          {/* delikatna poświata w tle */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -top-24 left-1/2 h-64 w-[36rem] -translate-x-1/2 rounded-full bg-rose-500/10 blur-3xl"
+          />
+          <div className="container relative mx-auto px-5 py-14 sm:px-6 md:py-20 lg:px-10 xl:px-12">
+            <div className="mb-8 flex flex-col items-start gap-3 md:mb-10 md:flex-row md:items-end md:justify-between">
+              <div>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-rose-500 to-red-600 px-3 py-1 text-xs font-bold uppercase tracking-wider text-white shadow-sm">
+                  🔻 Wyprzedaż
+                </span>
+                <h2 className="mt-3 text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl md:text-5xl">
+                  Ceny spadły. Wredność została.
+                </h2>
+                <p className="mt-3 max-w-2xl text-muted-foreground">
+                  Te kubki muszą zniknąć z naszych półek — więc obniżyliśmy
+                  ceny do bólu. Kto pierwszy, ten pije taniej. Sztuk jest
+                  dokładnie tyle, ile widzisz, a potem koniec.
+                </p>
+              </div>
+              <Link
+                href="/wyprzedaz"
+                className="text-sm font-semibold text-rose-600 underline-offset-4 hover:underline"
+              >
+                Zobacz całą wyprzedaż →
+              </Link>
+            </div>
+            <ProductCarousel products={saleProducts} />
+          </div>
+        </section>
+      )}
 
       {/* WREDNE HITY — polecane przez admina */}
       {featuredProducts.length > 0 && (

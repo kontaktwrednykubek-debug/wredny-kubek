@@ -103,7 +103,7 @@ export default async function ProductDetailsPage({
   const { data: product } = await supabase
     .from("shop_products")
     .select(
-      "id, slug, title, description, body, category, categories, price_grosze, images, specs, variants, rating, reviews_count, show_variant_stock, variant_stock, show_view_counter, view_count_base",
+      "id, slug, title, description, body, category, categories, price_grosze, sale_price_grosze, images, specs, variants, rating, reviews_count, show_variant_stock, variant_stock, show_view_counter, view_count_base",
     )
     .eq("slug", params.slug)
     .eq("is_published", true)
@@ -182,11 +182,22 @@ export default async function ProductDetailsPage({
 
           {/* Cena — tylko dla merch (personalizacja). Dla produktów z wariantami
               cenę pokazuje BuyNowSection (zmienia się z wybranym kolorem). */}
-          {product.category === "merch" && (
-            <p className="text-2xl sm:text-3xl font-bold text-primary">
-              {formatPrice(product.price_grosze)}
-            </p>
-          )}
+          {product.category === "merch" &&
+            (product.sale_price_grosze != null &&
+            product.sale_price_grosze < product.price_grosze ? (
+              <p className="flex items-baseline gap-2">
+                <span className="text-lg text-muted-foreground line-through">
+                  {formatPrice(product.price_grosze)}
+                </span>
+                <span className="text-2xl sm:text-3xl font-bold text-rose-600">
+                  {formatPrice(product.sale_price_grosze)}
+                </span>
+              </p>
+            ) : (
+              <p className="text-2xl sm:text-3xl font-bold text-primary">
+                {formatPrice(product.price_grosze)}
+              </p>
+            ))}
 
           {/* Krótki opis */}
           {product.description && (
@@ -221,6 +232,7 @@ export default async function ProductDetailsPage({
                 slug={product.slug}
                 title={product.title}
                 priceGrosze={product.price_grosze}
+                salePriceGrosze={product.sale_price_grosze ?? null}
                 cover={images[0] ?? null}
                 variants={variants}
                 showVariantStock={showVariantStock}

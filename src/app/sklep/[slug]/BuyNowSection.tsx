@@ -7,6 +7,7 @@ import { ShoppingCart, Check, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/features/cart/useCart";
 import { formatPrice } from "@/lib/utils";
+import { SaleBadge, salePercent } from "@/components/SaleBadge";
 
 type Variant = {
   id: string;
@@ -23,6 +24,7 @@ export function BuyNowSection({
   slug,
   title,
   priceGrosze,
+  salePriceGrosze = null,
   cover,
   showVariantStock,
   capacities = [],
@@ -31,6 +33,7 @@ export function BuyNowSection({
   slug: string;
   title: string;
   priceGrosze: number;
+  salePriceGrosze?: number | null;
   cover: string | null;
   showVariantStock: boolean;
   capacities?: string[];
@@ -111,8 +114,18 @@ export function BuyNowSection({
     effectiveStock != null && effectiveStock > 0 && effectiveStock <= 5
       ? effectiveStock
       : null;
+  // Wyprzedaż: cena po obniżce zastępuje cenę bazową. Wariant z ceną custom
+  // ma pierwszeństwo (jego cena nie podlega obniżce).
+  const salePct =
+    selectedVariant?.priceGrosze != null
+      ? null
+      : salePercent(priceGrosze, salePriceGrosze);
   const effectivePriceGr =
-    selectedVariant?.priceGrosze != null ? selectedVariant.priceGrosze : priceGrosze;
+    selectedVariant?.priceGrosze != null
+      ? selectedVariant.priceGrosze
+      : salePct != null
+      ? salePriceGrosze!
+      : priceGrosze;
 
   const buildLabel = () => {
     const variant = variants.find(v => v.id === color);
@@ -312,10 +325,24 @@ export function BuyNowSection({
       </div>
 
       {/* Cena (aktualizuje się przy wyborze koloru) */}
-      <div className="flex items-baseline gap-2">
-        <span className="text-3xl font-extrabold text-primary">
-          {formatPrice(effectivePriceGr)}
-        </span>
+      <div className="flex items-center gap-3">
+        {salePct != null ? (
+          <>
+            <span className="flex items-baseline gap-2">
+              <span className="text-lg text-muted-foreground line-through">
+                {formatPrice(priceGrosze)}
+              </span>
+              <span className="text-3xl font-extrabold text-rose-600">
+                {formatPrice(effectivePriceGr)}
+              </span>
+            </span>
+            <SaleBadge percent={salePct} size="sm" />
+          </>
+        ) : (
+          <span className="text-3xl font-extrabold text-primary">
+            {formatPrice(effectivePriceGr)}
+          </span>
+        )}
         {selectedVariant?.priceGrosze != null && selectedVariant.priceGrosze !== priceGrosze && (
           <span className="text-sm text-muted-foreground">
             (kolor: {selectedVariant.name})

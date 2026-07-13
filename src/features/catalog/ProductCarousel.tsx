@@ -5,11 +5,13 @@ import Link from "next/link";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, Star } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
+import { SaleBadge, salePercent } from "@/components/SaleBadge";
 
 export type CarouselProduct = {
   slug: string;
   title: string;
   price_grosze: number;
+  sale_price_grosze?: number | null;
   images: string[] | null;
   rating?: number | null;
   reviews_count?: number | null;
@@ -72,6 +74,7 @@ export function ProductCarousel({ products }: { products: CarouselProduct[] }) {
       >
         {products.map((p) => {
           const cover = p.images?.[0];
+          const pct = salePercent(p.price_grosze, p.sale_price_grosze);
           return (
             <Link
               key={p.slug}
@@ -94,13 +97,27 @@ export function ProductCarousel({ products }: { products: CarouselProduct[] }) {
                     brak zdjęcia
                   </div>
                 )}
+                {pct != null && (
+                  <SaleBadge percent={pct} className="absolute left-2 top-2" />
+                )}
               </div>
               <div className="flex flex-1 flex-col p-4">
                 <p className="line-clamp-2 font-semibold">{p.title}</p>
                 <div className="mt-auto flex items-start justify-between pt-3">
-                  <span className="text-lg font-bold text-primary">
-                    {priceLabel(p.price_grosze, p.variants)}
-                  </span>
+                  {pct != null ? (
+                    <span className="flex flex-col">
+                      <span className="text-xs text-muted-foreground line-through">
+                        {formatPrice(p.price_grosze)}
+                      </span>
+                      <span className="text-lg font-bold text-rose-600">
+                        {formatPrice(p.sale_price_grosze!)}
+                      </span>
+                    </span>
+                  ) : (
+                    <span className="text-lg font-bold text-primary">
+                      {priceLabel(p.price_grosze, p.variants)}
+                    </span>
+                  )}
                   {p.rating != null && (
                     <span className="flex items-center gap-1 text-xs text-muted-foreground">
                       <Star className="h-3 w-3 fill-amber-400 text-amber-400" />

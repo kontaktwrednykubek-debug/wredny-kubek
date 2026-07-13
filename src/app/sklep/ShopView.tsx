@@ -6,6 +6,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatPrice } from "@/lib/utils";
 import { ShopFilters, type Category } from "./ShopFilters";
 import { WishlistButton } from "@/components/WishlistButton";
+import { SaleBadge, salePercent } from "@/components/SaleBadge";
 import { AgeGate } from "./AgeGate";
 import { AdultProductCard } from "./AdultProductCard";
 
@@ -85,7 +86,7 @@ export async function ShopView({
     supabase
       .from("shop_products")
       .select(
-        "slug, title, price_grosze, images, rating, reviews_count, category, categories, variants",
+        "slug, title, price_grosze, sale_price_grosze, images, rating, reviews_count, category, categories, variants",
       )
       .eq("is_published", true)
       .order("created_at", { ascending: false }),
@@ -137,7 +138,9 @@ export async function ShopView({
   }
 
   const products = allProducts.filter((p) => {
-    const price = (p.price_grosze as number) ?? 0;
+    // Filtr cenowy działa na cenie efektywnej (po obniżce, jeśli jest).
+    const price =
+      (p.sale_price_grosze as number | null) ?? (p.price_grosze as number) ?? 0;
     if (price < selectedMinGr || price > selectedMaxGr) return false;
     if (selectedCategory) {
       // Produkt może należeć do wielu kategorii — sprawdzamy całą tablicę,
@@ -215,6 +218,10 @@ export async function ShopView({
                 <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
                   {products.map((p) => {
                     const cover = (p.images as string[])?.[0];
+                    const pct = salePercent(
+                      p.price_grosze as number,
+                      p.sale_price_grosze as number | null,
+                    );
                     const pCats =
                       (p.categories as string[] | null) ?? [(p.category as string | null) ?? ""];
                     const isAdult = pCats.some((c) => adultCatSlugs.has(c));
@@ -242,15 +249,29 @@ export async function ShopView({
                           <div className="absolute right-2 top-2">
                             <WishlistButton slug={p.slug as string} initialSaved={savedSlugs.has(p.slug as string)} />
                           </div>
+                          {pct != null && (
+                            <SaleBadge percent={pct} className="absolute left-2 top-2" />
+                          )}
                         </div>
                         <div className="p-4">
                           <p className="line-clamp-2 font-semibold">
                             {p.title}
                           </p>
                           <div className="mt-2 flex items-start justify-between">
-                            <span className="text-lg font-bold text-primary">
-                              {priceLabel(p.price_grosze as number, p.variants)}
-                            </span>
+                            {pct != null ? (
+                              <span className="flex flex-col">
+                                <span className="text-xs text-muted-foreground line-through">
+                                  {formatPrice(p.price_grosze as number)}
+                                </span>
+                                <span className="text-lg font-bold text-rose-600">
+                                  {formatPrice(p.sale_price_grosze as number)}
+                                </span>
+                              </span>
+                            ) : (
+                              <span className="text-lg font-bold text-primary">
+                                {priceLabel(p.price_grosze as number, p.variants)}
+                              </span>
+                            )}
                             <span className="flex items-center gap-1 text-xs text-muted-foreground">
                               <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
                               {Number(p.rating).toFixed(1)} ({p.reviews_count})

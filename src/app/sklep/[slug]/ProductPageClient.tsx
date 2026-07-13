@@ -15,6 +15,7 @@ export function ProductPageClient({
   slug,
   title,
   priceGrosze,
+  salePriceGrosze = null,
   cover,
   variants,
   showVariantStock,
@@ -24,6 +25,7 @@ export function ProductPageClient({
   slug: string;
   title: string;
   priceGrosze: number;
+  salePriceGrosze?: number | null;
   cover: string | null;
   variants: Variants;
   showVariantStock: boolean;
@@ -95,6 +97,7 @@ export function ProductPageClient({
       slug={slug}
       title={title}
       priceGrosze={priceGrosze}
+      salePriceGrosze={salePriceGrosze}
       cover={cover}
       showVariantStock={showVariantStock}
       capacities={variants.capacities ?? []}
