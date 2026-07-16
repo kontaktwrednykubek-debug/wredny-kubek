@@ -57,11 +57,13 @@ export function CartClient() {
 
   React.useEffect(() => {
     async function fetchStock() {
+      // Wszystkie produkty sklepu — z kolorem (stan per kolor) i bez wariantu
+      // (stan bazowy z pola „Ilość"). Bez tego produkty bez koloru nie miały
+      // limitu i „+" pozwalał dodać dowolną liczbę sztuk.
       const shopItems = items.filter(
         (item) =>
           typeof item.productId === "string" &&
-          item.productId.startsWith("shop:") &&
-          item.variant?.color,
+          item.productId.startsWith("shop:"),
       );
       if (shopItems.length === 0) {
         setStockMap({});
@@ -70,7 +72,7 @@ export function CartClient() {
       try {
         const stockItems = shopItems.map((item) => ({
           slug: item.productId.slice("shop:".length),
-          variantId: item.variant!.color!,
+          variantId: item.variant?.color ?? null,
         }));
         const res = await fetch("/api/shop-products/stock", {
           method: "POST",
@@ -89,6 +91,30 @@ export function CartClient() {
   }, [items]);
 
   const itemsWithoutVariant = items.filter(isMissingRequiredVariant);
+
+  // JEDEN łączny progress bar dla całego koszyka.
+  // WAŻNE: useMemo MUSI być wywołany przed jakimkolwiek wczesnym `return`,
+  // inaczej przy przejściu pusty→pełny koszyk (rehydracja zustand) React
+  // zgłasza „Rendered more hooks than during the previous render" i koszyk
+  // wpada w error boundary.
+  const promoProgress = React.useMemo(() => {
+    if (!promo?.active) return null;
+
+    const totalQty = items
+      .filter((i) => !i.isGratis)
+      .reduce((s, i) => s + i.quantity, 0);
+
+    const completedSets = Math.floor(totalQty / promo.buy_qty);
+    const nextThreshold = (completedSets + 1) * promo.buy_qty;
+    const inCurrentSet = totalQty - completedSets * promo.buy_qty;
+    const needed = nextThreshold - totalQty;
+    const progressPct = Math.round((inCurrentSet / promo.buy_qty) * 100);
+
+    // Pokaż tylko gdy brakuje produktów do kolejnego progu (nie gdy już osiągnięty)
+    if (needed <= 0 || needed >= promo.buy_qty) return null;
+
+    return { totalQty, needed, nextThreshold, progressPct, completedSets };
+  }, [items, promo]);
 
   if (items.length === 0) {
     return (
@@ -109,31 +135,12 @@ export function CartClient() {
   const gratisDiscount = cartGratisDiscountGr(items);
 
   const getMaxQty = (item: CartItem) => {
-    if (typeof item.productId !== "string" || !item.productId.startsWith("shop:") || !item.variant?.color) return 999;
+    if (typeof item.productId !== "string" || !item.productId.startsWith("shop:")) return 999;
     const slug = item.productId.slice("shop:".length);
-    const key = `${slug}:${item.variant.color}`;
+    // Klucz: kolor → `${slug}:${color}`; brak wariantu → `${slug}:` (stan bazowy).
+    const key = `${slug}:${item.variant?.color ?? ""}`;
     return stockMap[key] ?? 999;
   };
-
-  // JEDEN łączny progress bar dla całego koszyka
-  const promoProgress = React.useMemo(() => {
-    if (!promo?.active) return null;
-
-    const totalQty = items
-      .filter((i) => !i.isGratis)
-      .reduce((s, i) => s + i.quantity, 0);
-
-    const completedSets = Math.floor(totalQty / promo.buy_qty);
-    const nextThreshold = (completedSets + 1) * promo.buy_qty;
-    const inCurrentSet = totalQty - completedSets * promo.buy_qty;
-    const needed = nextThreshold - totalQty;
-    const progressPct = Math.round((inCurrentSet / promo.buy_qty) * 100);
-
-    // Pokaż tylko gdy brakuje produktów do kolejnego progu (nie gdy już osiągnięty)
-    if (needed <= 0 || needed >= promo.buy_qty) return null;
-
-    return { totalQty, needed, nextThreshold, progressPct, completedSets };
-  }, [items, promo]);
 
   return (
     <section className="container mx-auto max-w-4xl px-4 py-10">
@@ -287,7 +294,7 @@ export function CartClient() {
                       >
                         <Plus className="h-4 w-4" />
                       </Button>
-                      {item.productId.startsWith("shop:") && item.variant?.color && (
+                      {item.productId.startsWith("shop:") && getMaxQty(item) < 999 && (
                         <span className="text-xs text-muted-foreground">
                           max {getMaxQty(item)} szt.
                         </span>
