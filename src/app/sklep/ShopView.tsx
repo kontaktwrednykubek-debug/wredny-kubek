@@ -86,7 +86,7 @@ export async function ShopView({
     supabase
       .from("shop_products")
       .select(
-        "slug, title, price_grosze, sale_price_grosze, images, rating, reviews_count, category, categories, variants",
+        "slug, title, price_grosze, sale_price_grosze, images, rating, reviews_count, category, categories, variants, specs",
       )
       .eq("is_published", true)
       .order("created_at", { ascending: false }),
@@ -138,6 +138,20 @@ export async function ShopView({
   }
 
   const products = allProducts.filter((p) => {
+    // Ukryj wyprzedane produkty BEZ wariantu koloru (stan bazowy
+    // specs["Ilość"] === 0). Produkty z kolorami mają stan per wariant i tu
+    // ich nie filtrujemy. Brak/niepoprawny „Ilość" = brak limitu (pokaż).
+    const pVariants = (p.variants as { cupColors?: unknown[] } | null) ?? {};
+    const hasColorVariants =
+      Array.isArray(pVariants.cupColors) && pVariants.cupColors.length > 0;
+    if (!hasColorVariants) {
+      const parsedStock = parseInt(
+        ((p.specs as Record<string, string> | null) ?? {})["Ilość"] ?? "",
+        10,
+      );
+      if (Number.isFinite(parsedStock) && parsedStock <= 0) return false;
+    }
+
     // Filtr cenowy działa na cenie efektywnej (po obniżce, jeśli jest).
     const price =
       (p.sale_price_grosze as number | null) ?? (p.price_grosze as number) ?? 0;

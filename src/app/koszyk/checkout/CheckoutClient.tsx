@@ -421,13 +421,24 @@ export function CheckoutClient({
         <div ref={firstErrorRef} className="mb-6 flex items-start gap-3 rounded-2xl border-2 border-destructive bg-destructive/10 p-4">
           <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
           <div>
-            <p className="font-semibold text-destructive">Produkt niedostępny w tej ilości</p>
-            <p className="mt-1 text-sm text-destructive/80">
-              <strong>{stockError.label}</strong> — chcesz kupić{" "}
-              <strong>{stockError.requested} szt.</strong>, a dostępne jest tylko{" "}
-              <strong>{stockError.available} szt.</strong>
-            </p>
-            <p className="mt-1 text-sm text-destructive/80">Zmień ilość w koszyku i spróbuj ponownie.</p>
+            {stockError.available === 0 ? (
+              <>
+                <p className="font-semibold text-destructive">Za późno — właśnie się wyprzedał 😢</p>
+                <p className="mt-1 text-sm text-destructive/80">
+                  <strong>{stockError.label}</strong> został właśnie sprzedany komuś innemu i nie ma go już w sklepie. Usuń go z koszyka, żeby dokończyć zamówienie.
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="font-semibold text-destructive">Produkt niedostępny w tej ilości</p>
+                <p className="mt-1 text-sm text-destructive/80">
+                  <strong>{stockError.label}</strong> — chcesz kupić{" "}
+                  <strong>{stockError.requested} szt.</strong>, a dostępne jest tylko{" "}
+                  <strong>{stockError.available} szt.</strong>
+                </p>
+                <p className="mt-1 text-sm text-destructive/80">Zmień ilość w koszyku i spróbuj ponownie.</p>
+              </>
+            )}
           </div>
         </div>
       )}

@@ -180,6 +180,97 @@ export async function POST(req: Request) {
     }
   }
 
+  // Rezerwacja stanu dla produktów BEZ wariantu koloru — stan bazowy trzymany
+  // w specs["Ilość"] na wierszu produktu. Sumujemy per slug i atomowo (CAS na
+  // wartości JSONB) zdejmujemy sztuki. Dzięki temu jednosztukowy kubek znika ze
+  // sklepu po sprzedaży, a spóźniony kupujący (np. z porzuconego koszyka)
+  // dostaje jasny komunikat „sprzedane". Brak/niepoprawny „Ilość" = brak limitu.
+  const qtyBySlug = new Map<string, { qty: number; label: string }>();
+  for (const item of items) {
+    if (!item.productId.startsWith("shop:") || item.variantColor) continue;
+    const slug = item.productId.slice("shop:".length);
+    const prev = qtyBySlug.get(slug);
+    qtyBySlug.set(slug, {
+      qty: (prev?.qty ?? 0) + item.quantity,
+      label: prev?.label ?? item.label ?? slug,
+    });
+  }
+
+  for (const [slug, { qty, label }] of qtyBySlug) {
+    let reserved = false;
+    for (let attempt = 0; attempt < 5 && !reserved; attempt++) {
+      const { data: row, error: readErr } = await stockService
+        .from("shop_products")
+        .select("specs")
+        .eq("slug", slug)
+        .maybeSingle();
+
+      if (readErr || !row) {
+        return NextResponse.json(
+          { error: "Nie znaleziono produktu.", code: "OUT_OF_STOCK", label },
+          { status: 400 },
+        );
+      }
+
+      const specs = (row.specs as Record<string, string> | null) ?? {};
+      const parsed = parseInt(specs["Ilość"] ?? "", 10);
+
+      // Brak limitu (pole puste / nie-liczba) — nie zdejmujemy stanu.
+      if (!Number.isFinite(parsed)) {
+        reserved = true;
+        break;
+      }
+
+      if (parsed < qty) {
+        return NextResponse.json(
+          {
+            error:
+              parsed === 0
+                ? `„${label}" właśnie został sprzedany — ktoś Cię ubiegł.`
+                : `Produktu „${label}" pozostało tylko ${parsed} szt.`,
+            code: "OUT_OF_STOCK",
+            label,
+            available: parsed,
+            requested: qty,
+          },
+          { status: 400 },
+        );
+      }
+
+      // CAS: zmniejsz „Ilość" tylko jeśli wartość nie zmieniła się od odczytu.
+      const { data: updated, error: updErr } = await stockService
+        .from("shop_products")
+        .update({ specs: { ...specs, "Ilość": String(parsed - qty) } })
+        .eq("slug", slug)
+        .eq("specs->>Ilość", String(parsed))
+        .select("id");
+
+      if (updErr) {
+        return NextResponse.json(
+          {
+            error: `Nie udało się zarezerwować stanu dla „${label}".`,
+            code: "OUT_OF_STOCK",
+            label,
+            details: updErr.message,
+          },
+          { status: 400 },
+        );
+      }
+      if (updated && updated.length > 0) reserved = true;
+    }
+
+    if (!reserved) {
+      return NextResponse.json(
+        {
+          error: "Zbyt duży ruch przy tym produkcie — spróbuj ponownie za chwilę.",
+          code: "OUT_OF_STOCK",
+          label,
+        },
+        { status: 409 },
+      );
+    }
+  }
+
   const totalQty = items.reduce((s, it) => s + it.quantity, 0);
 
   let shippingMethodName: string;
