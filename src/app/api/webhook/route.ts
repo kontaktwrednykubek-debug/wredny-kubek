@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import { sendOrderConfirmationEmail, sendAdminNotificationEmail } from "@/lib/email/sendOrderEmail";
+import { decrementStockForPaidOrders } from "@/lib/stock/decrementForOrders";
 
 export const runtime = "nodejs";
 
@@ -95,8 +96,13 @@ export async function POST(req: Request) {
   }
 
   console.log("[stripe-webhook] Marked PAID:", updatedRows.map((r) => r.id));
-  
-  // Stan magazynowy został już zdekrementowany atomowo w /api/orders przy tworzeniu zamówienia
+
+  // Zdejmij stan magazynowy — dopiero teraz, po potwierdzeniu płatności, i tylko
+  // dla zamówień, które TA obsługa przełączyła PENDING→PAID (zwycięzca wyścigu
+  // z /verify). Dzięki temu porzucona płatność nie blokuje sztuki w sklepie.
+  const paidIds = new Set(updatedRows.map((r) => r.id));
+  const paidRows = allOrderRows.filter((o) => paidIds.has(o.id));
+  await decrementStockForPaidOrders(supabase, paidRows);
 
   // Jeśli użyto kodu rabatowego — zapisz użycie i zainkrementuj licznik.
   if (primaryOrder.discount_code_id) {

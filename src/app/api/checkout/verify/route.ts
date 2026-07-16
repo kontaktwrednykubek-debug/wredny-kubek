@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import { sendOrderConfirmationEmail, sendAdminNotificationEmail } from "@/lib/email/sendOrderEmail";
+import { decrementStockForPaidOrders } from "@/lib/stock/decrementForOrders";
 import { env } from "@/lib/env";
 
 export const runtime = "nodejs";
@@ -51,7 +52,7 @@ export async function POST(req: Request) {
   // Pobierz wszystkie zamówienia z batcha.
   const { data: allOrders } = await supabase
     .from("orders")
-    .select("id, status, amount_grosze, shipping_info, user_id, product_id, label, quantity, preview_url, discount_code_id, discount_grosze")
+    .select("id, status, amount_grosze, shipping_info, user_id, product_id, label, variant_color, quantity, preview_url, discount_code_id, discount_grosze")
     .in("id", allOrderIds);
 
   if (!allOrders || allOrders.length === 0) {
@@ -72,6 +73,13 @@ export async function POST(req: Request) {
   if (!updatedRows || updatedRows.length === 0) {
     return NextResponse.json({ paid: true, alreadyUpdated: true });
   }
+
+  // Zdejmij stan magazynowy — dopiero po potwierdzeniu płatności i tylko dla
+  // zamówień, które TA obsługa przełączyła PENDING→PAID (zwycięzca wyścigu z
+  // webhookiem). Porzucona płatność nie blokuje sztuki w sklepie.
+  const paidIds = new Set(updatedRows.map((r) => r.id));
+  const paidRows = allOrders.filter((o) => paidIds.has(o.id));
+  await decrementStockForPaidOrders(supabase, paidRows);
 
   // Zapisz użycie kodu rabatowego jeśli był użyty (z głównego zamówienia).
   if (primaryOrder.discount_code_id) {

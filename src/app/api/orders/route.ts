@@ -101,12 +101,14 @@ export async function POST(req: Request) {
     }
   }
 
-  // Rezerwacja stanu magazynowego — JEDEN wspólny globalny stan per kolor
-  // (cup_color_variants.stock_count). Wszystkie pozycje o tym samym kolorze,
-  // niezależnie od produktu, schodzą z tej samej puli.
+  // Walidacja dostępności (BEZ zdejmowania stanu). Stan magazynowy schodzi
+  // dopiero po POTWIERDZENIU płatności (webhook / /verify → decrementStockForPaidOrders),
+  // żeby porzucona/nieopłacona płatność nie blokowała sztuki w sklepie. Tu tylko
+  // sprawdzamy, czy w chwili składania zamówienia jest wystarczający stan — dzięki
+  // temu produkt już wyprzedany od razu daje komunikat „sprzedane".
   const stockService = createSupabaseServiceClient();
 
-  // Zsumuj zamawianą ilość per kolor (wariant) ze wszystkich pozycji sklepowych.
+  // Kolory — wspólny globalny stan per wariant (cup_color_variants.stock_count).
   const qtyByVariant = new Map<string, number>();
   for (const item of items) {
     if (!item.productId.startsWith("shop:") || !item.variantColor) continue;
@@ -117,74 +119,40 @@ export async function POST(req: Request) {
   }
 
   for (const [variantId, qty] of qtyByVariant) {
-    // Atomowa rezerwacja przez compare-and-swap (kilka prób przy równoległych zakupach).
-    let reserved = false;
-    for (let attempt = 0; attempt < 5 && !reserved; attempt++) {
-      const { data: row, error: readErr } = await stockService
-        .from("cup_color_variants")
-        .select("stock_count, name")
-        .eq("id", variantId)
-        .maybeSingle();
+    const { data: row, error: readErr } = await stockService
+      .from("cup_color_variants")
+      .select("stock_count, name")
+      .eq("id", variantId)
+      .maybeSingle();
 
-      if (readErr || !row) {
-        return NextResponse.json(
-          { error: "Nie znaleziono wariantu koloru.", code: "OUT_OF_STOCK" },
-          { status: 400 },
-        );
-      }
-
-      const available = row.stock_count ?? 0;
-      const name = row.name ?? variantId;
-
-      if (available < qty) {
-        return NextResponse.json(
-          {
-            error: `Produktu w wariancie "${name}" pozostało tylko ${available} szt.`,
-            code: "OUT_OF_STOCK",
-            available,
-            requested: qty,
-          },
-          { status: 400 },
-        );
-      }
-
-      // CAS: zdejmij sztuki tylko jeśli stan nie zmienił się od odczytu.
-      const { data: updated, error: updErr } = await stockService
-        .from("cup_color_variants")
-        .update({ stock_count: available - qty })
-        .eq("id", variantId)
-        .eq("stock_count", available)
-        .select("id");
-
-      if (updErr) {
-        return NextResponse.json(
-          {
-            error: `Nie udało się zarezerwować stanu dla "${name}".`,
-            code: "OUT_OF_STOCK",
-            details: updErr.message,
-          },
-          { status: 400 },
-        );
-      }
-      if (updated && updated.length > 0) reserved = true;
+    if (readErr || !row) {
+      return NextResponse.json(
+        { error: "Nie znaleziono wariantu koloru.", code: "OUT_OF_STOCK" },
+        { status: 400 },
+      );
     }
 
-    if (!reserved) {
+    const available = row.stock_count ?? 0;
+    const name = row.name ?? variantId;
+
+    if (available < qty) {
       return NextResponse.json(
         {
-          error: "Zbyt duży ruch przy tym produkcie — spróbuj ponownie za chwilę.",
+          error:
+            available === 0
+              ? `Wariant „${name}" właśnie został wyprzedany — ktoś Cię ubiegł.`
+              : `Produktu w wariancie "${name}" pozostało tylko ${available} szt.`,
           code: "OUT_OF_STOCK",
+          available,
+          requested: qty,
         },
-        { status: 409 },
+        { status: 400 },
       );
     }
   }
 
-  // Rezerwacja stanu dla produktów BEZ wariantu koloru — stan bazowy trzymany
-  // w specs["Ilość"] na wierszu produktu. Sumujemy per slug i atomowo (CAS na
-  // wartości JSONB) zdejmujemy sztuki. Dzięki temu jednosztukowy kubek znika ze
-  // sklepu po sprzedaży, a spóźniony kupujący (np. z porzuconego koszyka)
-  // dostaje jasny komunikat „sprzedane". Brak/niepoprawny „Ilość" = brak limitu.
+  // Produkty BEZ wariantu koloru — stan bazowy w specs["Ilość"].
+  // Brak/niepoprawny „Ilość" = brak limitu (pomijamy).
   const qtyBySlug = new Map<string, { qty: number; label: string }>();
   for (const item of items) {
     if (!item.productId.startsWith("shop:") || item.variantColor) continue;
@@ -197,76 +165,35 @@ export async function POST(req: Request) {
   }
 
   for (const [slug, { qty, label }] of qtyBySlug) {
-    let reserved = false;
-    for (let attempt = 0; attempt < 5 && !reserved; attempt++) {
-      const { data: row, error: readErr } = await stockService
-        .from("shop_products")
-        .select("specs")
-        .eq("slug", slug)
-        .maybeSingle();
+    const { data: row, error: readErr } = await stockService
+      .from("shop_products")
+      .select("specs")
+      .eq("slug", slug)
+      .maybeSingle();
 
-      if (readErr || !row) {
-        return NextResponse.json(
-          { error: "Nie znaleziono produktu.", code: "OUT_OF_STOCK", label },
-          { status: 400 },
-        );
-      }
-
-      const specs = (row.specs as Record<string, string> | null) ?? {};
-      const parsed = parseInt(specs["Ilość"] ?? "", 10);
-
-      // Brak limitu (pole puste / nie-liczba) — nie zdejmujemy stanu.
-      if (!Number.isFinite(parsed)) {
-        reserved = true;
-        break;
-      }
-
-      if (parsed < qty) {
-        return NextResponse.json(
-          {
-            error:
-              parsed === 0
-                ? `„${label}" właśnie został sprzedany — ktoś Cię ubiegł.`
-                : `Produktu „${label}" pozostało tylko ${parsed} szt.`,
-            code: "OUT_OF_STOCK",
-            label,
-            available: parsed,
-            requested: qty,
-          },
-          { status: 400 },
-        );
-      }
-
-      // CAS: zmniejsz „Ilość" tylko jeśli wartość nie zmieniła się od odczytu.
-      const { data: updated, error: updErr } = await stockService
-        .from("shop_products")
-        .update({ specs: { ...specs, "Ilość": String(parsed - qty) } })
-        .eq("slug", slug)
-        .eq("specs->>Ilość", String(parsed))
-        .select("id");
-
-      if (updErr) {
-        return NextResponse.json(
-          {
-            error: `Nie udało się zarezerwować stanu dla „${label}".`,
-            code: "OUT_OF_STOCK",
-            label,
-            details: updErr.message,
-          },
-          { status: 400 },
-        );
-      }
-      if (updated && updated.length > 0) reserved = true;
+    if (readErr || !row) {
+      return NextResponse.json(
+        { error: "Nie znaleziono produktu.", code: "OUT_OF_STOCK", label },
+        { status: 400 },
+      );
     }
 
-    if (!reserved) {
+    const specs = (row.specs as Record<string, string> | null) ?? {};
+    const parsed = parseInt(specs["Ilość"] ?? "", 10);
+
+    if (Number.isFinite(parsed) && parsed < qty) {
       return NextResponse.json(
         {
-          error: "Zbyt duży ruch przy tym produkcie — spróbuj ponownie za chwilę.",
+          error:
+            parsed === 0
+              ? `„${label}" właśnie został sprzedany — ktoś Cię ubiegł.`
+              : `Produktu „${label}" pozostało tylko ${parsed} szt.`,
           code: "OUT_OF_STOCK",
           label,
+          available: parsed,
+          requested: qty,
         },
-        { status: 409 },
+        { status: 400 },
       );
     }
   }
