@@ -81,7 +81,7 @@ export async function ShopView({
       .order("sort_order", { ascending: true }),
     supabase
       .from("shop_products")
-      .select("price_grosze")
+      .select("price_grosze, sale_price_grosze")
       .eq("is_published", true),
     supabase
       .from("shop_products")
@@ -110,8 +110,11 @@ export async function ShopView({
   });
 
   const allProducts = productsRes.data ?? [];
+  // Zakres suwaka liczony z cen efektywnych (po obniżce) — inaczej produkt
+  // przeceniony poniżej najtańszej ceny bazowej wypadałby poza domyślny filtr.
   const prices = (allRangeRes.data ?? []).map(
-    (p) => (p.price_grosze as number) ?? 0,
+    (p) =>
+      (p.sale_price_grosze as number | null) ?? (p.price_grosze as number) ?? 0,
   );
   const globalMinGr = prices.length ? Math.min(...prices) : 0;
   const globalMaxGr = prices.length ? Math.max(...prices) : 50000;
