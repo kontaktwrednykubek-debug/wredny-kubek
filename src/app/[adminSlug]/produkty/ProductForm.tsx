@@ -220,11 +220,8 @@ export function ProductForm({
   }, []);
 
   function toggleCupColor(id: string) {
-    // Nie pozwalaj zaznaczyć wariantu, który ma 0 sztuk globalnie
-    const variant = cupColorVariants.find((v) => v.id === id);
-    if (variant && variant.stock_count === 0 && !selectedCupColorIds.includes(id)) {
-      return;
-    }
+    // Kolor z 0 szt. też można dodać — klient zobaczy „brak na stanie",
+    // a po uzupełnieniu stanu w zakładce Warianty kolor sam stanie się aktywny.
     setSelectedCupColorIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
@@ -857,7 +854,9 @@ export function ProductForm({
           <p className="text-sm font-medium">Kolory kubka</p>
           <p className="text-xs text-muted-foreground">
             Zaznacz kolory dostępne dla tego produktu. Zarządzaj kolorami w zakładce{" "}
-            <strong>Warianty</strong>. Na stronie klient wybierze jeden kolor.
+            <strong>Warianty</strong>. Na stronie klient wybierze jeden kolor. Kolory
+            z 0 szt. też możesz dodać — klient zobaczy je jako „brak na stanie", a gdy
+            uzupełnisz stan, staną się aktywne automatycznie.
           </p>
           {cupColorVariants.length === 0 ? (
             <p className="text-xs text-muted-foreground italic">
@@ -868,19 +867,17 @@ export function ProductForm({
               {cupColorVariants.map((v) => {
                 const selected = selectedCupColorIds.includes(v.id);
                 const outOfStock = v.stock_count === 0;
-                const disabled = outOfStock && !selected;
                 return (
                   <button
                     key={v.id}
                     type="button"
-                    disabled={disabled}
                     onClick={() => toggleCupColor(v.id)}
-                    title={outOfStock ? "Brak na stanie globalnym — dodaj sztuki w zakładce Warianty" : undefined}
+                    title={outOfStock ? "Brak na stanie — klient zobaczy kolor jako niedostępny, dopóki nie uzupełnisz stanu w zakładce Warianty" : undefined}
                     className={`relative overflow-hidden rounded-xl border-2 transition ${
                       selected
                         ? "border-primary ring-2 ring-primary/30"
-                        : disabled
-                        ? "border-border opacity-50 cursor-not-allowed"
+                        : outOfStock
+                        ? "border-dashed border-destructive/40 opacity-70 hover:border-primary/50 hover:opacity-100"
                         : "border-border hover:border-primary/50"
                     }`}
                   >
@@ -911,7 +908,7 @@ export function ProductForm({
                     <p className="px-2 py-1.5 text-center text-xs font-medium">
                       {v.name}
                       {outOfStock && (
-                        <span className="ml-1 text-[10px] text-destructive font-semibold">— brak ({v.stock_count})</span>
+                        <span className="ml-1 text-[10px] text-destructive font-semibold">— brak na stanie</span>
                       )}
                       {!outOfStock && (
                         <span className="ml-1 text-[10px] text-muted-foreground">({v.stock_count})</span>

@@ -55,9 +55,10 @@ export function BuyNowSection({
       if (res.ok) {
         const data = await res.json();
         setVariants(data.variants || []);
-        // Auto-select first variant
-        if (data.variants?.length > 0 && !color) {
-          setColor(data.variants[0].id);
+        // Auto-wybór pierwszego koloru NA STANIE (fallback: pierwszy w ogóle)
+        const list: Variant[] = data.variants ?? [];
+        if (list.length > 0 && !color) {
+          setColor((list.find((v) => v.stockCount > 0) ?? list[0]).id);
         }
       }
     } catch (err) {
@@ -205,9 +206,11 @@ export function BuyNowSection({
             <span className="text-muted-foreground">
               {variants.find((c) => c.id === color)?.name ?? ""}
             </span>
-            {showVariantStock && color && (() => {
+            {color && (() => {
               const variant = variants.find(v => v.id === color);
               if (!variant) return null;
+              // „Brak na stanie" pokazujemy zawsze; liczbę sztuk tylko gdy admin włączył.
+              if (variant.stockCount > 0 && !showVariantStock) return null;
               return (
                 <span className={`ml-2 text-xs font-normal ${
                   variant.stockCount === 0 ? "text-destructive" : "text-muted-foreground"
@@ -228,6 +231,8 @@ export function BuyNowSection({
                   type="button"
                   disabled={isDisabled}
                   onClick={() => setColor(c.id)}
+                  title={isDisabled ? `${c.name} — brak na stanie` : c.name}
+                  aria-label={isDisabled ? `${c.name} — brak na stanie` : c.name}
                   className={`relative overflow-hidden rounded-lg border-2 transition-all ${
                     color === c.id
                       ? "border-primary ring-2 ring-primary/20"
@@ -245,8 +250,11 @@ export function BuyNowSection({
                       sizes="(max-width: 640px) 48px, 64px"
                     />
                     {isDisabled && (
-                      <div className="absolute inset-0 bg-muted/60 flex items-center justify-center">
+                      <div className="absolute inset-0 bg-muted/60 flex flex-col items-center justify-center gap-0.5">
                         <Package className="h-4 w-4 text-muted-foreground" />
+                        <span className="rounded bg-destructive px-1 text-[9px] font-bold uppercase leading-tight text-destructive-foreground">
+                          brak
+                        </span>
                       </div>
                     )}
                   </div>
