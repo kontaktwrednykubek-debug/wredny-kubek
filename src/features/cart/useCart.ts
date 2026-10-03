@@ -15,7 +15,8 @@ export type CartItem = {
   unitPriceGr: number;
   previewUrl?: string;
   label: string;
-  variant?: { color?: string; size?: string };
+  /** size = pojemność, design = ID wersji graficznej */
+  variant?: { color?: string; size?: string; design?: string };
   // maxQty is NOT persisted - always fetched from database
   maxQty?: number;
   /** Pozycja dodana automatycznie przez promocję "kup X dostaniesz Y gratis" */
@@ -122,7 +123,8 @@ export const useCart = create<CartState>()(
               i.productId === item.productId &&
               (i.designId ?? null) === (item.designId ?? null) &&
               (i.variant?.color ?? null) === (item.variant?.color ?? null) &&
-              (i.variant?.size ?? null) === (item.variant?.size ?? null),
+              (i.variant?.size ?? null) === (item.variant?.size ?? null) &&
+              (i.variant?.design ?? null) === (item.variant?.design ?? null),
           );
 
           let next: CartItem[];

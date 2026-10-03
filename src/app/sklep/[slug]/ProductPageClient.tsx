@@ -9,6 +9,7 @@ type Variants = {
   cupColors?: { id: string; name: string; imageUrl: string }[];
   capacities?: string[];
   sizes?: string[];
+  designs?: { id: string; name: string; imageUrl: string; images: string[] }[];
 };
 
 export function ProductPageClient({
@@ -101,6 +102,7 @@ export function ProductPageClient({
       cover={cover}
       showVariantStock={showVariantStock}
       capacities={variants.capacities ?? []}
+      designs={variants.designs ?? []}
       baseStock={baseStock}
     />
   );

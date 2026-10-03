@@ -31,6 +31,18 @@ const variantsSchema = z
     capacities: z.array(z.string()).optional(),
     sizes: z.array(z.string()).optional(),
     options: z.array(z.object({ label: z.string(), values: z.array(z.string()) })).optional(),
+    // Wersje graficzne: zdjęcie profilowe + zdjęcia dodatkowe per wersja.
+    designs: z
+      .array(
+        z.object({
+          id: z.string().min(1).max(64),
+          name: z.string().min(1).max(80),
+          imageUrl: z.string().url(),
+          images: z.array(z.string().url()).max(9).default([]),
+        }),
+      )
+      .max(30)
+      .optional(),
   })
   .default({});
 

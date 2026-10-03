@@ -92,6 +92,7 @@ type Variants = {
   cupColors?: { id: string; name: string; imageUrl: string }[];
   capacities?: string[];
   sizes?: string[];
+  designs?: { id: string; name: string; imageUrl: string; images: string[] }[];
 };
 
 export default async function ProductDetailsPage({
@@ -148,6 +149,12 @@ export default async function ProductDetailsPage({
   // Per-product stock map (zapisany w variant_stock JSONB)
   const variantStockMap: Record<string, number> =
     (product.variant_stock as Record<string, number>) ?? {};
+  // Wersje graficzne: galeria startuje od zdjęć pierwszej wersji
+  // (ta sama, którą BuyNowSection zaznacza domyślnie).
+  const designs = variants.designs ?? [];
+  const galleryImages = designs.length
+    ? [designs[0].imageUrl, ...(designs[0].images ?? [])]
+    : images;
 
   return (
     <section className="container mx-auto max-w-6xl px-4 py-6 sm:py-8 mx-4 sm:mx-0">
@@ -157,7 +164,7 @@ export default async function ProductDetailsPage({
       <div className="grid gap-6 lg:gap-8 lg:grid-cols-2">
         {/* Lewa kolumna: tylko galeria */}
         <div className="order-1">
-          <ProductGalleryClient images={images} title={product.title} />
+          <ProductGalleryClient images={galleryImages} title={product.title} slug={product.slug} />
         </div>
 
         {/* Prawa kolumna (mobile: pod galerią): tytuł → opinie → cena → warianty/kup → opis → dane techniczne */}
@@ -233,7 +240,7 @@ export default async function ProductDetailsPage({
                 title={product.title}
                 priceGrosze={product.price_grosze}
                 salePriceGrosze={product.sale_price_grosze ?? null}
-                cover={images[0] ?? null}
+                cover={galleryImages[0] ?? null}
                 variants={variants}
                 showVariantStock={showVariantStock}
                 variantStockMap={variantStockMap}

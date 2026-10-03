@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useCart } from "@/features/cart/useCart";
 import { formatPrice } from "@/lib/utils";
 import { SaleBadge, salePercent } from "@/components/SaleBadge";
+import { DESIGN_VERSION_EVENT, type DesignVersionEventDetail } from "./ProductGalleryClient";
 
 type Variant = {
   id: string;
@@ -20,6 +21,8 @@ type Variant = {
   extraInfo?: string[]; // specyfikacja: informacje dodatkowe
 };
 
+type DesignVersion = { id: string; name: string; imageUrl: string; images: string[] };
+
 export function BuyNowSection({
   slug,
   title,
@@ -28,6 +31,7 @@ export function BuyNowSection({
   cover,
   showVariantStock,
   capacities = [],
+  designs = [],
   baseStock = null,
 }: {
   slug: string;
@@ -37,6 +41,7 @@ export function BuyNowSection({
   cover: string | null;
   showVariantStock: boolean;
   capacities?: string[];
+  designs?: DesignVersion[];
   baseStock?: number | null;
 }) {
   const router = useRouter();
@@ -44,6 +49,18 @@ export function BuyNowSection({
   const [variants, setVariants] = React.useState<Variant[]>([]);
   const [color, setColor] = React.useState<string | null>(null);
   const [capacity, setCapacity] = React.useState<string | null>(capacities[0] ?? null);
+  const [designId, setDesignId] = React.useState<string | null>(designs[0]?.id ?? null);
+  const selectedDesign = designs.find((d) => d.id === designId) ?? null;
+
+  function selectDesign(d: DesignVersion) {
+    setDesignId(d.id);
+    // Galeria (osobny komponent) przełącza się na zdjęcia wybranej wersji.
+    window.dispatchEvent(
+      new CustomEvent<DesignVersionEventDetail>(DESIGN_VERSION_EVENT, {
+        detail: { slug, images: [d.imageUrl, ...(d.images ?? [])] },
+      }),
+    );
+  }
   const [qty, setQty] = React.useState(1);
   const [added, setAdded] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(true);
@@ -129,6 +146,7 @@ export function BuyNowSection({
   const buildLabel = () => {
     const variant = variants.find(v => v.id === color);
     const parts: string[] = [title];
+    if (selectedDesign) parts.push(selectedDesign.name);
     if (variant) parts.push(variant.name);
     if (capacity) parts.push(capacity);
     return parts.join(" - ");
@@ -145,10 +163,18 @@ export function BuyNowSection({
       designId: null,
       productId: `shop:${slug}`,
       unitPriceGr: effectivePriceGr,
-      previewUrl: cover ?? undefined,
+      previewUrl: selectedDesign?.imageUrl ?? cover ?? undefined,
       label: buildLabel(),
       quantity: qty,
-      variant: variant ? { color: variant.id } : undefined,
+      // size/design rozróżniają pozycje w koszyku (inna wersja = osobna pozycja).
+      variant:
+        variant || capacity || selectedDesign
+          ? {
+              color: variant?.id,
+              size: capacities.length ? capacity ?? undefined : undefined,
+              design: selectedDesign?.id,
+            }
+          : undefined,
       // Produkt bez wariantów kolorów — brak koloru jest poprawny, koszyk go nie usuwa.
       variantOptional: !hasColorVariants,
     });
@@ -172,6 +198,48 @@ export function BuyNowSection({
 
   return (
     <div className="space-y-4">
+      {/* Wersja graficzna — zdjęcie profilowe jako kafelek, przełącza galerię */}
+      {designs.length > 0 && (
+        <div>
+          <p className="mb-2 text-sm font-medium">
+            Wersja:{" "}
+            <span className="text-muted-foreground">{selectedDesign?.name ?? ""}</span>
+          </p>
+          <div className="flex flex-wrap gap-3">
+            {designs.map((d) => (
+              <button
+                key={d.id}
+                type="button"
+                onClick={() => selectDesign(d)}
+                title={d.name}
+                aria-label={d.name}
+                aria-pressed={designId === d.id}
+                className={`relative overflow-hidden rounded-lg border-2 transition-all ${
+                  designId === d.id
+                    ? "border-primary ring-2 ring-primary/20"
+                    : "border-border hover:border-primary/50"
+                }`}
+              >
+                <div className="relative h-14 w-14 sm:h-16 sm:w-16">
+                  <Image
+                    src={d.imageUrl}
+                    alt={d.name}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 640px) 56px, 64px"
+                  />
+                </div>
+                {designId === d.id && (
+                  <div className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary flex items-center justify-center">
+                    <Check className="h-3 w-3 text-primary-foreground" />
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Pojemność */}
       {capacities.length > 0 && (
         <div>

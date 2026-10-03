@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Loader2, Plus, Star, Trash2, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { DesignVersionsEditor, type DesignVersion } from "./DesignVersionsEditor";
 
 const MAX_IMAGES = 10;
 
@@ -26,6 +27,7 @@ type Variants = {
   cupColors?: { id: string; name: string; imageUrl: string; priceGrosze?: number | null }[];
   capacities?: string[];
   sizes?: string[];
+  designs?: DesignVersion[];
 };
 
 export type ProductInitial = {
@@ -212,6 +214,14 @@ export function ProductForm({
   );
   const [cupColorVariants, setCupColorVariants] = React.useState<CupColorVariant[]>([]);
 
+  // Wersje graficzne — ten sam produkt w kilku wersjach (każda z własnymi zdjęciami).
+  const [hasDesigns, setHasDesigns] = React.useState<boolean>(
+    (initial?.variants?.designs?.length ?? 0) > 0,
+  );
+  const [designs, setDesigns] = React.useState<DesignVersion[]>(
+    initial?.variants?.designs ?? [],
+  );
+
   React.useEffect(() => {
     void fetch("/api/cup-variants")
       .then((r) => r.json())
@@ -357,6 +367,14 @@ export function ProductForm({
           const priceGrosze = !isNaN(parsed) && parsed > 0 ? Math.round(parsed * 100) : null;
           return { id: v.id, name: v.name, imageUrl: v.image_url ?? "", priceGrosze };
         });
+    }
+    if (hasDesigns && designs.length > 0) {
+      const bad = designs.findIndex((d) => !d.name.trim() || !d.imageUrl);
+      if (bad >= 0) {
+        setError(`Wersja ${bad + 1}: podaj nazwę i dodaj zdjęcie profilowe.`);
+        return;
+      }
+      variants.designs = designs.map((d) => ({ ...d, name: d.name.trim() }));
     }
     // Bez wariantów: nie wysyłaj stanu magazynowego per-kolor.
     const variantStockToSend = noVariants ? {} : variantStock;
@@ -1010,6 +1028,35 @@ export function ProductForm({
         </label>
         </>
         )}
+
+        {/* Wersje graficzne — niezależne od pojemności/kolorów */}
+        <div className="space-y-3 rounded-xl border border-border/60 p-4">
+          <label className="flex cursor-pointer items-start gap-3">
+            <input
+              type="checkbox"
+              checked={hasDesigns}
+              onChange={(e) => {
+                setHasDesigns(e.target.checked);
+                if (e.target.checked && designs.length === 0) {
+                  setDesigns([{ id: crypto.randomUUID(), name: "Wersja 1", imageUrl: "", images: [] }]);
+                }
+              }}
+              className="mt-0.5 h-4 w-4 accent-primary"
+            />
+            <span>
+              <span className="block text-sm font-medium">Produkt ma wersje graficzne</span>
+              <span className="block text-xs text-muted-foreground">
+                Ten sam kubek w kilku wersjach (np. Wersja 1, 2, 3). Każda wersja ma
+                zdjęcie profilowe (miniaturka do wyboru) i zdjęcia dodatkowe. Po
+                kliknięciu wersji galeria na stronie przełącza się na jej zdjęcia.
+                Klient wybiera też pojemność i kolor, jeśli je dodałeś.
+              </span>
+            </span>
+          </label>
+          {hasDesigns && (
+            <DesignVersionsEditor versions={designs} onChange={setDesigns} />
+          )}
+        </div>
       </fieldset>
 
       {/* Licznik popularności */}

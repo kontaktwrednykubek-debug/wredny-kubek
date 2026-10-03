@@ -4,14 +4,34 @@ import * as React from "react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, X, ZoomIn } from "lucide-react";
 
+/** Zdarzenie wysyłane przez BuyNowSection po wybraniu wersji graficznej. */
+export const DESIGN_VERSION_EVENT = "design-version-change";
+export type DesignVersionEventDetail = { slug: string; images: string[] };
+
 export function ProductGalleryClient({
-  images,
+  images: initialImages,
   title,
+  slug,
 }: {
   images: string[];
   title: string;
+  slug?: string;
 }) {
+  const [images, setImages] = React.useState(initialImages);
   const [active, setActive] = React.useState(0);
+
+  // Wybór wersji graficznej przełącza galerię na zdjęcia tej wersji.
+  React.useEffect(() => {
+    if (!slug) return;
+    const onChange = (e: Event) => {
+      const detail = (e as CustomEvent<DesignVersionEventDetail>).detail;
+      if (detail?.slug !== slug || !detail.images.length) return;
+      setImages(detail.images);
+      setActive(0);
+    };
+    window.addEventListener(DESIGN_VERSION_EVENT, onChange);
+    return () => window.removeEventListener(DESIGN_VERSION_EVENT, onChange);
+  }, [slug]);
   const [lightbox, setLightbox] = React.useState(false);
   const main = images[active];
 
