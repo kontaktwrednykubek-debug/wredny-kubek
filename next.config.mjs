@@ -12,6 +12,10 @@ const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   images: {
+    // Bez Vercel Image Optimization (limit transformacji w planie).
+    // Zdjęcia z panelu są konwertowane do WebP (max 1600 px) już przy uploadzie
+    // (/api/shop-products/upload), a statyczne grafiki w /public są w WebP.
+    unoptimized: true,
     remotePatterns: [
       { protocol: "https", hostname: "**" },
     ],

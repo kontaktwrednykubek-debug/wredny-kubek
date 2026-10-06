@@ -61,7 +61,7 @@ export function Footer() {
         <div>
           <Link href="/" aria-label={brand.name} className="inline-block">
             <Image
-              src="/wk.kubek.png"
+              src="/wk.kubek-footer.webp"
               alt={brand.name}
               width={160}
               height={60}

@@ -3,7 +3,7 @@
 import * as React from "react";
 import Image from "next/image";
 
-const SLIDES = ["/slajd_1.png", "/slajd_2.png", "/slajd_3.png"];
+const SLIDES = ["/slajd_1.webp", "/slajd_2.webp", "/slajd_3.webp"];
 const INTERVAL_MS = 5000;
 
 export function HeroSlideshow() {

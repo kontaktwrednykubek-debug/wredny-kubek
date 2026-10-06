@@ -504,7 +504,7 @@ export default async function HomePage() {
                 className="absolute inset-x-8 bottom-6 top-1/2 rounded-[50%] bg-black/40 blur-3xl"
               />
               <Image
-                src="/kubek_merch.png"
+                src="/kubek_merch.webp"
                 alt="Personalizowany kubek ceramiczny"
                 fill
                 sizes="(min-width: 768px) 50vw, 100vw"

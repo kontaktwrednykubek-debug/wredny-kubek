@@ -84,8 +84,8 @@ export function Navbar() {
       <header className="fixed top-0 left-0 right-0 z-40 w-full border-b border-border bg-background/80 backdrop-blur-md">
         <div className="container mx-auto flex h-20 items-center justify-between gap-2 px-4 sm:gap-4">
           <Link href="/" aria-label={brand.name} className="flex h-full items-center">
-            <Image src="/wk-logo-light.png" alt={brand.name} width={160} height={80} priority className="block h-14 w-auto object-contain dark:hidden sm:h-16" />
-            <Image src="/wk-logo-dark.png" alt={brand.name} width={160} height={80} priority className="hidden h-14 w-auto object-contain dark:block sm:h-16" />
+            <Image src="/wk-logo-light.webp" alt={brand.name} width={160} height={80} priority className="block h-14 w-auto object-contain dark:hidden sm:h-16" />
+            <Image src="/wk-logo-dark.webp" alt={brand.name} width={160} height={80} priority className="hidden h-14 w-auto object-contain dark:block sm:h-16" />
           </Link>
 
           <nav className="hidden items-center gap-6 md:flex">
@@ -130,8 +130,8 @@ export function Navbar() {
           {/* Top bar */}
           <div className="flex h-20 shrink-0 items-center justify-between border-b border-border px-4">
             <Link href="/" onClick={() => setMenuOpen(false)} aria-label={brand.name}>
-              <Image src="/wk-logo-light.png" alt={brand.name} width={140} height={70} className="block h-12 w-auto dark:hidden" />
-              <Image src="/wk-logo-dark.png" alt={brand.name} width={140} height={70} className="hidden h-12 w-auto dark:block" />
+              <Image src="/wk-logo-light.webp" alt={brand.name} width={140} height={70} className="block h-12 w-auto dark:hidden" />
+              <Image src="/wk-logo-dark.webp" alt={brand.name} width={140} height={70} className="hidden h-12 w-auto dark:block" />
             </Link>
             <Button variant="ghost" size="icon" onClick={() => setMenuOpen(false)} aria-label="Zamknij menu">
               <X className="h-6 w-6" />
