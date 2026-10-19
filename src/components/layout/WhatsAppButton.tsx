@@ -15,10 +15,13 @@ export function WhatsAppButton() {
 
   // URL strony znamy dopiero w przeglądarce — budujemy treść wiadomości po montażu.
   React.useEffect(() => {
+    const greeting =
+      "Hej! 😈☕ Witaj w świecie Wrednego Kubka — napisz, a znajdziemy kubek z charakterem idealny dla Ciebie!";
+    // Na stronie produktu dopisujemy link, żeby było wiadomo, o który kubek chodzi.
     const onProduct = pathname?.startsWith("/sklep/");
     const text = onProduct
-      ? `Cześć! Mam pytanie o ten kubek: ${window.location.origin}${pathname}`
-      : "Cześć! Mam pytanie odnośnie WrednyKubek.";
+      ? `${greeting}\n\n${window.location.origin}${pathname}`
+      : greeting;
     setHref(`https://wa.me/${brand.whatsapp}?text=${encodeURIComponent(text)}`);
   }, [pathname]);
 
