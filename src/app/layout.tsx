@@ -9,6 +9,7 @@ import { brand } from "@/config/theme";
 import { cn } from "@/lib/utils";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { FABWidget } from "@/components/layout/FABWidget";
+import { WhatsAppButton } from "@/components/layout/WhatsAppButton";
 import { WrednyAssistant } from "@/components/WrednyAssistant";
 
 const inter = Inter({subsets:['latin'],variable:'--font-sans'});
@@ -98,6 +99,7 @@ export default function RootLayout({
           </div>
           <BottomNav />
           <FABWidget />
+          <WhatsAppButton />
           <WrednyAssistant />
           </PromoProvider>
         </ThemeProvider>

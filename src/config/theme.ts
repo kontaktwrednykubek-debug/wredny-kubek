@@ -57,4 +57,6 @@ export const darkTheme: ThemePalette = {
 export const brand = {
   name: "WrednyKubek",
   tagline: "Stwórz swój własny merch",
+  /** Numer WhatsApp właściciela — same cyfry z kierunkowym, bez „+” (format wa.me). */
+  whatsapp: "48789111041",
 } as const;
