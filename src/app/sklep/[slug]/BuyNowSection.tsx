@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ShoppingCart, Check, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/features/cart/useCart";
+import { FreeShippingProgress } from "@/features/cart/FreeShippingProgress";
 import { formatPrice } from "@/lib/utils";
 import { SaleBadge, salePercent } from "@/components/SaleBadge";
 import { DESIGN_VERSION_EVENT, type DesignVersionEventDetail } from "./ProductGalleryClient";
@@ -469,6 +470,9 @@ export function BuyNowSection({
           </Button>
         </div>
       )}
+
+      {/* Ile brakuje do darmowej dostawy — widoczne, gdy w koszyku coś jest */}
+      <FreeShippingProgress />
     </div>
   );
 }

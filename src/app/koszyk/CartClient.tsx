@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useCart, cartTotalGr, cartGratisDiscountGr, useAutoClearCart, isMissingRequiredVariant, MYSTERY_MUG_ID, type CartItem } from "@/features/cart/useCart";
 import { usePromoStore } from "@/features/promo/usePromoStore";
 import { formatPrice } from "@/lib/utils";
+import { FreeShippingProgress } from "@/features/cart/FreeShippingProgress";
 import * as React from "react";
 
 type MysteryMugConfig = {
@@ -382,6 +383,7 @@ export function CartClient() {
         </div>
 
         <aside className="h-fit rounded-2xl border border-border bg-card p-5">
+          <FreeShippingProgress className="mb-4" />
           <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
             Podsumowanie
           </h2>

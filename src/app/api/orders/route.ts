@@ -239,7 +239,7 @@ export async function POST(req: Request) {
     const { data: methodRow } = await supabase
       .from("shipping_methods")
       .select(
-        "id, code, name, price_grosze, requires_parcel_code, carrier, is_active, shipping_method_tiers(min_quantity, price_grosze)",
+        "id, code, name, price_grosze, free_shipping_threshold_grosze, requires_parcel_code, carrier, is_active, shipping_method_tiers(min_quantity, price_grosze)",
       )
       .eq("code", shipping.shippingMethod)
       .maybeSingle();
@@ -259,6 +259,11 @@ export async function POST(req: Request) {
       const tier = sorted.find((t) => t.min_quantity <= totalQty);
       if (tier) price = tier.price_grosze;
     }
+    // Próg darmowej dostawy (tylko krajowa) — liczony od sumy produktów przed
+    // rabatem, tak samo jak w CheckoutClient i w pasku postępu w koszyku.
+    const threshold = methodRow.free_shipping_threshold_grosze as number | null;
+    const itemsTotalForThreshold = items.reduce((s, it) => s + it.unitPriceGr * it.quantity, 0);
+    if (threshold != null && itemsTotalForThreshold >= threshold) price = 0;
     shippingMethodName = methodRow.name;
     shippingPriceGr = price;
     shippingCarrier = (methodRow.carrier as string | null) ?? null;
