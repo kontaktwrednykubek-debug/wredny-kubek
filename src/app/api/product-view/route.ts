@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
 }
 
 // GET /api/product-view?product_id=xxx
-// Zwraca liczbę unikalnych IP w oknie z view_count_period + base
+// Zwraca liczbę unikalnych IP z ostatnich 30 dni + base
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const product_id = searchParams.get("product_id");
@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
   // Pobierz konfigurację produktu
   const { data: product } = await supabase
     .from("shop_products")
-    .select("view_count_base, show_view_counter, view_count_period")
+    .select("view_count_base, show_view_counter")
     .eq("id", product_id)
     .maybeSingle();
 
@@ -61,7 +61,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ count: 0, visible: false });
   }
 
-  const days = product.view_count_period ?? 7;
+  // Zawsze 30 dni (stare produkty mogą mieć w bazie view_count_period = 7).
+  const days = 30;
   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
 
   const { data } = await supabase

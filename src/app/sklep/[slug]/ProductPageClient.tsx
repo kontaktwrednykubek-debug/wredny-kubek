@@ -43,10 +43,8 @@ export function ProductPageClient({
     const paymentSuccess = searchParams.get("payment") === "success";
     const paymentCanceled = searchParams.get("payment") === "canceled";
     
-    console.log("[ProductPageClient] Payment params:", { paymentSuccess, paymentCanceled, slug });
     
     if (paymentSuccess || paymentCanceled) {
-      console.log("[ProductPageClient] Detected payment completion, refreshing stock...");
       // Clean URL params
       const cleanUrl = window.location.pathname;
       window.history.replaceState({}, "", cleanUrl);
@@ -69,17 +67,13 @@ export function ProductPageClient({
   }, [slug]);
   
   async function refreshStock() {
-    console.log(`[ProductPageClient] Refreshing variants for ${slug}...`);
     setIsRefreshing(true);
     try {
       const res = await fetch(`/api/shop-products/${slug}/variants`);
-      console.log(`[ProductPageClient] Variants API response status: ${res.status}`);
       if (res.ok) {
         const data = await res.json();
-        console.log(`[ProductPageClient] Variants API response data:`, data);
         // Trigger re-render by forcing BuyNowSection to refetch
         // This will automatically update the stock counts
-        console.log(`[ProductPageClient] Dispatching variants-refresh event for ${slug}`);
         window.dispatchEvent(new CustomEvent('variants-refresh', { detail: { slug } }));
       } else {
         console.error(`[ProductPageClient] Variants API error: ${res.status}`);
@@ -91,7 +85,6 @@ export function ProductPageClient({
     }
   }
 
-  console.log(`[ProductPageClient] Rendering with stock:`, variantStockMap);
   
   return (
     <BuyNowSection

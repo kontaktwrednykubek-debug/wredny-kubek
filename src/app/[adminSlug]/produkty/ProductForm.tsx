@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { DesignVersionsEditor, type DesignVersion } from "./DesignVersionsEditor";
 
 const MAX_IMAGES = 10;
+// Licznik popularności liczy zawsze z ostatnich 30 dni.
+const VIEW_COUNT_PERIOD_DAYS = 30;
 
 // Stałe opcje pojemności kubka pokazywane jako klikalne przyciski.
 const CAPACITY_OPTIONS = ["330 ml", "450 ml"];
@@ -102,9 +104,6 @@ export function ProductForm({
   );
   const [viewCountBase, setViewCountBase] = React.useState(
     String(initial?.view_count_base ?? 0),
-  );
-  const [viewCountPeriod, setViewCountPeriod] = React.useState(
-    initial?.view_count_period ?? 7,
   );
   const [relatedProductIds, setRelatedProductIds] = React.useState<string[]>(
     initial?.related_product_ids ?? [],
@@ -397,7 +396,7 @@ export function ProductForm({
       reviewsCount: parseInt(reviewsCount || "0", 10) || 0,
       showViewCounter,
       viewCountBase: parseInt(viewCountBase || "0", 10) || 0,
-      viewCountPeriod,
+      viewCountPeriod: VIEW_COUNT_PERIOD_DAYS,
       relatedProductIds,
       tags,
       labels,
@@ -1074,7 +1073,8 @@ export function ProductForm({
           <div>
             <p className="text-sm font-medium">Włącz licznik popularności 🔥</p>
             <p className="text-xs text-muted-foreground">
-              Pod tytułem produktu pojawi się komunikat: &quot;X osób wyświetliło ten kubek w tym tygodniu&quot;.
+              Pod tytułem produktu pojawi się komunikat: &quot;W tym miesiącu: X osób wyświetliło ten kubek&quot;
+              (wyświetlenia z ostatnich 30 dni).
             </p>
           </div>
         </label>
@@ -1093,16 +1093,6 @@ export function ProductForm({
                   className={inputCls}
                   placeholder="np. 150"
                 />
-              </Field>
-              <Field label="Okno czasowe" hint="Okres, z którego liczone są wyświetlenia.">
-                <select
-                  value={viewCountPeriod}
-                  onChange={(e) => setViewCountPeriod(Number(e.target.value))}
-                  className={inputCls}
-                >
-                  <option value={7}>🔥 Ostatnie 7 dni</option>
-                  <option value={30}>👀 Ostatnie 30 dni (miesiąc)</option>
-                </select>
               </Field>
             </div>
           </div>

@@ -4,7 +4,8 @@ import * as React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Search, Menu, X, Heart, ShieldCheck } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { SHOP_SEARCH_FOCUS_EVENT } from "@/app/sklep/ShopSearch";
 import { brand } from "@/config/theme";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -26,6 +27,15 @@ export function Navbar() {
   const [userEmail, setUserEmail] = React.useState<string | null>(null);
   const [adminUrl, setAdminUrl] = React.useState<string | null>(null);
   const router = useRouter();
+  const pathname = usePathname();
+
+  // Lupa: na liście sklepu rozwija wyszukiwarkę, z innych stron przechodzi do niej.
+  function handleSearchClick() {
+    const onShopList =
+      pathname === "/sklep" || pathname?.startsWith("/sklep/kategoria/");
+    if (onShopList) window.dispatchEvent(new Event(SHOP_SEARCH_FOCUS_EVENT));
+    else router.push("/sklep#szukaj");
+  }
 
   React.useEffect(() => {
     const supabase = createSupabaseBrowserClient();
@@ -101,7 +111,7 @@ export function Navbar() {
             <Button variant="ghost" size="icon" aria-label="Ulubione" onClick={handleHeartClick}>
               <Heart className="h-6 w-6" />
             </Button>
-            <Button variant="ghost" size="icon" aria-label="Szukaj">
+            <Button variant="ghost" size="icon" aria-label="Szukaj" onClick={handleSearchClick}>
               <Search className="h-6 w-6" />
             </Button>
             <CartIcon />

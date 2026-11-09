@@ -92,7 +92,7 @@ export default function RootLayout({
       <body className="min-h-screen flex flex-col font-sans" suppressHydrationWarning>
         <ThemeProvider>
           <PromoProvider>
-          <div className="flex flex-col min-h-screen overflow-x-hidden">
+          <div className="flex flex-col min-h-screen overflow-x-clip">
             <Navbar />
             <main className="flex-1 w-full max-w-full pt-20 pb-20 md:pb-0">{children}</main>
             <div className="pb-20 md:pb-0"><Footer /></div>

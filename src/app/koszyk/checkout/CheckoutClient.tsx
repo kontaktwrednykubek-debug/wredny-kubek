@@ -331,7 +331,6 @@ export function CheckoutClient({
             unitPriceGr: i.unitPriceGr,
             previewUrl: i.previewUrl ?? null,
           };
-          console.log("[CheckoutClient] Item payload:", item);
 
           // Walidacja: tylko produkt Z wariantami musi mieć wybrany kolor.
           if (isMissingRequiredVariant(i)) {

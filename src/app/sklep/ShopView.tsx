@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ShopSearch } from "./ShopSearch";
 import Image from "next/image";
 import { Star } from "lucide-react";
 import type { Metadata } from "next";
@@ -52,6 +53,17 @@ export async function categoryMetadata(slug: string): Promise<Metadata> {
   };
 }
 
+/** Małe litery, bez polskich znaków i interpunkcji — do porównań w wyszukiwarce. */
+function normalizeSearch(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/ł/g, "l")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s]/g, " ")
+    .trim();
+}
+
 export type ShopSearchParams = {
   minPrice?: string;
   maxPrice?: string;
@@ -86,7 +98,7 @@ export async function ShopView({
     supabase
       .from("shop_products")
       .select(
-        "slug, title, price_grosze, sale_price_grosze, images, rating, reviews_count, category, categories, variants, specs",
+        "slug, title, price_grosze, sale_price_grosze, images, rating, reviews_count, category, categories, variants, specs, tags",
       )
       .eq("is_published", true)
       .order("created_at", { ascending: false }),
@@ -120,7 +132,9 @@ export async function ShopView({
   const globalMaxGr = prices.length ? Math.max(...prices) : 50000;
 
   const selectedCategory = category ?? null;
-  const searchQuery = searchParams?.q?.trim().toLowerCase() ?? "";
+  // Każde słowo musi pasować do tytułu lub tagów; bez polskich znaków
+  // („wkurwiac” znajdzie „WKURWIAĆ”).
+  const searchWords = normalizeSearch(searchParams?.q ?? "").split(/\s+/).filter(Boolean);
   const selectedMinGr = searchParams?.minPrice
     ? parseInt(searchParams.minPrice, 10) || globalMinGr
     : globalMinGr;
@@ -166,7 +180,12 @@ export async function ShopView({
         (p.categories as string[] | null) ?? [(p.category as string | null) ?? ""];
       if (!cats.some((c) => childSlugs.has(c))) return false;
     }
-    if (searchQuery && !((p.title as string) ?? "").toLowerCase().includes(searchQuery)) return false;
+    if (searchWords.length) {
+      const haystack = normalizeSearch(
+        `${(p.title as string) ?? ""} ${((p.tags as string[] | null) ?? []).join(" ")}`,
+      );
+      if (!searchWords.every((w) => haystack.includes(w))) return false;
+    }
     return true;
   });
 
@@ -203,10 +222,12 @@ export async function ShopView({
             {shortDesc ||
               (selectedCategory
                 ? `Produkty w kategorii: ${headerLabel}`
-                : "Wszystkie produkty dostępne do personalizacji.")}
+                : "Kubki z charakterem — gotowe nadruki i personalizacja.")}
           </p>
         </div>
       </header>
+
+      <ShopSearch />
 
       <section className="container mx-auto px-5 py-10 sm:px-6 lg:px-10 xl:px-12">
         <div className="grid gap-6 lg:grid-cols-[260px_1fr]">

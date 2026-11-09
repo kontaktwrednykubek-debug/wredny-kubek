@@ -91,16 +91,9 @@ function Dots() {
 
 // ─── Main component ────────────────────────────────────────────────────────
 export function WrednyAssistant() {
-  const { isOpen, close, open } = useAssistantStore();
-
-  React.useEffect(() => {
-    if (sessionStorage.getItem("wk_advisor_shown")) return;
-    const t = setTimeout(() => {
-      open();
-      sessionStorage.setItem("wk_advisor_shown", "1");
-    }, 20000);
-    return () => clearTimeout(t);
-  }, [open]);
+  // Doradca otwiera się tylko na kliknięcie (przycisk w menu / ikona FAB) —
+  // bez automatycznego wyskakiwania po czasie.
+  const { isOpen, close } = useAssistantStore();
 
   const [step, setStep] = React.useState<QuizStep>("greeting");
   const [forWhom, setForWhom] = React.useState("");
