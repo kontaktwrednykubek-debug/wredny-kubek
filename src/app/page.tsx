@@ -223,7 +223,7 @@ export default async function HomePage() {
                 </div>
                 <div>
                   <p className="text-sm font-bold">Szybka realizacja</p>
-                  <p className="text-xs text-muted-foreground">1–14 dni roboczych</p>
+                  <p className="text-xs text-muted-foreground">1–5 dni roboczych</p>
                 </div>
               </div>
 
