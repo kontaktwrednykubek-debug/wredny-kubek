@@ -24,6 +24,28 @@ type Variant = {
 
 type DesignVersion = { id: string; name: string; imageUrl: string; images: string[] };
 
+/** Pojemność w ml z tekstu („biały 330 ml” → 330, „450 ml” → 450); null gdy brak. */
+function mlOf(text: string | null | undefined): number | null {
+  const m = text?.match(/(\d{2,4})\s*ml/i);
+  return m ? Number(m[1]) : null;
+}
+
+/**
+ * Kolory pasujące do wybranej pojemności — pojemność jest w nazwie koloru
+ * („coffee czarny 330 ml”). Kolor bez pojemności w nazwie (np. „Outlet…”)
+ * liczy się jako najmniejsza pojemność produktu (330 ml).
+ */
+function variantsForCapacity(
+  list: Variant[],
+  capacity: string | null,
+  smallestCapacity: string | null,
+): Variant[] {
+  const ml = mlOf(capacity);
+  if (ml == null) return list;
+  const fallbackMl = mlOf(smallestCapacity);
+  return list.filter((v) => (mlOf(v.name) ?? fallbackMl) === ml);
+}
+
 export function BuyNowSection({
   slug,
   title,
@@ -49,7 +71,12 @@ export function BuyNowSection({
   const add = useCart((state) => state.add);
   const [variants, setVariants] = React.useState<Variant[]>([]);
   const [color, setColor] = React.useState<string | null>(null);
-  const [capacity, setCapacity] = React.useState<string | null>(capacities[0] ?? null);
+  // Pojemności od najmniejszej; domyślnie zaznaczona najmniejsza.
+  const sortedCapacities = React.useMemo(
+    () => [...capacities].sort((a, b) => (mlOf(a) ?? 0) - (mlOf(b) ?? 0)),
+    [capacities],
+  );
+  const [capacity, setCapacity] = React.useState<string | null>(sortedCapacities[0] ?? null);
   const [designId, setDesignId] = React.useState<string | null>(designs[0]?.id ?? null);
   const selectedDesign = designs.find((d) => d.id === designId) ?? null;
 
@@ -73,18 +100,13 @@ export function BuyNowSection({
       if (res.ok) {
         const data = await res.json();
         setVariants(data.variants || []);
-        // Auto-wybór pierwszego koloru NA STANIE (fallback: pierwszy w ogóle)
-        const list: Variant[] = data.variants ?? [];
-        if (list.length > 0 && !color) {
-          setColor((list.find((v) => v.stockCount > 0) ?? list[0]).id);
-        }
       }
     } catch (err) {
       console.error("Failed to fetch variants:", err);
     } finally {
       setIsLoading(false);
     }
-  }, [slug, color]);
+  }, [slug]);
 
   React.useEffect(() => {
     fetchVariants();
@@ -106,6 +128,22 @@ export function BuyNowSection({
   
   // Czy produkt w ogóle ma warianty kolorów. Bez nich kupujemy bez wyboru koloru.
   const hasColorVariants = variants.length > 0;
+  // Kafelki kolorów tylko dla wybranej pojemności (także te bez stanu — z „BRAK”).
+  const visibleVariants = variantsForCapacity(variants, capacity, sortedCapacities[0] ?? null);
+
+  // Auto-wybór koloru: pierwszy NA STANIE w wybranej pojemności (fallback:
+  // pierwszy z tej pojemności). Po zmianie pojemności kolor z innej się podmienia.
+  React.useEffect(() => {
+    if (variants.length === 0) return;
+    const visible = variantsForCapacity(variants, capacity, sortedCapacities[0] ?? null);
+    if (color && visible.some((v) => v.id === color)) return;
+    const next = visible.find((v) => v.stockCount > 0) ?? visible[0] ?? null;
+    setColor(next?.id ?? null);
+  }, [variants, capacity, color, sortedCapacities]);
+  const capacityUnavailable =
+    capacities.length > 0 &&
+    hasColorVariants &&
+    (visibleVariants.length === 0 || visibleVariants.every((v) => v.stockCount === 0));
 
   // maxQty ZAWSZE limituje zakup do dostępnego stanu. Dla produktu bez wariantów
   // stanem jest baseStock (pole „Ilość"); null = brak limitu.
@@ -145,7 +183,8 @@ export function BuyNowSection({
     const parts: string[] = [title];
     if (selectedDesign) parts.push(selectedDesign.name);
     if (variant) parts.push(variant.name);
-    if (capacity) parts.push(capacity);
+    // Pojemność dopisujemy, tylko gdy nie ma jej już w nazwie koloru.
+    if (capacity && mlOf(variant?.name) == null) parts.push(capacity);
     return parts.join(" - ");
   };
 
@@ -245,7 +284,7 @@ export function BuyNowSection({
             <span className="text-muted-foreground">{capacity ?? ""}</span>
           </p>
           <div className="flex flex-wrap gap-2">
-            {capacities.map((cap) => (
+            {sortedCapacities.map((cap) => (
               <button
                 key={cap}
                 type="button"
@@ -263,7 +302,7 @@ export function BuyNowSection({
         </div>
       )}
 
-      {/* Kolory kubka z obrazkami */}
+      {/* Kolory kubka z obrazkami — tylko dla wybranej pojemności */}
       {variants.length > 0 && (
         <div>
           <p className="mb-2 text-sm font-medium">
@@ -286,7 +325,7 @@ export function BuyNowSection({
             })()}
           </p>
           <div className="flex flex-wrap gap-3">
-            {variants.map((c) => {
+            {visibleVariants.map((c) => {
               const stock = c.stockCount;
               // ZAWSZE wyłącz przycisk gdy brak na stanie (niezależnie od showVariantStock)
               const isDisabled = stock === 0;
@@ -332,6 +371,13 @@ export function BuyNowSection({
               );
             })}
           </div>
+          {capacityUnavailable && (
+            <p className="mt-2 text-sm text-destructive">
+              {visibleVariants.length === 0
+                ? `Brak kolorów w pojemności ${capacity}.`
+                : `Pojemność ${capacity} jest chwilowo niedostępna.`}
+            </p>
+          )}
         </div>
       )}
 
