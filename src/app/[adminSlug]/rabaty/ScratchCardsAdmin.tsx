@@ -10,6 +10,7 @@ import {
   Download,
   Loader2,
   Plus,
+  Printer,
   Ticket,
   X,
 } from "lucide-react";
@@ -196,6 +197,66 @@ function BatchCard({
     }
   }
 
+  async function printCodes() {
+    // Okno otwieramy od razu (w obsłudze kliknięcia), żeby nie zablokował go
+    // bloker wyskakujących okien — treść wpisujemy po pobraniu kodów.
+    const w = window.open("", "_blank");
+    if (!w) {
+      alert("Przeglądarka zablokowała okno drukowania. Zezwól na wyskakujące okna dla tej strony.");
+      return;
+    }
+    w.document.write("<p style='font-family:sans-serif'>Przygotowuję kody do druku…</p>");
+    setBusy(true);
+    try {
+      const items = await loadCodes();
+      const unused = items.filter((c) => c.times_used === 0);
+      const esc = (t: string) =>
+        t.replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]!);
+      const reward = esc(discountValueLabel(b.type, b.value, b.gift_description));
+      const until = b.valid_until ? `Ważny do ${esc(formatDate(b.valid_until))}` : "";
+      const minOrder = b.min_order_grosze != null ? `Min. koszyk ${esc(formatPrice(b.min_order_grosze))}` : "";
+      const notes = [until, minOrder].filter(Boolean).join(" · ");
+      const cards = unused
+        .map(
+          (c) => `<div class="card">
+  <div class="brand">WREDNY KUBEK</div>
+  <div class="reward">${reward}</div>
+  <div class="code">${esc(c.code)}</div>
+  <div class="hint">Wpisz kod w koszyku na wrednykubek.pl · kod jednorazowy</div>
+  ${notes ? `<div class="hint">${notes}</div>` : ""}
+</div>`,
+        )
+        .join("");
+      w.document.open();
+      w.document.write(`<!doctype html><html lang="pl"><head><meta charset="utf-8">
+<title>Zdrapki — ${esc(b.name)}</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; margin: 16px; color: #111; }
+  h1 { font-size: 16px; margin: 0 0 4px; }
+  .meta { font-size: 12px; color: #555; margin-bottom: 12px; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .card { border: 1px dashed #888; border-radius: 8px; padding: 10px; text-align: center; break-inside: avoid; page-break-inside: avoid; }
+  .brand { font-size: 10px; letter-spacing: 2px; font-weight: 700; color: #0f9b8e; }
+  .reward { font-size: 13px; font-weight: 600; margin: 4px 0; }
+  .code { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 18px; font-weight: 700; letter-spacing: 1px; margin: 6px 0; }
+  .hint { font-size: 9px; color: #666; }
+  .toolbar { margin-bottom: 12px; }
+  .toolbar button { font-size: 14px; padding: 6px 14px; cursor: pointer; }
+  @media print { .toolbar { display: none; } body { margin: 8mm; } }
+</style></head><body>
+<div class="toolbar"><button onclick="window.print()">🖨 Drukuj</button></div>
+<h1>${esc(b.name)}</h1>
+<div class="meta">${reward} · ${unused.length} nieużytych kodów (z ${items.length})</div>
+${unused.length ? `<div class="grid">${cards}</div>` : "<p>Wszystkie kody z tej puli zostały już wykorzystane.</p>"}
+</body></html>`);
+      w.document.close();
+      if (unused.length) setTimeout(() => w.print(), 300);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function copyUnused() {
     setBusy(true);
     try {
@@ -267,6 +328,9 @@ function BatchCard({
           </Button>
           <Button variant="outline" size="sm" disabled={busy} onClick={downloadCsv} className="gap-1">
             <Download className="h-3.5 w-3.5" /> CSV
+          </Button>
+          <Button variant="outline" size="sm" disabled={busy} onClick={printCodes} className="gap-1">
+            <Printer className="h-3.5 w-3.5" /> Drukuj
           </Button>
           <Button variant="outline" size="sm" disabled={busy} onClick={copyUnused} className="gap-1">
             <Copy className="h-3.5 w-3.5" /> {copied ? "Skopiowano" : "Kopiuj nieużyte"}
