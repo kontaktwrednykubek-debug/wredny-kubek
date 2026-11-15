@@ -103,7 +103,7 @@ export async function validateDiscountCode(params: {
   if (isSecondItemType(dc.type) && paidUnitPrices(params.items).length < 2) {
     return {
       valid: false,
-      error: "Ten kod działa przy zakupie minimum 2 sztuk.",
+      error: "Ten kod działa przy zakupie minimum 2 kubków — dodaj drugi kubek do koszyka, a rabat obejmie tańszy z nich.",
       discountGrosze: 0,
     };
   }

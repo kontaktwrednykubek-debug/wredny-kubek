@@ -176,8 +176,13 @@ export function CheckoutClient({
 
   // Ponowna walidacja rabatu gdy zmienia się koszyk/dostawa
   React.useEffect(() => {
-    if (!discount) return;
-    void revalidateDiscount(discount.code, false);
+    if (discount) {
+      void revalidateDiscount(discount.code, false);
+    } else if (discountError && discountInput.trim()) {
+      // Kod odrzucony wcześniej (np. za mało kubków) — spróbuj ponownie po
+      // zmianie koszyka, żeby rabat włączył się sam po dodaniu drugiego kubka.
+      void revalidateDiscount(discountInput.trim().toUpperCase(), false);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [itemsTotal, shippingPrice, totalQty]);
 
@@ -200,7 +205,11 @@ export function CheckoutClient({
       });
       const j = await res.json();
       if (!j.valid) {
-        if (showError) setDiscountError(j.error ?? "Nieprawid\u0142owy kod.");
+        // Komunikat pokazujemy zawsze — także gdy wcześniej przyjęty kod
+        // przestał działać po zmianie koszyka (np. zostaje 1 kubek przy
+        // rabacie „drugi kubek"). Kod zostaje w polu, by klient wiedział czemu.
+        setDiscountError(j.error ?? "Nieprawid\u0142owy kod.");
+        setDiscountInput(code);
         setDiscount(null);
         return;
       }
