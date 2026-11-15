@@ -23,16 +23,20 @@ export async function validateDiscountCode(params: {
   const code = params.code.trim().toUpperCase();
   if (!code) return { valid: false, error: "Podaj kod rabatowy.", discountGrosze: 0 };
 
-  const { data: row, error } = await params.supabase
+  // Klient może wpisać kod z myślnikami, bez nich lub ze spacjami
+  // (np. „ZDR-K7XM-Q4PA", „ZDRK7XMQ4PA", „zdr k7xm q4pa") — sprawdzamy warianty.
+  const candidates = codeCandidates(code);
+  const { data: rows, error } = await params.supabase
     .from("discount_codes")
     .select("*")
-    .eq("code", code)
-    .maybeSingle();
+    .in("code", candidates);
 
-  if (error || !row) {
+  const found = (rows ?? []) as DiscountCode[];
+  const dc =
+    candidates.map((c) => found.find((r) => r.code === c)).find(Boolean) ?? null;
+  if (error || !dc) {
     return { valid: false, error: "Kod nie istnieje.", discountGrosze: 0 };
   }
-  const dc = row as DiscountCode;
 
   if (!dc.active) {
     return { valid: false, error: "Kod jest nieaktywny.", discountGrosze: 0 };
@@ -129,6 +133,22 @@ export async function validateDiscountCode(params: {
  * Oblicza wartość rabatu w groszach dla danego typu i sumy.
  * Zwraca wartość ≤ sumy (nie zjedzie poniżej 0).
  */
+/**
+ * Warianty zapisu kodu do wyszukania w bazie: dokładnie jak wpisany, bez
+ * separatorów oraz w formacie zdrapki [PREFIKS-]XXXX-XXXX.
+ */
+export function codeCandidates(input: string): string[] {
+  const raw = input.trim().toUpperCase();
+  const bare = raw.replace(/[^A-Z0-9]/g, "");
+  const out = [raw, raw.replace(/\s+/g, ""), bare];
+  if (bare.length >= 8) {
+    const tail = `${bare.slice(-8, -4)}-${bare.slice(-4)}`;
+    const prefix = bare.slice(0, -8);
+    out.push(prefix ? `${prefix}-${tail}` : tail);
+  }
+  return Array.from(new Set(out.filter(Boolean)));
+}
+
 export function isSecondItemType(type: DiscountType): boolean {
   return type === "second_percent" || type === "second_fixed";
 }
