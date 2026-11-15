@@ -188,17 +188,12 @@ export async function POST(req: Request) {
   if (
     discountCodeRow &&
     discountCodeRow.type !== "free_shipping" &&
-    discountCodeRow.stripe_promotion_code_id
-  ) {
-    discounts.push({ promotion_code: discountCodeRow.stripe_promotion_code_id });
-  } else if (
-    discountCodeRow &&
-    discountCodeRow.type !== "free_shipping" &&
     discountCodeRow.type !== "gift" &&
     discountGr > 0
   ) {
-    // Zdrapki (i rabat „na drugą sztukę") nie mają PromotionCode w Stripe —
-    // tworzymy jednorazowy kupon na dokładną kwotę wyliczoną przy zamówieniu.
+    // Do Stripe zawsze przekazujemy DOKŁADNĄ kwotę rabatu wyliczoną przy
+    // zamówieniu (tylko od produktów). Kupon procentowy ze Stripe obniżałby też
+    // pozycję „Dostawa", przez co pobrana kwota różniłaby się od koszyka.
     try {
       const coupon = await stripe.coupons.create({
         amount_off: discountGr,
@@ -231,7 +226,9 @@ export async function POST(req: Request) {
     session = await stripe.checkout.sessions.create({
       mode: "payment",
       line_items,
-      ...(discounts.length > 0 ? { discounts } : { allow_promotion_codes: true }),
+      // Kody rabatowe wpisuje się tylko w koszyku sklepu (tam działają limity,
+      // minimalny koszyk i jednorazowość) — bez pola kodu na stronie Stripe.
+      ...(discounts.length > 0 ? { discounts } : {}),
       // Kod jednorazowy (zdrapka) jest zablokowany na 35 min — płatność musi
       // się zmieścić w tym czasie (30 min to minimum Stripe).
       ...(discountCodeRow?.max_uses === 1
