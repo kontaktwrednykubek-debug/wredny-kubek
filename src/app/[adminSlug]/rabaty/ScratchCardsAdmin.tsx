@@ -27,13 +27,20 @@ type ScratchCode = { id: string; code: string; times_used: number; active: boole
 const inputCls =
   "w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring";
 
-// W zdrapkach rabat procentowy i kwotowy działa ZAWSZE od drugiego kubka
-// (min. 2 szt. w koszyku, rabat na 1 — najtańszą — sztukę).
-const SCRATCH_TYPES: DiscountType[] = ["second_percent", "second_fixed", "free_shipping", "gift"];
+const SCRATCH_TYPES: DiscountType[] = [
+  "percent",
+  "fixed",
+  "second_percent",
+  "second_fixed",
+  "free_shipping",
+  "gift",
+];
 
 const SCRATCH_TYPE_NAMES: Partial<Record<DiscountType, string>> = {
-  second_percent: "Procentowy (%) — od drugiego kubka",
-  second_fixed: "Kwotowy (zł) — od drugiego kubka",
+  percent: "Procentowy (%) — na całe zamówienie, bez dostawy",
+  fixed: "Kwotowy (zł) — na całe zamówienie, bez dostawy",
+  second_percent: "Procentowy (%) — od drugiego kubka (min. 2 szt.)",
+  second_fixed: "Kwotowy (zł) — od drugiego kubka (min. 2 szt.)",
   free_shipping: "Darmowa dostawa",
   gift: "Gratis",
 };
@@ -585,6 +592,13 @@ function NewScratchBatchForm({
           </label>
         )}
       </div>
+
+      {(type === "percent" || type === "fixed") && (
+        <p className="rounded-lg bg-background/60 px-3 py-2 text-xs text-muted-foreground">
+          Rabat od wartości wszystkich produktów w koszyku, bez wymogu liczby sztuk. Dostawa nie jest
+          objęta rabatem.
+        </p>
+      )}
 
       {isSecond && (
         <p className="rounded-lg bg-background/60 px-3 py-2 text-xs text-muted-foreground">

@@ -22,17 +22,17 @@ export function discountValueLabel(
 ): string {
   switch (type) {
     case "percent":
-      return `-${value ?? 0}%`;
+      return `-${value ?? 0}% na zamówienie`;
     case "fixed":
-      return `-${pln(value ?? 0)}`;
+      return `-${pln(value ?? 0)} na zamówienie`;
     case "free_shipping":
       return "Darmowa dostawa";
     case "gift":
       return giftDescription ? `Gratis: ${giftDescription}` : "Gratis";
     case "second_percent":
-      return `-${value ?? 0}% na 1 szt. (min. 2 szt.)`;
+      return `-${value ?? 0}% na drugi kubek (min. 2 szt.)`;
     case "second_fixed":
-      return `-${pln(value ?? 0)} na 1 szt. (min. 2 szt.)`;
+      return `-${pln(value ?? 0)} na drugi kubek (min. 2 szt.)`;
     default:
       return String(type);
   }
