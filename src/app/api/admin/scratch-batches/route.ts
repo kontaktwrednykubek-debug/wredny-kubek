@@ -21,6 +21,9 @@ const createSchema = z.object({
     .nullable()
     .optional(),
   count: z.number().int().min(1).max(2000),
+  /** sequential = kolejne numery (1001, 1002…), random = losowe XXXX-XXXX */
+  mode: z.enum(["sequential", "random"]).optional(),
+  start_number: z.number().int().min(1).max(999_999_999).optional(),
   valid_from: z.string().datetime().optional(),
   valid_until: z.string().datetime().nullable().optional(),
   min_order_grosze: z.number().int().nonnegative().nullable().optional(),
@@ -81,6 +84,34 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Opisz, co jest gratisem." }, { status: 400 });
   }
 
+  // Kody numerowane: sprawdzamy, czy cały zakres jest wolny, ZANIM utworzymy pulę.
+  let sequentialCodes: string[] | null = null;
+  if (input.mode === "sequential") {
+    if (!input.start_number) {
+      return NextResponse.json({ error: "Podaj pierwszy numer kodu." }, { status: 400 });
+    }
+    sequentialCodes = Array.from({ length: input.count }, (_, i) => String(input.start_number! + i));
+    const taken: string[] = [];
+    for (let i = 0; i < sequentialCodes.length; i += 500) {
+      const { data } = await auth.supabase
+        .from("discount_codes")
+        .select("code")
+        .in("code", sequentialCodes.slice(i, i + 500));
+      for (const r of data ?? []) taken.push((r as { code: string }).code);
+    }
+    if (taken.length > 0) {
+      const list = taken.sort((a, b) => Number(a) - Number(b));
+      return NextResponse.json(
+        {
+          error: `Te numery już istnieją: ${list.slice(0, 10).join(", ")}${
+            list.length > 10 ? ` (i ${list.length - 10} więcej)` : ""
+          }. Zacznij od innego numeru.`,
+        },
+        { status: 409 },
+      );
+    }
+  }
+
   const value = needsPercent || needsFixed ? input.value ?? null : null;
   const prefix = input.prefix ? input.prefix.toUpperCase() : null;
   const validFrom = input.valid_from ?? new Date().toISOString();
@@ -92,7 +123,7 @@ export async function POST(req: Request) {
       type: input.type,
       value,
       gift_description: input.type === "gift" ? input.gift_description : null,
-      prefix,
+      prefix: sequentialCodes ? null : prefix,
       valid_from: validFrom,
       valid_until: input.valid_until ?? null,
       min_order_grosze: input.min_order_grosze ?? null,
@@ -124,6 +155,22 @@ export async function POST(req: Request) {
     scratch_batch_id: batch.id,
     created_by: auth.user.id,
   };
+
+  if (sequentialCodes) {
+    const rows = sequentialCodes.map((code) => ({ ...baseRow, code }));
+    for (let i = 0; i < rows.length; i += 500) {
+      const { error } = await auth.supabase.from("discount_codes").insert(rows.slice(i, i + 500));
+      if (error) {
+        // Ktoś zajął numer w międzyczasie — wycofujemy całą pulę.
+        await auth.supabase.from("scratch_batches").delete().eq("id", batch.id);
+        return NextResponse.json(
+          { error: `Nie udało się zapisać kodów: ${error.message}` },
+          { status: 500 },
+        );
+      }
+    }
+    return NextResponse.json({ item: batch });
+  }
 
   let remaining = input.count;
   for (let attempt = 0; attempt < 5 && remaining > 0; attempt++) {

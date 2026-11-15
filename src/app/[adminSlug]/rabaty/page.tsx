@@ -45,6 +45,23 @@ export default async function DiscountCodesAdminPage() {
     codes = data;
   }
 
+  // Następny wolny numer dla kodów numerowanych (1001, 1002, …).
+  let maxNumber = 1000;
+  for (let from = 0; from < 50_000; from += 1000) {
+    const { data, error } = await supabase
+      .from("discount_codes")
+      .select("code")
+      .filter("code", "match", "^[0-9]+$")
+      .range(from, from + 999);
+    if (error || !data || data.length === 0) break;
+    for (const r of data as { code: string }[]) {
+      const n = Number(r.code);
+      if (Number.isSafeInteger(n) && n > maxNumber) maxNumber = n;
+    }
+    if (data.length < 1000) break;
+  }
+  const nextNumber = maxNumber + 1;
+
   // Liczniki kodów (wszystkie / użyte) dla każdej puli zdrapek.
   const batches: ScratchBatchWithStats[] = await Promise.all(
     ((rawBatches ?? []) as ScratchBatch[]).map(async (b) => {
@@ -85,7 +102,7 @@ export default async function DiscountCodesAdminPage() {
       <div className="border-t border-border" />
 
       {/* Sekcja rabatów zdrapek */}
-      <ScratchCardsAdmin initialBatches={batches} />
+      <ScratchCardsAdmin initialBatches={batches} nextNumber={nextNumber} />
 
       {/* Divider */}
       <div className="border-t border-border" />

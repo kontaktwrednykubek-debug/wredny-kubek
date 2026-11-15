@@ -55,7 +55,25 @@ function toLocalInput(iso: string): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-export function ScratchCardsAdmin({ initialBatches }: { initialBatches: ScratchBatchWithStats[] }) {
+/** Gratisy do wyboru z listy (nazwa puli = nazwa gratisu). */
+export const GIFT_ITEMS = [
+  "Zakładka do książki",
+  "Plan lekcji",
+  "Kieliszek do wina",
+  "Szklanka",
+  "Kubek losowy",
+];
+
+const CUSTOM = "__custom__";
+
+export function ScratchCardsAdmin({
+  initialBatches,
+  nextNumber,
+}: {
+  initialBatches: ScratchBatchWithStats[];
+  /** Następny wolny numer kodu (dla kodów numerowanych). */
+  nextNumber: number;
+}) {
   const router = useRouter();
   const [batches, setBatches] = React.useState(initialBatches);
   const [showForm, setShowForm] = React.useState(false);
@@ -82,6 +100,13 @@ export function ScratchCardsAdmin({ initialBatches }: { initialBatches: ScratchB
 
       {showForm && (
         <NewScratchBatchForm
+          nextNumber={nextNumber}
+          giftOptions={Array.from(
+            new Set([
+              ...GIFT_ITEMS,
+              ...batches.filter((b) => b.type === "gift" && b.gift_description).map((b) => b.gift_description!),
+            ]),
+          )}
           onClose={() => setShowForm(false)}
           onCreated={() => {
             setShowForm(false);
@@ -375,13 +400,27 @@ ${unused.length ? `<div class="grid">${cards}</div>` : "<p>Wszystkie kody z tej 
   );
 }
 
-function NewScratchBatchForm({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
-  const [name, setName] = React.useState("");
-  const [type, setType] = React.useState<DiscountType>("second_percent");
+function NewScratchBatchForm({
+  onClose,
+  onCreated,
+  nextNumber,
+  giftOptions,
+}: {
+  onClose: () => void;
+  onCreated: () => void;
+  nextNumber: number;
+  giftOptions: string[];
+}) {
+  const [nameChoice, setNameChoice] = React.useState<string>(giftOptions[0] ?? CUSTOM);
+  const [customName, setCustomName] = React.useState("");
+  const name = nameChoice === CUSTOM ? customName : nameChoice;
+  const [type, setType] = React.useState<DiscountType>(nameChoice === CUSTOM ? "second_percent" : "gift");
+  const [codeMode, setCodeMode] = React.useState<"sequential" | "random">("sequential");
+  const [startNumber, setStartNumber] = React.useState(String(nextNumber));
   const [percentValue, setPercentValue] = React.useState("10");
   const [fixedValuePln, setFixedValuePln] = React.useState("10");
-  const [giftDescription, setGiftDescription] = React.useState("");
-  const [count, setCount] = React.useState("50");
+  const [giftDescription, setGiftDescription] = React.useState(nameChoice === CUSTOM ? "" : nameChoice);
+  const [count, setCount] = React.useState("10");
   const [prefix, setPrefix] = React.useState("ZDR");
   const [validFrom, setValidFrom] = React.useState(toLocalInput(new Date().toISOString()));
   const [validUntil, setValidUntil] = React.useState("");
@@ -393,6 +432,24 @@ function NewScratchBatchForm({ onClose, onCreated }: { onClose: () => void; onCr
   const isFixed = type === "fixed" || type === "second_fixed";
   const isSecond = type === "second_percent" || type === "second_fixed";
 
+  function chooseName(v: string) {
+    setNameChoice(v);
+    if (v !== CUSTOM) {
+      // Gratis z listy: typ „Gratis", opis = nazwa przedmiotu.
+      setType("gift");
+      setGiftDescription(v);
+    }
+  }
+
+  const startN = parseInt(startNumber, 10);
+  const countN = parseInt(count, 10);
+  const rangePreview =
+    codeMode === "sequential" && !isNaN(startN) && !isNaN(countN) && countN > 0
+      ? countN === 1
+        ? `${startN}`
+        : `${startN} – ${startN + countN - 1}`
+      : null;
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -400,7 +457,10 @@ function NewScratchBatchForm({ onClose, onCreated }: { onClose: () => void; onCr
     if (!name.trim()) return setError("Podaj nazwę puli.");
     const n = parseInt(count, 10);
     if (isNaN(n) || n < 1 || n > 2000) return setError("Liczba kodów: 1-2000.");
-    if (prefix && !/^[A-Za-z0-9]{1,10}$/.test(prefix)) return setError("Prefiks: do 10 liter/cyfr.");
+    if (codeMode === "random" && prefix && !/^[A-Za-z0-9]{1,10}$/.test(prefix))
+      return setError("Prefiks: do 10 liter/cyfr.");
+    if (codeMode === "sequential" && (isNaN(startN) || startN < 1))
+      return setError("Podaj pierwszy numer kodu (np. 1001).");
 
     let value: number | null = null;
     if (isPercent) {
@@ -418,7 +478,9 @@ function NewScratchBatchForm({ onClose, onCreated }: { onClose: () => void; onCr
       type,
       value,
       count: n,
-      prefix: prefix || null,
+      mode: codeMode,
+      start_number: codeMode === "sequential" ? startN : undefined,
+      prefix: codeMode === "random" ? prefix || null : null,
       gift_description: type === "gift" ? giftDescription.trim() : null,
     };
     if (validFrom) body.valid_from = new Date(validFrom).toISOString();
@@ -461,14 +523,29 @@ function NewScratchBatchForm({ onClose, onCreated }: { onClose: () => void; onCr
 
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="block">
-          <span className="text-sm font-medium">Nazwa puli</span>
-          <input
-            required
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="np. Zdrapki — paczki listopad"
-            className={inputCls}
-          />
+          <span className="text-sm font-medium">Nazwa puli (gratis)</span>
+          <select value={nameChoice} onChange={(e) => chooseName(e.target.value)} className={inputCls}>
+            {giftOptions.map((g) => (
+              <option key={g} value={g}>
+                {g}
+              </option>
+            ))}
+            <option value={CUSTOM}>Własna nazwa…</option>
+          </select>
+          {nameChoice === CUSTOM && (
+            <input
+              required
+              value={customName}
+              onChange={(e) => setCustomName(e.target.value)}
+              placeholder="np. Zdrapki — paczki listopad"
+              className={`${inputCls} mt-2`}
+            />
+          )}
+          {nameChoice !== CUSTOM && type === "gift" && (
+            <span className="text-xs text-muted-foreground">
+              Klient z tym kodem dostanie gratis: <b>{nameChoice}</b>
+            </span>
+          )}
         </label>
 
         <label className="block">
@@ -533,7 +610,57 @@ function NewScratchBatchForm({ onClose, onCreated }: { onClose: () => void; onCr
         </label>
       )}
 
+      <div className="space-y-2">
+        <span className="text-sm font-medium">Rodzaj kodów</span>
+        <div className="flex flex-wrap gap-4 text-sm">
+          <label className="flex cursor-pointer items-center gap-2">
+            <input
+              type="radio"
+              checked={codeMode === "sequential"}
+              onChange={() => setCodeMode("sequential")}
+              className="h-4 w-4"
+            />
+            Kolejne numery (np. 1001, 1002, 1003…)
+          </label>
+          <label className="flex cursor-pointer items-center gap-2">
+            <input
+              type="radio"
+              checked={codeMode === "random"}
+              onChange={() => setCodeMode("random")}
+              className="h-4 w-4"
+            />
+            Losowe (np. ZDR-K7XM-Q4PA)
+          </label>
+        </div>
+      </div>
+
       <div className="grid gap-4 sm:grid-cols-2">
+        {codeMode === "sequential" ? (
+          <label className="block">
+            <span className="text-sm font-medium">Pierwszy numer</span>
+            <input
+              type="number"
+              min={1}
+              value={startNumber}
+              onChange={(e) => setStartNumber(e.target.value)}
+              className={`${inputCls} font-mono`}
+            />
+            <span className="text-xs text-muted-foreground">Następny wolny numer: {nextNumber}</span>
+          </label>
+        ) : (
+          <label className="block">
+            <span className="text-sm font-medium">Prefiks kodu (opcjonalnie)</span>
+            <input
+              value={prefix}
+              onChange={(e) => setPrefix(e.target.value.toUpperCase())}
+              placeholder="ZDR"
+              className={`${inputCls} font-mono`}
+            />
+            <span className="text-xs text-muted-foreground">
+              Przykład kodu: <span className="font-mono">{prefix ? `${prefix}-` : ""}K7XM-Q4PA</span>
+            </span>
+          </label>
+        )}
         <label className="block">
           <span className="text-sm font-medium">Liczba kodów do wygenerowania</span>
           <input
@@ -544,18 +671,11 @@ function NewScratchBatchForm({ onClose, onCreated }: { onClose: () => void; onCr
             onChange={(e) => setCount(e.target.value)}
             className={inputCls}
           />
-        </label>
-        <label className="block">
-          <span className="text-sm font-medium">Prefiks kodu (opcjonalnie)</span>
-          <input
-            value={prefix}
-            onChange={(e) => setPrefix(e.target.value.toUpperCase())}
-            placeholder="ZDR"
-            className={`${inputCls} font-mono`}
-          />
-          <span className="text-xs text-muted-foreground">
-            Przykład kodu: <span className="font-mono">{prefix ? `${prefix}-` : ""}K7XM-Q4PA</span>
-          </span>
+          {rangePreview && (
+            <span className="text-xs text-muted-foreground">
+              Powstaną kody: <span className="font-mono font-semibold text-foreground">{rangePreview}</span>
+            </span>
+          )}
         </label>
       </div>
 
