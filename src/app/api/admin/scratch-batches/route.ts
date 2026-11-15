@@ -5,14 +5,8 @@ import { requireAdmin } from "@/lib/discount/requireAdmin";
 
 export const runtime = "nodejs";
 
-const SCRATCH_TYPES = [
-  "percent",
-  "fixed",
-  "free_shipping",
-  "gift",
-  "second_percent",
-  "second_fixed",
-] as const;
+// Zdrapki: procent / kwota zawsze „od drugiego kubka" (min. 2 szt.).
+const SCRATCH_TYPES = ["second_percent", "second_fixed", "free_shipping", "gift"] as const;
 
 const createSchema = z.object({
   name: z.string().trim().min(1).max(120),
@@ -75,8 +69,8 @@ export async function POST(req: Request) {
   }
   const input = parsed.data;
 
-  const needsPercent = input.type === "percent" || input.type === "second_percent";
-  const needsFixed = input.type === "fixed" || input.type === "second_fixed";
+  const needsPercent = input.type === "second_percent";
+  const needsFixed = input.type === "second_fixed";
   if (needsPercent && (!input.value || input.value < 1 || input.value > 100)) {
     return NextResponse.json({ error: "Wartość procentowa musi być 1-100." }, { status: 400 });
   }

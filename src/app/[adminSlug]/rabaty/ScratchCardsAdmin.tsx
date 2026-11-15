@@ -27,14 +27,16 @@ type ScratchCode = { id: string; code: string; times_used: number; active: boole
 const inputCls =
   "w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring";
 
-const SCRATCH_TYPES: DiscountType[] = [
-  "percent",
-  "fixed",
-  "second_percent",
-  "second_fixed",
-  "free_shipping",
-  "gift",
-];
+// W zdrapkach rabat procentowy i kwotowy działa ZAWSZE od drugiego kubka
+// (min. 2 szt. w koszyku, rabat na 1 — najtańszą — sztukę).
+const SCRATCH_TYPES: DiscountType[] = ["second_percent", "second_fixed", "free_shipping", "gift"];
+
+const SCRATCH_TYPE_NAMES: Partial<Record<DiscountType, string>> = {
+  second_percent: "Procentowy (%) — od drugiego kubka",
+  second_fixed: "Kwotowy (zł) — od drugiego kubka",
+  free_shipping: "Darmowa dostawa",
+  gift: "Gratis",
+};
 
 function formatDate(iso: string | null): string {
   if (!iso) return "bezterminowo";
@@ -375,7 +377,7 @@ ${unused.length ? `<div class="grid">${cards}</div>` : "<p>Wszystkie kody z tej 
 
 function NewScratchBatchForm({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
   const [name, setName] = React.useState("");
-  const [type, setType] = React.useState<DiscountType>("percent");
+  const [type, setType] = React.useState<DiscountType>("second_percent");
   const [percentValue, setPercentValue] = React.useState("10");
   const [fixedValuePln, setFixedValuePln] = React.useState("10");
   const [giftDescription, setGiftDescription] = React.useState("");
@@ -474,7 +476,7 @@ function NewScratchBatchForm({ onClose, onCreated }: { onClose: () => void; onCr
           <select value={type} onChange={(e) => setType(e.target.value as DiscountType)} className={inputCls}>
             {SCRATCH_TYPES.map((t) => (
               <option key={t} value={t}>
-                {DISCOUNT_TYPE_NAMES[t]}
+                {SCRATCH_TYPE_NAMES[t] ?? DISCOUNT_TYPE_NAMES[t]}
               </option>
             ))}
           </select>
