@@ -85,13 +85,16 @@ export async function POST(req: Request) {
     stripe_promotion_code_id: string | null;
     times_used: number;
     max_uses: number | null;
+    scratch_batch_id?: string | null;
+    reserved_by?: string | null;
+    reserved_until?: string | null;
   };
   let discountCodeRow: DiscountRow | null = null;
   if (primaryOrder.discount_code_id) {
     const service = createSupabaseServiceClient();
     const { data: dc, error: dcErr } = await service
       .from("discount_codes")
-      .select("type, code, stripe_promotion_code_id, times_used, max_uses")
+      .select("*")
       .eq("id", primaryOrder.discount_code_id)
       .maybeSingle();
     if (dcErr) {
@@ -106,6 +109,20 @@ export async function POST(req: Request) {
     ) {
       return NextResponse.json(
         { error: `Kod ${discountCodeRow.code} został już wykorzystany. Usuń go i złóż zamówienie ponownie.` },
+        { status: 409 },
+      );
+    }
+    // Zdrapka zablokowana teraz przez inne zamówienie (inny klient).
+    const claimant = (user?.id ?? String(shipping.email ?? "")).trim().toLowerCase();
+    if (
+      discountCodeRow?.scratch_batch_id &&
+      discountCodeRow.reserved_by &&
+      discountCodeRow.reserved_until &&
+      new Date(discountCodeRow.reserved_until) > new Date() &&
+      discountCodeRow.reserved_by !== claimant
+    ) {
+      return NextResponse.json(
+        { error: `Kod ${discountCodeRow.code} jest już wykorzystywany przez inną osobę.` },
         { status: 409 },
       );
     }
@@ -215,6 +232,11 @@ export async function POST(req: Request) {
       mode: "payment",
       line_items,
       ...(discounts.length > 0 ? { discounts } : { allow_promotion_codes: true }),
+      // Kod jednorazowy (zdrapka) jest zablokowany na 35 min — płatność musi
+      // się zmieścić w tym czasie (30 min to minimum Stripe).
+      ...(discountCodeRow?.max_uses === 1
+        ? { expires_at: Math.floor(Date.now() / 1000) + 30 * 60 + 30 }
+        : {}),
       customer_email: user?.email ?? shipping.email ?? undefined,
       metadata: {
         orderId: primaryOrder.id,

@@ -54,3 +54,20 @@ alter table public.discount_codes add constraint discount_value_check check (
   (type in ('fixed', 'second_fixed') and value > 0) or
   (type in ('free_shipping', 'gift'))
 );
+
+-- ----------------------------------------------------------------------------
+-- Jednorazowość kodów zdrapek
+-- ----------------------------------------------------------------------------
+-- Przy składaniu zamówienia kod jest blokowany (rezerwowany) dla jednego klienta
+-- na 35 minut (sesja płatności Stripe wygasa po 30). Inna osoba nie może go w tym czasie użyć. Po opłaceniu kod jest
+-- zużyty na zawsze (times_used = max_uses = 1). Porzucona płatność zwalnia
+-- kod po wygaśnięciu rezerwacji.
+alter table public.discount_codes
+  add column if not exists reserved_by text,          -- user id albo e-mail klienta
+  add column if not exists reserved_until timestamptz;
+
+-- Twarda blokada w bazie: licznik użyć nigdy nie przekroczy limitu.
+-- NOT VALID = nie sprawdzamy historycznych wierszy, tylko nowe zmiany.
+alter table public.discount_codes drop constraint if exists discount_codes_max_uses_check;
+alter table public.discount_codes add constraint discount_codes_max_uses_check
+  check (max_uses is null or times_used <= max_uses) not valid;

@@ -299,6 +299,7 @@ export async function POST(req: Request) {
       itemsTotalGrosze,
       shippingGrosze: shippingPriceGr,
       items: items.map((it) => ({ unitPriceGr: it.unitPriceGr, quantity: it.quantity })),
+      email: shipping.email,
     });
     if (!v.valid || !v.code) {
       return NextResponse.json(
@@ -308,6 +309,37 @@ export async function POST(req: Request) {
     }
     discountCodeId = v.code.id;
     discountGrosze = v.discountGrosze;
+
+    // Kod ze zdrapki jest jednorazowy: blokujemy go atomowo dla tego klienta
+    // (na 35 min — dłużej niż żyje sesja płatności Stripe), żeby nikt inny nie użył go równolegle. Ten sam klient może
+    // ponowić zamówienie z tym kodem (np. po anulowaniu płatności).
+    if (v.code.is_scratch) {
+      const claimant = (user?.id ?? shipping.email).trim().toLowerCase();
+      const nowIso = new Date().toISOString();
+      const until = new Date(Date.now() + 35 * 60 * 1000).toISOString();
+      const { data: claimed, error: claimErr } = await service
+        .from("discount_codes")
+        .update({ reserved_by: claimant, reserved_until: until })
+        .eq("id", v.code.id)
+        .eq("times_used", 0)
+        .or(
+          `reserved_until.is.null,reserved_until.lt.${nowIso},reserved_by.eq."${claimant.replace(/"/g, "")}"`,
+        )
+        .select("id");
+      if (claimErr) {
+        console.error("[orders-api] scratch code claim failed:", claimErr);
+        return NextResponse.json(
+          { error: "Nie udało się zarezerwować kodu. Spróbuj ponownie." },
+          { status: 500 },
+        );
+      }
+      if (!claimed || claimed.length === 0) {
+        return NextResponse.json(
+          { error: "Ten kod ze zdrapki został już wykorzystany przez inną osobę." },
+          { status: 400 },
+        );
+      }
+    }
   }
 
   // Wspólny group_id dla wszystkich pozycji z jednego koszyka — panel admina

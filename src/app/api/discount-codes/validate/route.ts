@@ -19,6 +19,7 @@ const bodySchema = z.object({
     )
     .max(50)
     .optional(),
+  email: z.string().max(200).optional(),
 });
 
 /**
@@ -49,6 +50,7 @@ export async function POST(req: Request) {
     itemsTotalGrosze: parsed.data.itemsTotalGrosze,
     shippingGrosze: parsed.data.shippingGrosze ?? 0,
     items: parsed.data.items,
+    email: parsed.data.email ?? null,
   });
 
   return NextResponse.json(result);

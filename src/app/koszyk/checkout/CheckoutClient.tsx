@@ -195,6 +195,7 @@ export function CheckoutClient({
           itemsTotalGrosze: itemsTotal,
           shippingGrosze: shippingPrice,
           items: items.map((i) => ({ unitPriceGr: i.unitPriceGr, quantity: i.quantity })),
+          email: form.email || undefined,
         }),
       });
       const j = await res.json();

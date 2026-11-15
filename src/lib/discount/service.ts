@@ -17,6 +17,8 @@ export async function validateDiscountCode(params: {
   shippingGrosze: number;
   /** Pozycje koszyka — wymagane dla rabatów „na drugą sztukę". */
   items?: DiscountCartItem[];
+  /** E-mail klienta (gość) — do rozpoznania własnej rezerwacji zdrapki. */
+  email?: string | null;
 }): Promise<DiscountValidationResult> {
   const code = params.code.trim().toUpperCase();
   if (!code) return { valid: false, error: "Podaj kod rabatowy.", discountGrosze: 0 };
@@ -50,6 +52,21 @@ export async function validateDiscountCode(params: {
       error: dc.scratch_batch_id
         ? "Ten kod ze zdrapki został już wykorzystany."
         : "Kod został już w pełni wykorzystany.",
+      discountGrosze: 0,
+    };
+  }
+
+  // Zdrapka zablokowana przez inne, trwające właśnie zamówienie.
+  if (
+    dc.scratch_batch_id &&
+    dc.reserved_until &&
+    new Date(dc.reserved_until) > now &&
+    (!params.userId || dc.reserved_by !== params.userId.toLowerCase()) &&
+    (!params.email || dc.reserved_by !== params.email.trim().toLowerCase())
+  ) {
+    return {
+      valid: false,
+      error: "Ten kod ze zdrapki jest już wykorzystywany w innym zamówieniu.",
       discountGrosze: 0,
     };
   }

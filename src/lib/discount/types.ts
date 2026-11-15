@@ -47,6 +47,8 @@ export interface DiscountCode {
   stripe_promotion_code_id: string | null;
   scratch_batch_id?: string | null;
   gift_description?: string | null;
+  reserved_by?: string | null;
+  reserved_until?: string | null;
   created_at: string;
   created_by: string | null;
 }
