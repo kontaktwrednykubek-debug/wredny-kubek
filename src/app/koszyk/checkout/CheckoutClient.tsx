@@ -988,7 +988,9 @@ export function CheckoutClient({
                       }
                     }}
                     placeholder="WPISZ KOD"
-                    className={`${inputCls} min-w-0 font-mono text-xs uppercase`}
+                    className={`${inputCls} min-w-0 font-mono text-xs uppercase ${
+                      discountError ? "border-red-500 focus:ring-red-500" : ""
+                    }`}
                     disabled={discountChecking}
                   />
                   <Button
@@ -1002,7 +1004,13 @@ export function CheckoutClient({
                   </Button>
                 </div>
                 {discountError && (
-                  <p className="mt-1 text-xs text-destructive">⚠️ {discountError}</p>
+                  <div
+                    role="alert"
+                    className="mt-2 flex items-start gap-2 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm font-medium text-red-500"
+                  >
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                    <span>{discountError}</span>
+                  </div>
                 )}
               </div>
             ) : (

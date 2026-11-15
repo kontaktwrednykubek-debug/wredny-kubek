@@ -100,10 +100,16 @@ export async function validateDiscountCode(params: {
     }
   }
 
-  if (isSecondItemType(dc.type) && paidUnitPrices(params.items).length < 2) {
+  // Rabat % / zł „od drugiego kubka" wymaga min. 2 płatnych kubków w koszyku
+  // (gratisy 0 zł się nie liczą). Gratis i darmowa dostawa działają od 1 kubka.
+  const paidUnits = paidUnitPrices(params.items).length;
+  if (isSecondItemType(dc.type) && paidUnits < 2) {
+    const missing = 2 - paidUnits;
     return {
       valid: false,
-      error: "Ten kod działa przy zakupie minimum 2 kubków — dodaj drugi kubek do koszyka, a rabat obejmie tańszy z nich.",
+      error: `Aby wykorzystać ten kod, w koszyku muszą być minimum 2 kubki — dodaj jeszcze ${missing} ${
+        missing === 1 ? "kubek" : "kubki"
+      }.`,
       discountGrosze: 0,
     };
   }
