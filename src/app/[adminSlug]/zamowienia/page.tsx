@@ -38,14 +38,31 @@ export default async function AdminOrdersPage() {
     ),
   );
   const freeShipCodeIds = new Set<string>();
+  // Kod + ewentualny gratis (zdrapki) — do pokazania przy zamówieniu.
+  const codeInfo = new Map<string, { code: string; gift: string | null }>();
   if (codeIds.length > 0) {
-    const { data: codes } = await supabase
+    let { data: codes, error: codesErr } = await supabase
       .from("discount_codes")
-      .select("id, type")
+      .select("id, type, code, gift_description")
       .in("id", codeIds);
-    for (const c of codes ?? []) {
-      if ((c as { type?: string }).type === "free_shipping")
-        freeShipCodeIds.add((c as { id: string }).id);
+    if (codesErr) {
+      // Fallback sprzed migracji 0023 (brak kolumny gift_description).
+      ({ data: codes } = await supabase
+        .from("discount_codes")
+        .select("id, type, code")
+        .in("id", codeIds) as unknown as { data: typeof codes });
+    }
+    for (const c of (codes ?? []) as {
+      id: string;
+      type?: string;
+      code?: string;
+      gift_description?: string | null;
+    }[]) {
+      if (c.type === "free_shipping") freeShipCodeIds.add(c.id);
+      codeInfo.set(c.id, {
+        code: c.code ?? "",
+        gift: c.type === "gift" ? c.gift_description ?? "Gratis" : null,
+      });
     }
   }
 
@@ -157,6 +174,24 @@ export default async function AdminOrdersPage() {
                           {group.length} pozycje
                         </span>
                       )}
+                      {(() => {
+                        const info = codeInfo.get(
+                          (primary as { discount_code_id?: string | null }).discount_code_id ?? "",
+                        );
+                        if (!info) return null;
+                        return (
+                          <>
+                            <span className="rounded-full bg-muted px-2 py-0.5 font-mono text-[11px]">
+                              {info.code}
+                            </span>
+                            {info.gift && (
+                              <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
+                                🎁 Dołącz gratis: {info.gift}
+                              </span>
+                            )}
+                          </>
+                        );
+                      })()}
                     </div>
                     <p className="text-xs text-muted-foreground">
                       {new Date(primary.created_at).toLocaleString("pl-PL")}

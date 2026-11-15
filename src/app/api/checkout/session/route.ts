@@ -4,6 +4,7 @@ import Stripe from "stripe";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import { env } from "@/lib/env";
+import type { DiscountType } from "@/lib/discount/types";
 
 export const runtime = "nodejs";
 
@@ -79,21 +80,35 @@ export async function POST(req: Request) {
 
   // Dociągamy informacje o kodzie rabatowym z głównego zamówienia.
   type DiscountRow = {
-    type: "percent" | "fixed" | "free_shipping";
+    type: DiscountType;
+    code: string;
     stripe_promotion_code_id: string | null;
+    times_used: number;
+    max_uses: number | null;
   };
   let discountCodeRow: DiscountRow | null = null;
   if (primaryOrder.discount_code_id) {
     const service = createSupabaseServiceClient();
     const { data: dc, error: dcErr } = await service
       .from("discount_codes")
-      .select("type, stripe_promotion_code_id")
+      .select("type, code, stripe_promotion_code_id, times_used, max_uses")
       .eq("id", primaryOrder.discount_code_id)
       .maybeSingle();
     if (dcErr) {
       console.error("[checkout/session] discount_codes read error:", dcErr);
     }
     if (dc) discountCodeRow = dc as unknown as DiscountRow;
+    // Kod jednorazowy (np. zdrapka) mógł zostać zużyty w innym zamówieniu.
+    if (
+      discountCodeRow &&
+      discountCodeRow.max_uses != null &&
+      discountCodeRow.times_used >= discountCodeRow.max_uses
+    ) {
+      return NextResponse.json(
+        { error: `Kod ${discountCodeRow.code} został już wykorzystany. Usuń go i złóż zamówienie ponownie.` },
+        { status: 409 },
+      );
+    }
   }
 
   const stripe = new Stripe(env.STRIPE_SECRET_KEY);
@@ -152,12 +167,37 @@ export async function POST(req: Request) {
 
   // Rabat percent/fixed: Stripe PromotionCode.
   const discounts: Stripe.Checkout.SessionCreateParams.Discount[] = [];
+  const discountGr = Number(primaryOrder.discount_grosze ?? 0);
   if (
     discountCodeRow &&
     discountCodeRow.type !== "free_shipping" &&
     discountCodeRow.stripe_promotion_code_id
   ) {
     discounts.push({ promotion_code: discountCodeRow.stripe_promotion_code_id });
+  } else if (
+    discountCodeRow &&
+    discountCodeRow.type !== "free_shipping" &&
+    discountCodeRow.type !== "gift" &&
+    discountGr > 0
+  ) {
+    // Zdrapki (i rabat „na drugą sztukę") nie mają PromotionCode w Stripe —
+    // tworzymy jednorazowy kupon na dokładną kwotę wyliczoną przy zamówieniu.
+    try {
+      const coupon = await stripe.coupons.create({
+        amount_off: discountGr,
+        currency: "pln",
+        duration: "once",
+        max_redemptions: 1,
+        name: `Rabat ${discountCodeRow.code}`.slice(0, 40),
+      });
+      discounts.push({ coupon: coupon.id });
+    } catch (err) {
+      console.error("[checkout/session] one-off coupon creation failed:", err);
+      return NextResponse.json(
+        { error: "Nie udało się zastosować rabatu. Spróbuj ponownie." },
+        { status: 500 },
+      );
+    }
   }
 
   // Origin z requestu — żeby redirect zawsze wracał na tę domenę co klient.

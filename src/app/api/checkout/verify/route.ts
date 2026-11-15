@@ -119,7 +119,7 @@ export async function POST(req: Request) {
 
     if (to) {
       const { data: dcRow } = primaryOrder.discount_code_id
-        ? await supabase.from("discount_codes").select("code, type").eq("id", primaryOrder.discount_code_id).maybeSingle()
+        ? await supabase.from("discount_codes").select("*").eq("id", primaryOrder.discount_code_id).maybeSingle()
         : { data: null };
 
       const freeShipping = (dcRow as { type?: string } | null)?.type === "free_shipping";
@@ -155,6 +155,10 @@ export async function POST(req: Request) {
         discountCode: (dcRow as { code?: string } | null)?.code ?? null,
         discountGrosze: rawDiscount > 0 ? rawDiscount : undefined,
         freeShipping,
+        giftDescription:
+          (dcRow as { type?: string } | null)?.type === "gift"
+            ? (dcRow as { gift_description?: string | null }).gift_description ?? "Gratis"
+            : null,
       });
 
       // Powiadomienie dla admina

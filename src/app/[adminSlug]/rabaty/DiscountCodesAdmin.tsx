@@ -2,10 +2,12 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Plus, Trash2, X, Calendar, Tag, Percent, Truck } from "lucide-react";
+import { Loader2, Plus, X, Calendar, Tag, Percent, Truck } from "lucide-react";
+import { ConfirmDeleteButton } from "@/components/admin/ConfirmDeleteButton";
 import { Button } from "@/components/ui/button";
 import type { DiscountCode, DiscountType } from "@/lib/discount/types";
 import { formatPrice } from "@/lib/utils";
+import { discountValueLabel } from "@/lib/discount/labels";
 
 const inputCls =
   "w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring";
@@ -35,9 +37,7 @@ function formatDate(iso: string | null): string {
 }
 
 function typeLabel(t: DiscountType, value: number | null): string {
-  if (t === "percent") return `-${value ?? 0}%`;
-  if (t === "fixed") return `-${formatPrice(value ?? 0)}`;
-  return "Darmowa dostawa";
+  return discountValueLabel(t, value);
 }
 
 function typeIcon(t: DiscountType) {
@@ -75,7 +75,6 @@ export function DiscountCodesAdmin({
   }
 
   async function remove(id: string) {
-    if (!confirm("Usunąć ten kod? Tej operacji nie da się cofnąć (Stripe Coupon też zostanie usunięty).")) return;
     setBusy(id);
     try {
       const res = await fetch(`/api/admin/discount-codes/${id}`, { method: "DELETE" });
@@ -187,20 +186,11 @@ export function DiscountCodesAdmin({
                       />
                       Aktywny
                     </label>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={busy === c.id}
-                      onClick={() => remove(c.id)}
-                      className="gap-1 text-red-600 hover:bg-red-50"
-                    >
-                      {busy === c.id ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <Trash2 className="h-3.5 w-3.5" />
-                      )}
-                      Usuń
-                    </Button>
+                    <ConfirmDeleteButton
+                      busy={busy === c.id}
+                      onConfirm={() => remove(c.id)}
+                      question="Usunąć kod (też w Stripe)?"
+                    />
                   </div>
                 </div>
               </div>

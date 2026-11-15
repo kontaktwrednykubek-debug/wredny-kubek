@@ -2,11 +2,12 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Check, Loader2, Tag, Truck, X } from "lucide-react";
+import { AlertTriangle, Check, Gift, Loader2, Tag, Truck, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCart, cartTotalGr, isMissingRequiredVariant } from "@/features/cart/useCart";
 import { formatPrice } from "@/lib/utils";
+import type { DiscountType } from "@/lib/discount/types";
 import { isValidPhone } from "@/lib/phone";
 
 export type ShippingTier = {
@@ -88,9 +89,10 @@ export function CheckoutClient({
   const [discountInput, setDiscountInput] = React.useState("");
   const [discount, setDiscount] = React.useState<{
     code: string;
-    type: "percent" | "fixed" | "free_shipping";
+    type: DiscountType;
     value: number | null;
     grosze: number;
+    giftDescription: string | null;
   } | null>(null);
   const [discountError, setDiscountError] = React.useState<string | null>(null);
   const [discountChecking, setDiscountChecking] = React.useState(false);
@@ -177,7 +179,7 @@ export function CheckoutClient({
     if (!discount) return;
     void revalidateDiscount(discount.code, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [itemsTotal, shippingPrice]);
+  }, [itemsTotal, shippingPrice, totalQty]);
 
   if (items.length === 0) return null;
 
@@ -192,6 +194,7 @@ export function CheckoutClient({
           code,
           itemsTotalGrosze: itemsTotal,
           shippingGrosze: shippingPrice,
+          items: items.map((i) => ({ unitPriceGr: i.unitPriceGr, quantity: i.quantity })),
         }),
       });
       const j = await res.json();
@@ -205,6 +208,7 @@ export function CheckoutClient({
         type: j.code.type,
         value: j.code.value,
         grosze: j.discountGrosze,
+        giftDescription: j.code.gift_description ?? null,
       });
     } catch {
       if (showError) setDiscountError("B\u0142\u0105d po\u0142\u0105czenia. Spr\u00f3buj ponownie.");
@@ -935,8 +939,20 @@ export function CheckoutClient({
           )}
           {discount && discount.type !== "free_shipping" && discountGrosze > 0 && (
             <div className="flex justify-between text-sm text-emerald-600">
-              <span>Rabat ({discount.code})</span>
+              <span>
+                {discount.type === "second_percent" || discount.type === "second_fixed"
+                  ? `Rabat na 1 szt. (${discount.code})`
+                  : `Rabat (${discount.code})`}
+              </span>
               <span className="font-semibold">− {formatPrice(discountGrosze)}</span>
+            </div>
+          )}
+          {discount?.type === "gift" && (
+            <div className="flex items-start gap-1.5 rounded-lg bg-emerald-500/10 px-3 py-2 text-sm text-emerald-700">
+              <Gift className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>
+                Gratis do zamówienia{discount.giftDescription ? `: ${discount.giftDescription}` : ""}
+              </span>
             </div>
           )}
 

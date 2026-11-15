@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
+import { requireAdmin } from "@/lib/discount/requireAdmin";
 
 export const revalidate = 0;
 
 export async function GET() {
+  const auth = await requireAdmin();
+  if (auth.error) return auth.error;
   const supabase = createSupabaseServiceClient();
   const { data, error } = await supabase
     .from("promotions")
@@ -15,6 +18,8 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  const auth = await requireAdmin();
+  if (auth.error) return auth.error;
   const supabase = createSupabaseServiceClient();
   const body = await req.json();
 

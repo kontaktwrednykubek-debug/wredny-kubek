@@ -10,6 +10,15 @@ const bodySchema = z.object({
   code: z.string().min(1).max(40),
   itemsTotalGrosze: z.number().int().nonnegative(),
   shippingGrosze: z.number().int().nonnegative().optional(),
+  items: z
+    .array(
+      z.object({
+        unitPriceGr: z.number().int().nonnegative(),
+        quantity: z.number().int().min(1).max(999),
+      }),
+    )
+    .max(50)
+    .optional(),
 });
 
 /**
@@ -39,6 +48,7 @@ export async function POST(req: Request) {
     userId: user?.id ?? null,
     itemsTotalGrosze: parsed.data.itemsTotalGrosze,
     shippingGrosze: parsed.data.shippingGrosze ?? 0,
+    items: parsed.data.items,
   });
 
   return NextResponse.json(result);

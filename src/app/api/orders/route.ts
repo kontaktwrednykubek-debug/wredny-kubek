@@ -298,6 +298,7 @@ export async function POST(req: Request) {
       userId: user?.id ?? null,
       itemsTotalGrosze,
       shippingGrosze: shippingPriceGr,
+      items: items.map((it) => ({ unitPriceGr: it.unitPriceGr, quantity: it.quantity })),
     });
     if (!v.valid || !v.code) {
       return NextResponse.json(

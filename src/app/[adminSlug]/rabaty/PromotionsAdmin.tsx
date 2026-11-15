@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { Loader2, Gift, Save, Plus, Trash2 } from "lucide-react";
+import { Loader2, Gift, Save, Plus } from "lucide-react";
+import { ConfirmDeleteButton } from "@/components/admin/ConfirmDeleteButton";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 
@@ -70,10 +71,15 @@ function PromoRow({
   }
 
   async function remove() {
-    if (!confirm("Usunąć tę promocję?")) return;
+    setError(null);
     setDeleting(true);
     try {
-      await fetch(`/api/admin/promotions/${promo.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/admin/promotions/${promo.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        setError(j.error ?? "Nie udało się usunąć promocji.");
+        return;
+      }
       onDeleted(promo.id);
     } finally {
       setDeleting(false);
@@ -115,16 +121,7 @@ function PromoRow({
           </span>
         </label>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          disabled={deleting}
-          onClick={remove}
-          className="gap-1 text-red-600 hover:bg-red-50"
-        >
-          {deleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
-          Usuń
-        </Button>
+        <ConfirmDeleteButton variant="ghost" busy={deleting} onConfirm={remove} />
       </div>
 
       {/* Podgląd reguły */}
@@ -262,7 +259,10 @@ export function PromotionsAdmin({ initialPromotions }: { initialPromotions: Prom
             onUpdated={(updated) =>
               setPromos((prev) => prev.map((x) => (x.id === updated.id ? updated : x)))
             }
-            onDeleted={(id) => setPromos((prev) => prev.filter((x) => x.id !== id))}
+            onDeleted={(id) => {
+              setPromos((prev) => prev.filter((x) => x.id !== id));
+              router.refresh();
+            }}
           />
         ))}
       </div>

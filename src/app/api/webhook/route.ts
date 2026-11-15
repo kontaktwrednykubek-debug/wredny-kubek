@@ -151,16 +151,21 @@ export async function POST(req: Request) {
 
   // Pobierz kod rabatowy z głównego zamówienia.
   let appliedDiscountCode: string | null = null;
-  let appliedDiscountType: "percent" | "fixed" | "free_shipping" | null = null;
+  let appliedDiscountType: string | null = null;
+  let appliedGiftDescription: string | null = null;
   if (primaryOrder.discount_code_id) {
     const { data: dc } = await supabase
       .from("discount_codes")
-      .select("code, type")
+      .select("*")
       .eq("id", primaryOrder.discount_code_id)
       .maybeSingle();
     if (dc) {
       appliedDiscountCode = (dc as { code: string }).code;
-      appliedDiscountType = (dc as { type: typeof appliedDiscountType }).type;
+      appliedDiscountType = (dc as { type: string }).type;
+      appliedGiftDescription =
+        appliedDiscountType === "gift"
+          ? (dc as { gift_description?: string | null }).gift_description ?? "Gratis"
+          : null;
     }
   }
 
@@ -199,6 +204,7 @@ export async function POST(req: Request) {
       discountCode: appliedDiscountCode,
       discountGrosze: rawDiscount > 0 ? rawDiscount : undefined,
       freeShipping,
+      giftDescription: appliedGiftDescription,
     });
   } catch (err) {
     console.error("[stripe-webhook] sendOrderConfirmationEmail failed:", err);

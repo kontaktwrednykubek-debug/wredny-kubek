@@ -44,6 +44,7 @@ export async function GET() {
   const { data, error } = await auth.supabase
     .from("discount_codes")
     .select("*")
+    .is("scratch_batch_id", null)
     .order("created_at", { ascending: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

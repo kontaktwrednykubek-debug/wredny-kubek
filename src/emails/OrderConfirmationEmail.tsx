@@ -44,6 +44,8 @@ export type OrderEmailProps = {
   discountCode?: string | null;
   discountGrosze?: number;
   freeShipping?: boolean;
+  /** Opis gratisu ze zdrapki. */
+  giftDescription?: string | null;
   /** @deprecated unused — kept for backward compat */
   trackingUrl?: string;
   /** @deprecated unused — kept for backward compat */
@@ -84,6 +86,7 @@ export function OrderConfirmationEmail({
   discountCode,
   discountGrosze,
   freeShipping,
+  giftDescription,
 }: OrderEmailProps) {
   const firstName = customerName.split(" ")[0];
   const orderShort = orderId.slice(0, 8).toUpperCase();
@@ -234,6 +237,20 @@ export function OrderConfirmationEmail({
                         </td>
                       </tr>
                     )}
+                  {giftDescription && (
+                    <tr>
+                      <td
+                        colSpan={2}
+                        style={{
+                          fontSize: "13px",
+                          color: C.seledyn,
+                          padding: "4px 0",
+                        }}
+                      >
+                        🎁 Gratis{discountCode ? ` (${discountCode})` : ""}: {giftDescription}
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
 

@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
+import { requireAdmin } from "@/lib/discount/requireAdmin";
 
 export async function PATCH(
   req: Request,
   { params }: { params: { id: string } },
 ) {
+  const auth = await requireAdmin();
+  if (auth.error) return auth.error;
   const supabase = createSupabaseServiceClient();
   const body = await req.json();
 
@@ -29,6 +32,8 @@ export async function DELETE(
   _req: Request,
   { params }: { params: { id: string } },
 ) {
+  const auth = await requireAdmin();
+  if (auth.error) return auth.error;
   const supabase = createSupabaseServiceClient();
   const { error } = await supabase
     .from("promotions")

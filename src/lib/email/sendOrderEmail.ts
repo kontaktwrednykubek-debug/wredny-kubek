@@ -88,6 +88,8 @@ export async function sendOrderConfirmationEmail(params: {
   discountCode?: string | null;
   discountGrosze?: number;
   freeShipping?: boolean;
+  /** Opis gratisu ze zdrapki (rabat typu „gift"). */
+  giftDescription?: string | null;
 }) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
@@ -121,6 +123,7 @@ export async function sendOrderConfirmationEmail(params: {
     discountCode: params.discountCode,
     discountGrosze: params.discountGrosze,
     freeShipping: params.freeShipping,
+    giftDescription: params.giftDescription,
     trackingUrl,
     logoUrl,
   });

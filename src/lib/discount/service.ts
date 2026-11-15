@@ -1,6 +1,6 @@
 import Stripe from "stripe";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { DiscountCode, DiscountValidationResult, DiscountType } from "./types";
+import type { DiscountCartItem, DiscountCode, DiscountValidationResult, DiscountType } from "./types";
 
 /**
  * Waliduje kod rabatowy dla danego użytkownika i sumy koszyka.
@@ -15,6 +15,8 @@ export async function validateDiscountCode(params: {
   userId: string | null;
   itemsTotalGrosze: number;
   shippingGrosze: number;
+  /** Pozycje koszyka — wymagane dla rabatów „na drugą sztukę". */
+  items?: DiscountCartItem[];
 }): Promise<DiscountValidationResult> {
   const code = params.code.trim().toUpperCase();
   if (!code) return { valid: false, error: "Podaj kod rabatowy.", discountGrosze: 0 };
@@ -43,7 +45,13 @@ export async function validateDiscountCode(params: {
   }
 
   if (dc.max_uses != null && dc.times_used >= dc.max_uses) {
-    return { valid: false, error: "Kod został już w pełni wykorzystany.", discountGrosze: 0 };
+    return {
+      valid: false,
+      error: dc.scratch_batch_id
+        ? "Ten kod ze zdrapki został już wykorzystany."
+        : "Kod został już w pełni wykorzystany.",
+      discountGrosze: 0,
+    };
   }
 
   if (dc.min_order_grosze && params.itemsTotalGrosze < dc.min_order_grosze) {
@@ -71,9 +79,18 @@ export async function validateDiscountCode(params: {
     }
   }
 
+  if (isSecondItemType(dc.type) && paidUnitPrices(params.items).length < 2) {
+    return {
+      valid: false,
+      error: "Ten kod działa przy zakupie minimum 2 sztuk.",
+      discountGrosze: 0,
+    };
+  }
+
   const discountGrosze = calculateDiscountGrosze(dc.type, dc.value, {
     itemsTotal: params.itemsTotalGrosze,
     shipping: params.shippingGrosze,
+    items: params.items,
   });
 
   return {
@@ -84,6 +101,8 @@ export async function validateDiscountCode(params: {
       type: dc.type,
       value: dc.value,
       stripe_promotion_code_id: dc.stripe_promotion_code_id,
+      gift_description: dc.gift_description ?? null,
+      is_scratch: Boolean(dc.scratch_batch_id),
     },
     discountGrosze,
   };
@@ -93,10 +112,24 @@ export async function validateDiscountCode(params: {
  * Oblicza wartość rabatu w groszach dla danego typu i sumy.
  * Zwraca wartość ≤ sumy (nie zjedzie poniżej 0).
  */
+export function isSecondItemType(type: DiscountType): boolean {
+  return type === "second_percent" || type === "second_fixed";
+}
+
+/** Ceny jednostkowe wszystkich płatnych sztuk (gratisy 0 zł pomijamy). */
+function paidUnitPrices(items: DiscountCartItem[] | undefined): number[] {
+  const out: number[] = [];
+  for (const it of items ?? []) {
+    if (it.unitPriceGr <= 0) continue;
+    for (let i = 0; i < it.quantity && out.length < 1000; i++) out.push(it.unitPriceGr);
+  }
+  return out;
+}
+
 export function calculateDiscountGrosze(
   type: DiscountType,
   value: number | null,
-  totals: { itemsTotal: number; shipping: number },
+  totals: { itemsTotal: number; shipping: number; items?: DiscountCartItem[] },
 ): number {
   switch (type) {
     case "percent": {
@@ -108,6 +141,20 @@ export function calculateDiscountGrosze(
     }
     case "free_shipping":
       return totals.shipping;
+    case "second_percent":
+    case "second_fixed": {
+      // Rabat obejmuje tylko JEDNĄ sztukę (najtańszą), niezależnie od liczby sztuk.
+      const prices = paidUnitPrices(totals.items);
+      if (prices.length < 2) return 0;
+      const cheapest = Math.min(...prices);
+      if (type === "second_percent") {
+        const pct = Math.max(1, Math.min(100, value ?? 0));
+        return Math.round((cheapest * pct) / 100);
+      }
+      return Math.min(cheapest, Math.max(0, value ?? 0));
+    }
+    case "gift":
+      return 0;
     default:
       return 0;
   }
@@ -129,7 +176,7 @@ export async function createStripeCoupon(params: {
   validUntil: string | null;
   maxRedemptions: number | null;
 }): Promise<{ couponId: string | null; promotionCodeId: string | null }> {
-  if (params.type === "free_shipping") {
+  if (params.type !== "percent" && params.type !== "fixed") {
     return { couponId: null, promotionCodeId: null };
   }
 
