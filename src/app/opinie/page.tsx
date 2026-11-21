@@ -1,7 +1,10 @@
+import { unstable_noStore as noStore } from "next/cache";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import { ReviewsClient, StarRow, type Review } from "@/features/reviews/ReviewsClient";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 
 export const metadata = {
   title: "Opinie klientów | Wredny Kubek",
@@ -9,6 +12,7 @@ export const metadata = {
 };
 
 export default async function OpiniePage() {
+  noStore(); // zawsze świeże opinie (bez cache danych Next.js)
   const supabase = createSupabaseServiceClient();
   const { data } = await supabase
     .from("product_reviews")

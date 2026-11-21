@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
+import { revalidatePath } from "next/cache";
+
+export const dynamic = "force-dynamic";
 
 // GET /api/reviews — wszystkie zatwierdzone opinie
 export async function GET() {
@@ -78,5 +81,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  revalidatePath("/opinie");
   return NextResponse.json({ review }, { status: 201 });
 }

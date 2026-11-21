@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
+import { revalidatePath } from "next/cache";
 
 async function requireAdmin() {
   const supabase = createSupabaseServerClient();
@@ -60,6 +61,7 @@ export async function PATCH(request: NextRequest) {
     await service.rpc("refresh_product_rating", { p_slug: data.product_slug });
   }
 
+  revalidatePath("/opinie");
   return NextResponse.json({ ok: true });
 }
 
@@ -86,5 +88,6 @@ export async function DELETE(request: NextRequest) {
     await service.rpc("refresh_product_rating", { p_slug: review.product_slug });
   }
 
+  revalidatePath("/opinie");
   return NextResponse.json({ ok: true });
 }
