@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ReviewsLink } from "@/features/reviews/ReviewsLink";
 import { ShopSearch } from "./ShopSearch";
 import Image from "next/image";
 
@@ -224,19 +225,17 @@ export async function ShopView({
                 ? `Produkty w kategorii: ${headerLabel}`
                 : "Kubki z charakterem — gotowe nadruki i personalizacja.")}
           </p>
-          <Link
-            href="/opinie"
-            className="mt-3 inline-block text-sm text-foreground underline-offset-4 transition-colors hover:text-primary hover:underline"
-          >
-            <strong className="font-bold">Niezdecydowany? No bez jaj.</strong>{" "}
-            Zobacz opinie ludzi, którzy już zaryzykowali →
-          </Link>
         </div>
       </header>
 
       <ShopSearch />
 
-      <section className="container mx-auto px-5 py-10 sm:px-6 lg:px-10 xl:px-12">
+      {/* Link do opinii — pod wyszukiwarką */}
+      <div className="container mx-auto px-5 pt-6 sm:px-6 lg:px-10 xl:px-12">
+        <ReviewsLink className="sm:inline-flex sm:w-auto" />
+      </div>
+
+      <section className="container mx-auto px-5 pb-10 pt-6 sm:px-6 lg:px-10 xl:px-12">
         <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
           <ShopFilters
             categories={categories}

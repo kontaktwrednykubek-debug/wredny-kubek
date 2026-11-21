@@ -14,6 +14,7 @@ import { ViewCounter } from "./ViewCounter";
 import { RelatedProducts } from "./RelatedProducts";
 import { WrednyChatButton } from "./WrednyChatButton";
 import { AgeGate } from "../AgeGate";
+import { ReviewsLink } from "@/features/reviews/ReviewsLink";
 
 export async function generateMetadata({
   params,
@@ -240,6 +241,9 @@ export default async function ProductDetailsPage({
               />
             </React.Suspense>
           )}
+
+          {/* Link do opinii — pod przyciskiem zakupu */}
+          <ReviewsLink />
 
           {/* Wredny AI — pod przyciskami zakupu */}
           <div className="flex flex-col gap-3 mt-[30px]">
