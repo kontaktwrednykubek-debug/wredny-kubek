@@ -2,9 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
-// Opinie ogólne o sklepie (strona /opinie) — nie są przypięte do produktu.
-const GENERAL_SLUG = "sklep";
-
 // GET /api/reviews — wszystkie zatwierdzone opinie
 export async function GET() {
   const supabase = createSupabaseServiceClient();
@@ -33,7 +30,8 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json();
   const { rating, review_body, image_url } = body;
-  const product_slug = GENERAL_SLUG;
+  // Opinie ogólne (strona /opinie) nie są przypięte do produktu.
+  const product_slug = null;
 
   if (!rating || !review_body) {
     return NextResponse.json({ error: "Brakuje wymaganych pól" }, { status: 400 });

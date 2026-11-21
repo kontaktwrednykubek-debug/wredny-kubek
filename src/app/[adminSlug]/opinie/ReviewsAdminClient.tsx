@@ -7,7 +7,7 @@ import Image from "next/image";
 
 type Review = {
   id: string;
-  product_slug: string;
+  product_slug: string | null;
   author_name: string;
   rating: number;
   body: string;
@@ -136,7 +136,7 @@ export function ReviewsAdminClient({ initialReviews }: { initialReviews: Review[
                     </span>
                     <span className="text-xs text-muted-foreground">·</span>
                     <span className="text-xs text-muted-foreground font-mono">
-                      {review.product_slug}
+                      {review.product_slug ?? "opinia ogólna"}
                     </span>
                   </div>
                 </div>

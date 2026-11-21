@@ -56,7 +56,9 @@ export async function PATCH(request: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  await service.rpc("refresh_product_rating", { p_slug: data.product_slug });
+  if (data.product_slug) {
+    await service.rpc("refresh_product_rating", { p_slug: data.product_slug });
+  }
 
   return NextResponse.json({ ok: true });
 }
