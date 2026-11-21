@@ -16,6 +16,7 @@ import {
 } from "@/features/catalog/CategoryCarousel";
 import { BannerSlider } from "@/components/BannerSlider";
 import Marquee from "@/components/Marquee";
+import { ShippingCountries } from "@/components/ShippingCountries";
 import { TikTokSection } from "@/features/tiktok/TikTokSection";
 import { getAdultCategorySlugs } from "@/lib/adult";
 
@@ -258,6 +259,9 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* WYSYŁKA ZAGRANICZNA — lista krajów */}
+      <ShippingCountries />
 
       {/* MARQUEE — ruchomy pasek tekstowy */}
       <div className="overflow-hidden">
