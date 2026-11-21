@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ShopSearch } from "./ShopSearch";
 import Image from "next/image";
-import { Star } from "lucide-react";
+
 import type { Metadata } from "next";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatPrice } from "@/lib/utils";
@@ -224,6 +224,13 @@ export async function ShopView({
                 ? `Produkty w kategorii: ${headerLabel}`
                 : "Kubki z charakterem — gotowe nadruki i personalizacja.")}
           </p>
+          <Link
+            href="/opinie"
+            className="mt-3 inline-block text-sm text-foreground underline-offset-4 transition-colors hover:text-primary hover:underline"
+          >
+            <strong className="font-bold">Niezdecydowany? No bez jaj.</strong>{" "}
+            Zobacz opinie ludzi, którzy już zaryzykowali →
+          </Link>
         </div>
       </header>
 
@@ -310,10 +317,6 @@ export async function ShopView({
                                 {priceLabel(p.price_grosze as number, p.variants)}
                               </span>
                             )}
-                            <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                              <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                              {Number(p.rating).toFixed(1)} ({p.reviews_count})
-                            </span>
                           </div>
                         </div>
                       </Link>

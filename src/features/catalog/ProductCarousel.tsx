@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ChevronLeft, ChevronRight, Star } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 import { SaleBadge, salePercent } from "@/components/SaleBadge";
 
@@ -116,13 +116,6 @@ export function ProductCarousel({ products }: { products: CarouselProduct[] }) {
                   ) : (
                     <span className="text-lg font-bold text-primary">
                       {priceLabel(p.price_grosze, p.variants)}
-                    </span>
-                  )}
-                  {p.rating != null && (
-                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                      {Number(p.rating).toFixed(1)}
-                      {p.reviews_count != null && ` (${p.reviews_count})`}
                     </span>
                   )}
                 </div>

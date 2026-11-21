@@ -10,7 +10,6 @@ import { BackLink } from "@/components/BackLink";
 import { formatPrice } from "@/lib/utils";
 import { ProductGalleryClient } from "./ProductGalleryClient";
 import { ProductPageClient } from "./ProductPageClient";
-import { ProductRatingTrigger } from "./ProductRatingTrigger";
 import { ViewCounter } from "./ViewCounter";
 import { RelatedProducts } from "./RelatedProducts";
 import { WrednyChatButton } from "./WrednyChatButton";
@@ -140,7 +139,6 @@ export default async function ProductDetailsPage({
     ([k, v]) => !HIDDEN_SPECS.includes(k) && String(v ?? "").trim() !== "",
   );
   const variants = (product.variants as Variants) ?? {};
-  const rating = Number(product.rating ?? 0);
   const body = (product.body as string | null) ?? null;
   const showVariantStock = Boolean(product.show_variant_stock);
   // Stan bazowy (pole „Ilość") — używany dla produktów bez wariantów.
@@ -169,17 +167,11 @@ export default async function ProductDetailsPage({
 
         {/* Prawa kolumna (mobile: pod galerią): tytuł → opinie → cena → warianty/kup → opis → dane techniczne */}
         <div className="order-2 flex flex-col gap-4 sm:gap-5">
-          {/* Tytuł + opinie */}
+          {/* Tytuł */}
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
               {product.title}
             </h1>
-            <ProductRatingTrigger
-              productSlug={product.slug}
-              productTitle={product.title}
-              rating={rating}
-              reviewsCount={product.reviews_count ?? 0}
-            />
           </div>
 
           {/* Licznik popularności */}

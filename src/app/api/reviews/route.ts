@@ -2,18 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
-// GET /api/reviews?slug=xxx
-export async function GET(request: NextRequest) {
-  const slug = request.nextUrl.searchParams.get("slug");
-  if (!slug) {
-    return NextResponse.json({ error: "Brak slug" }, { status: 400 });
-  }
+// Opinie ogólne o sklepie (strona /opinie) — nie są przypięte do produktu.
+const GENERAL_SLUG = "sklep";
 
+// GET /api/reviews — wszystkie zatwierdzone opinie
+export async function GET() {
   const supabase = createSupabaseServiceClient();
   const { data, error } = await supabase
     .from("product_reviews")
     .select("id, author_name, rating, body, image_url, created_at")
-    .eq("product_slug", slug)
     .eq("is_approved", true)
     .order("created_at", { ascending: false });
 
@@ -35,9 +32,10 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { product_slug, rating, review_body, image_url } = body;
+  const { rating, review_body, image_url } = body;
+  const product_slug = GENERAL_SLUG;
 
-  if (!product_slug || !rating || !review_body) {
+  if (!rating || !review_body) {
     return NextResponse.json({ error: "Brakuje wymaganych pól" }, { status: 400 });
   }
   if (rating < 1 || rating > 5) {
@@ -74,16 +72,13 @@ export async function POST(request: NextRequest) {
   if (error) {
     if (error.code === "23505") {
       return NextResponse.json(
-        { error: "Już dodałeś opinię dla tego produktu" },
+        { error: "Już dodałeś swoją opinię — dziękujemy!" },
         { status: 409 }
       );
     }
     console.error("[reviews POST]", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-
-  // Refresh aggregates
-  await service.rpc("refresh_product_rating", { p_slug: product_slug });
 
   return NextResponse.json({ review }, { status: 201 });
 }

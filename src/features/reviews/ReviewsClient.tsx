@@ -2,12 +2,6 @@
 
 import * as React from "react";
 import { Star, X, ImagePlus, Loader2, LogIn, MessageSquarePlus } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -25,18 +19,9 @@ export type Review = {
   created_at: string;
 };
 
-type Props = {
-  open: boolean;
-  onClose: () => void;
-  productSlug: string;
-  productTitle: string;
-  initialRating: number;
-  initialCount: number;
-};
-
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
-function StarRow({
+export function StarRow({
   value,
   interactive = false,
   size = 16,
@@ -70,7 +55,7 @@ function StarRow({
   );
 }
 
-function ReviewCard({ review }: { review: Review }) {
+export function ReviewCard({ review }: { review: Review }) {
   const date = new Date(review.created_at).toLocaleDateString("pl-PL", {
     day: "2-digit",
     month: "long",
@@ -110,10 +95,8 @@ function ReviewCard({ review }: { review: Review }) {
 // ─── AddReviewForm ─────────────────────────────────────────────────────────────
 
 function AddReviewForm({
-  productSlug,
   onSuccess,
 }: {
-  productSlug: string;
   onSuccess: (review: Review) => void;
 }) {
   const [rating, setRating] = React.useState(0);
@@ -175,7 +158,6 @@ function AddReviewForm({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          product_slug: productSlug,
           rating,
           review_body: body.trim(),
           image_url,
@@ -215,7 +197,7 @@ function AddReviewForm({
         <Textarea
           value={body}
           onChange={(e) => setBody(e.target.value)}
-          placeholder="Napisz co sądzisz o tym produkcie... (min. 10 znaków)"
+          placeholder="Napisz, co sądzisz o naszych kubkach... (min. 10 znaków)"
           rows={4}
           className="resize-none text-sm bg-white dark:bg-zinc-900 border border-border rounded-lg focus:ring-2 focus:ring-primary/30"
         />
@@ -223,7 +205,7 @@ function AddReviewForm({
 
       {/* Image upload */}
       <div className="flex flex-col gap-1.5">
-        <span className="text-xs font-medium text-foreground">Zdjęcie produktu (opcjonalne)</span>
+        <span className="text-xs font-medium text-foreground">Zdjęcie (opcjonalne)</span>
         <input
           ref={fileRef}
           type="file"
@@ -264,137 +246,63 @@ function AddReviewForm({
   );
 }
 
-// ─── ReviewsSheet ──────────────────────────────────────────────────────────────
+// ─── ReviewsClient (strona /opinie) ───────────────────────────────────────────
 
-export function ReviewsSheet({
-  open,
-  onClose,
-  productSlug,
-  productTitle,
-  initialRating,
-  initialCount,
-}: Props) {
-  const [reviews, setReviews] = React.useState<Review[]>([]);
-  const [loadingReviews, setLoadingReviews] = React.useState(false);
+export function ReviewsClient({ reviews }: { reviews: Review[] }) {
   const [user, setUser] = React.useState<{ id: string } | null | undefined>(undefined);
-  const [alreadyReviewed, setAlreadyReviewed] = React.useState(false);
   const [showForm, setShowForm] = React.useState(false);
-  const [count, setCount] = React.useState(initialCount);
-  const [avg, setAvg] = React.useState(initialRating);
-
+  const [submitted, setSubmitted] = React.useState(false);
   const supabase = createSupabaseBrowserClient();
 
   React.useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUser(data.user ?? null));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  React.useEffect(() => {
-    if (!open) return;
-    setLoadingReviews(true);
-    fetch(`/api/reviews?slug=${productSlug}`)
-      .then((r) => r.json())
-      .then(({ reviews: data }: { reviews: Review[] }) => {
-        setReviews(data ?? []);
-        if (user && data.some((r) => r.author_name)) {
-          // check if this user already reviewed — we can't tell from author_name alone,
-          // so we rely on the 409 conflict from the server
-        }
-        setLoadingReviews(false);
-      })
-      .catch(() => setLoadingReviews(false));
-  }, [open, productSlug]);
-
-  function handleReviewAdded(_review: Review) {
-    setAlreadyReviewed(true);
-    setShowForm(false);
-  }
-
-  const avgDisplay = reviews.length > 0
-    ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length)
-    : avg;
-
   return (
-    <Dialog open={open} onOpenChange={(v: boolean) => { if (!v) onClose(); }}>
-      <DialogContent className="w-full max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden sm:rounded-2xl bg-white dark:bg-zinc-900 shadow-2xl">
-        {/* Header */}
-        <DialogHeader className="px-5 pt-5 pb-4 border-b border-border shrink-0">
-          <div className="flex items-start gap-3">
-            <div className="flex-1 min-w-0">
-              <DialogTitle className="text-base leading-tight truncate">{productTitle}</DialogTitle>
-              <div className="mt-1.5 flex items-center gap-2">
-                <StarRow value={Math.round(avgDisplay)} size={15} />
-                <span className="text-sm text-muted-foreground">
-                  {avgDisplay > 0 ? avgDisplay.toFixed(1) : "—"} · {count} {count === 1 ? "opinia" : count < 5 ? "opinie" : "opinii"}
-                </span>
-              </div>
-            </div>
-          </div>
-        </DialogHeader>
-
-        {/* Scrollable body */}
-        <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-4">
-
-          {/* CTA: add review */}
-          {!showForm && !alreadyReviewed && (
-            user === null ? (
-              // Not logged in
-              <div className="rounded-xl border border-border bg-card p-4 text-center flex flex-col items-center gap-3">
-                <p className="text-sm text-muted-foreground">
-                  Aby dodać opinię, musisz być zalogowany.
-                </p>
-                <Link href="/login" onClick={onClose}>
-                  <Button size="sm" variant="outline">
-                    <LogIn size={14} className="mr-1.5" />
-                    Zaloguj się
-                  </Button>
-                </Link>
-              </div>
-            ) : user !== undefined ? (
-              // Logged in
-              <Button
-                size="sm"
-                variant="outline"
-                className="w-full"
-                onClick={() => setShowForm(true)}
-              >
-                <MessageSquarePlus size={14} className="mr-1.5" />
-                Dodaj opinię
-              </Button>
-            ) : null
-          )}
-
-          {alreadyReviewed && (
-            <div className="rounded-xl border border-green-200 bg-green-50 dark:bg-green-950/30 dark:border-green-900 px-4 py-3 text-center">
-              <p className="text-sm font-medium text-green-800 dark:text-green-400">✅ Dziękujemy za opinię!</p>
-              <p className="text-xs text-green-700 dark:text-green-500 mt-1">Twoja opinia oczekuje na zatwierdzenie przez administratora. Pojawi się wkrótce.</p>
-            </div>
-          )}
-
-          {showForm && (
-            <AddReviewForm
-              productSlug={productSlug}
-              onSuccess={handleReviewAdded}
-            />
-          )}
-
-          {/* Reviews list */}
-          {loadingReviews ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="animate-spin text-muted-foreground" size={20} />
-            </div>
-          ) : reviews.length === 0 ? (
-            <p className="text-center text-sm text-muted-foreground py-8">
-              Brak opinii. Bądź pierwszy! ✍️
-            </p>
-          ) : (
-            <div className="flex flex-col gap-3">
-              {reviews.map((review) => (
-                <ReviewCard key={review.id} review={review} />
-              ))}
-            </div>
-          )}
+    <div className="flex flex-col gap-6">
+      {/* CTA: dodaj opinię */}
+      {submitted ? (
+        <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-center dark:border-green-900 dark:bg-green-950/30">
+          <p className="text-sm font-medium text-green-800 dark:text-green-400">✅ Dziękujemy za opinię!</p>
+          <p className="mt-1 text-xs text-green-700 dark:text-green-500">
+            Twoja opinia oczekuje na zatwierdzenie przez administratora. Pojawi się wkrótce.
+          </p>
         </div>
-      </DialogContent>
-    </Dialog>
+      ) : showForm ? (
+        <AddReviewForm
+          onSuccess={() => {
+            setSubmitted(true);
+            setShowForm(false);
+          }}
+        />
+      ) : user === null ? (
+        <div className="flex flex-col items-center gap-3 rounded-xl border border-border bg-card p-5 text-center">
+          <p className="text-sm text-muted-foreground">Aby dodać opinię, musisz być zalogowany.</p>
+          <Link href="/login?next=/opinie">
+            <Button>
+              <LogIn size={16} className="mr-1.5" />
+              Zaloguj się i dodaj opinię
+            </Button>
+          </Link>
+        </div>
+      ) : (
+        <Button size="lg" className="w-full sm:w-auto sm:self-start" onClick={() => setShowForm(true)} disabled={user === undefined}>
+          <MessageSquarePlus size={16} className="mr-1.5" />
+          Dodaj swoją opinię
+        </Button>
+      )}
+
+      {/* Lista opinii */}
+      {reviews.length === 0 ? (
+        <p className="py-8 text-center text-sm text-muted-foreground">Brak opinii. Bądź pierwszy! ✍️</p>
+      ) : (
+        <div className="columns-1 gap-4 sm:columns-2 lg:columns-3 [&>*]:mb-4 [&>*]:break-inside-avoid">
+          {reviews.map((review) => (
+            <ReviewCard key={review.id} review={review} />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

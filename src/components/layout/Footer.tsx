@@ -47,6 +47,7 @@ const cols = [
   {
     title: "Informacje",
     links: [
+      { href: "/opinie", label: "Opinie klientów" },
       { href: "/kontakt", label: "Kontakt" },
       { href: "/polityka-prywatnosci", label: "Polityka Prywatności" },
       { href: "/regulamin", label: "Regulamin sklepu" },
